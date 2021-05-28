@@ -1,4 +1,6 @@
 #include <eft_Config.h>
+#include <eft_Emitter.h>
+#include <eft_EmitterSet.h>
 #include <eft_Heap.h>
 #include <eft_Random.h>
 #include <eft_Renderer.h>
@@ -25,24 +27,24 @@ void System::Initialize(Heap* argHeap, const Config& config)
     numEmitterSetMax = config.numEmitterSetMax;
     numStripeMax = config.numStripeMax;
 
-    numCalcPtcl = 0;
+    numCalcParticle = 0;
     numUnusedEmitters = numEmitterMax;
     _530 = 0;
-    _18 = numEmitterSetMax - 1;
+    numEmitterSetMaxMask = numEmitterSetMax - 1;
     currentCallbackID = CustomActionCallBackID_Invalid;
-    _548 = numEmitterMax - 1;
+    numEmitterMaxMask = numEmitterMax - 1;
     _8A8 = -1;
-    _550 = numStripeMax - 1;
+    numStripeMaxMask = numStripeMax - 1;
     numCalcEmitterSet = 0;
-    _554 = 0;
-    _534 = 0;
+    numCalcEmitter = 0;
+    currentEmitterSetIdx = 0;
     _564 = 0;
     _538 = 0;
-    _3E4 = 0;
-    numCreatedEmitterSet = 0;
-    _54C = numParticleMax - 1;
+    currentEmitterIdx = 0;
+    currentEmitterSetCreateID = 0;
+    numParticleMaxMask = numParticleMax - 1;
     _A20 = 0;
-    currentPtclIdx = 0;
+    currentParticleIdx = 0;
 
     memset(emitterGroups,       0, 64 * sizeof(EmitterInstance*));
     memset(emitterSetGroupHead, 0, 64 * sizeof(EmitterSet*));
@@ -64,7 +66,13 @@ void System::Initialize(Heap* argHeap, const Config& config)
         renderers[i] = new (rendererWork[i]) Renderer(heap, this, config);
     }
 
-    // ...
+    emitterSetWork = heap->Alloc(sizeof(EmitterSet) * numEmitterSetMax + 32);
+    emitterSets = new (emitterSetWork) EmitterSet[numEmitterSetMax];
+
+    for (s32 i = 0; i < numEmitterSetMax; i++)
+        emitterSets[i].system = this;
+
+    emitters = static_cast<EmitterInstance*>(heap->Alloc(sizeof(EmitterInstance) * numEmitterMax));
 }
 
 } } // namespace nw::eft

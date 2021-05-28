@@ -18,6 +18,7 @@ public:
     Heap* heap;
     RenderContext renderContext;
     u32 _28;
+    // TODO
     u8 _2C[0x17C - 0x2C];
 };
 

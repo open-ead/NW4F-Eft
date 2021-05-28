@@ -1,6 +1,8 @@
 #ifndef EFT_HEAP_H_
 #define EFT_HEAP_H_
 
+#include <types.h>
+
 namespace nw { namespace eft {
 
 class Heap

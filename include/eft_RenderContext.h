@@ -11,7 +11,8 @@ class RenderContext
 public:
     RenderContext();
 
-    TextureSampler textureSamplers[2];
+    TextureSampler textureSampler;
+    TextureSampler textureSampler2;
     BlendType blendType;
     ZBufATestType zBufATestType;
 };

@@ -1,28 +1,21 @@
 #ifndef EFT_SYSTEM_H_
 #define EFT_SYSTEM_H_
 
+#include <math/math_MTX44.h>
 #include <eft_Enum.h>
-
-#include <types.h>
 
 namespace nw { namespace eft {
 
 class Config;
 class EmitterCalc;
-class EmitterInstance;
+struct EmitterInstance;
 class EmitterSet;
 class EmitterStaticUniformBlock;
 class Heap;
-class PtclInstance;
+struct PtclInstance;
 class PtclStripe;
 class Renderer;
 class Resource;
-
-// TODO: move this somewhere else
-struct Matrix44f
-{
-    f32 rows[4][4];
-};
 
 class System
 {
@@ -37,43 +30,43 @@ public:
     Resource** resources;
     u32 numResourceMax;
     EmitterSet* emitterSets;
-    u32 numEmitterSetMax;
-    s32 _18;
-    Matrix44f view[CpuCore_Max];
+    s32 numEmitterSetMax;
+    s32 numEmitterSetMaxMask;
+    math::MTX44 view[CpuCore_Max];
     EmitterInstance* emitterGroups[64];  // Maximum of 64 groups
     EmitterSet* emitterSetGroupHead[64]; // Maximum of 64 groups
     EmitterSet* emitterSetGroupTail[64]; // Maximum of 64 groups
     EmitterInstance* emitters;
     EmitterStaticUniformBlock* emitterStaticUniformBlocks;
-    u32 _3E4;
+    s32 currentEmitterIdx;
     s32 numUnusedEmitters;
     PtclInstance* particles;
-    s32 currentPtclIdx;
+    s32 currentParticleIdx;
     u8 _3F4[8];
     PtclInstance** childParticles[CpuCore_Max];
-    u32 numChildParticles[CpuCore_Max];
-    PtclInstance** ptclToRemove[CpuCore_Max];
-    u32 numPtclToRemove[CpuCore_Max];
+    u32 numChildParticle[CpuCore_Max];
+    PtclInstance** particlesToRemove[CpuCore_Max];
+    u32 numParticleToRemove[CpuCore_Max];
     PtclStripe* stripes;
     PtclStripe* stripeGroups[64]; // Maximum of 64 groups
     u32 _530;
-    u32 _534;
+    s32 currentEmitterSetIdx;
     u32 _538;
-    u32 numEmitterMax;
-    u32 numParticleMax;
-    u32 numStripeMax;
-    s32 _548;
-    s32 _54C;
-    s32 _550;
-    u32 _554;
-    u32 numCalcPtcl;
+    s32 numEmitterMax;
+    s32 numParticleMax;
+    s32 numStripeMax;
+    s32 numEmitterMaxMask;
+    s32 numParticleMaxMask;
+    s32 numStripeMaxMask;
+    u32 numCalcEmitter;
+    u32 numCalcParticle;
     u32 numCalcEmitterSet;
-    u32 numEmittedPtcl;
+    u32 numEmittedParticle;
     u32 _564;
     u64 activeGroupsFlg;
     u32 _570[CpuCore_Max][64]; // Maximum of 64 groups
     Renderer* renderers[CpuCore_Max];
-    u32 numCreatedEmitterSet;
+    u32 currentEmitterSetCreateID;
     EmitterCalc* emitterCalc[2];
     void* resourceWork;
     void* emitterSetWork;

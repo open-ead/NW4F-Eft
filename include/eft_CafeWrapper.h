@@ -7,6 +7,7 @@ namespace nw { namespace eft {
 
 class TextureSampler
 {
+public:
     TextureSampler();
     ~TextureSampler();
 

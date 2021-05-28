@@ -10,7 +10,17 @@ class Heap;
 class Config
 {
 public:
-    Config();
+    Config()
+        : heap (NULL)
+        , numEmitterMax(0x100)
+        , numParticleMax(0x800)
+        , numEmitterSetMax(0x80)
+        , numResourceMax(1)
+        , numStripeMax(0x100)
+        , _18(0x20000)
+    {
+    }
+
     virtual ~Config() { } // deleted
 
     virtual void SetHeap(Heap* heap) // deleted, not sure if correct

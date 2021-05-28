@@ -32,6 +32,22 @@ enum CustomShaderCallBackID
     CustomShaderCallBackID_Max = 9,
 };
 
+enum PtclFollowType
+{
+    PtclFollowType_SRT = 0,
+    PtclFollowType_None = 1,
+    PtclFollowType_Trans = 2,
+    PtclFollowType_Max = 3,
+};
+
+enum ShaderType
+{
+    ShaderType_Normal = 0,
+    ShaderType_UserMacro1 = 1,
+    ShaderType_UserMacro2 = 2,
+    ShaderType_Max,
+};
+
 enum ZBufATestType
 {
     ZBufATestType_Type0 = 0,
