@@ -38,14 +38,14 @@ public:
     u32 numResourceMax;
     EmitterSet* emitterSets;
     u32 numEmitterSetMax;
-    u8 _18[4];
+    s32 _18;
     Matrix44f view[CpuCore_Max];
     EmitterInstance* emitterGroups[64];  // Maximum of 64 groups
     EmitterSet* emitterSetGroupHead[64]; // Maximum of 64 groups
     EmitterSet* emitterSetGroupTail[64]; // Maximum of 64 groups
     EmitterInstance* emitters;
     EmitterStaticUniformBlock* emitterStaticUniformBlocks;
-    u8 _3E4[4];
+    u32 _3E4;
     s32 numUnusedEmitters;
     PtclInstance* particles;
     s32 currentPtclIdx;
@@ -56,17 +56,20 @@ public:
     u32 numPtclToRemove[CpuCore_Max];
     PtclStripe* stripes;
     PtclStripe* stripeGroups[64]; // Maximum of 64 groups
-    u8 _530[0xC];
+    u32 _530;
+    u32 _534;
+    u32 _538;
     u32 numEmitterMax;
     u32 numParticleMax;
     u32 numStripeMax;
-    u8 _548[4];
-    u32 _54C;
-    u8 _550[8];
+    s32 _548;
+    s32 _54C;
+    s32 _550;
+    u32 _554;
     u32 numCalcPtcl;
     u32 numCalcEmitterSet;
     u32 numEmittedPtcl;
-    u8 _564[4];
+    u32 _564;
     u64 activeGroupsFlg;
     u32 _570[CpuCore_Max][64]; // Maximum of 64 groups
     Renderer* renderers[CpuCore_Max];
@@ -93,7 +96,7 @@ public:
     void* sortedEmitterSets[CpuCore_Max];
     u32 numSortedEmitterSets[CpuCore_Max];
     u32 _A14[CpuCore_Max];
-    u8 _A20[4];
+    u32 _A20;
 };
 
 } } // namespace nw::eft

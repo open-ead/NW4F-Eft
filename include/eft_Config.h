@@ -25,7 +25,7 @@ public:
 
     Heap* heap;
     u32 numEmitterMax;
-    u32 numPtclMax;
+    u32 numParticleMax;
     u32 numEmitterSetMax;
     u32 numResourceMax;
     u32 numStripeMax;
