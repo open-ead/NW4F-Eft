@@ -5,6 +5,7 @@
 
 namespace nw { namespace eft {
 
+struct Header;
 class Heap;
 class ParticleShader;
 class Primitive;
@@ -21,7 +22,7 @@ public:
 
     System* system;
     u32 resourceID;
-    void* resource;
+    Header* resource;
     char* strTbl;
     void* textureDataTbl;
     void* emitterSets;

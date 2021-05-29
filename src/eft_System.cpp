@@ -1,12 +1,12 @@
 #include <eft_Config.h>
 #include <eft_EmitterComplex.h>
 #include <eft_EmitterSet.h>
-#include <eft_EmitterStaticUniformBlock.h>
 #include <eft_Heap.h>
 #include <eft_Particle.h>
 #include <eft_Random.h>
 #include <eft_Renderer.h>
 #include <eft_System.h>
+#include <eft_UniformBlock.h>
 
 #include <cstring>
 #include <new>
