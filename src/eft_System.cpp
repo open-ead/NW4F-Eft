@@ -1,7 +1,9 @@
 #include <eft_Config.h>
 #include <eft_Emitter.h>
 #include <eft_EmitterSet.h>
+#include <eft_EmitterStaticUniformBlock.h>
 #include <eft_Heap.h>
+#include <eft_Particle.h>
 #include <eft_Random.h>
 #include <eft_Renderer.h>
 #include <eft_System.h>
@@ -73,6 +75,25 @@ void System::Initialize(Heap* argHeap, const Config& config)
         emitterSets[i].system = this;
 
     emitters = static_cast<EmitterInstance*>(heap->Alloc(sizeof(EmitterInstance) * numEmitterMax));
+    emitterStaticUniformBlocks = static_cast<EmitterStaticUniformBlock*>(heap->Alloc(sizeof(EmitterStaticUniformBlock) * numEmitterMax * 2));
+
+    for (s32 i = 0; i < numEmitterMax; i++)
+    {
+        emitters[i].calc = NULL;
+        emitters[i].emitterStaticUniformBlock = &emitterStaticUniformBlocks[i];
+        emitters[i].childEmitterStaticUniformBlock = &emitterStaticUniformBlocks[numEmitterMax + i];
+    }
+
+    particles = static_cast<PtclInstance*>(heap->Alloc(sizeof(PtclInstance) * numParticleMax));
+    alphaAnim = static_cast<AlphaAnim*>(heap->Alloc(sizeof(AlphaAnim) * numParticleMax));
+    scaleAnim = static_cast<ScaleAnim*>(heap->Alloc(sizeof(ScaleAnim) * numParticleMax));
+
+    for (s32 i = 0; i < numParticleMax; i++)
+    {
+        particles[i].data = NULL;
+        particles[i].alphaAnim = &alphaAnim[i];
+        particles[i].scaleAnim = &scaleAnim[i];
+    }
 }
 
 } } // namespace nw::eft

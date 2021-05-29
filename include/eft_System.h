@@ -6,16 +6,18 @@
 
 namespace nw { namespace eft {
 
+struct AlphaAnim;
 class Config;
 class EmitterCalc;
 struct EmitterInstance;
 class EmitterSet;
-class EmitterStaticUniformBlock;
+struct EmitterStaticUniformBlock;
 class Heap;
 struct PtclInstance;
 class PtclStripe;
 class Renderer;
 class Resource;
+struct ScaleAnim; // ?
 
 class System
 {
@@ -42,7 +44,8 @@ public:
     s32 numUnusedEmitters;
     PtclInstance* particles;
     s32 currentParticleIdx;
-    u8 _3F4[8];
+    AlphaAnim* alphaAnim;
+    ScaleAnim* scaleAnim; // ?
     PtclInstance** childParticles[CpuCore_Max];
     u32 numChildParticle[CpuCore_Max];
     PtclInstance** particlesToRemove[CpuCore_Max];
