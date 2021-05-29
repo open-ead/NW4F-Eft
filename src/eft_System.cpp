@@ -1,5 +1,5 @@
 #include <eft_Config.h>
-#include <eft_Emitter.h>
+#include <eft_EmitterComplex.h>
 #include <eft_EmitterSet.h>
 #include <eft_EmitterStaticUniformBlock.h>
 #include <eft_Heap.h>
@@ -94,6 +94,64 @@ void System::Initialize(Heap* argHeap, const Config& config)
         particles[i].alphaAnim = &alphaAnim[i];
         particles[i].scaleAnim = &scaleAnim[i];
     }
+
+    emitterSimpleCalcWork = heap->Alloc(sizeof(EmitterSimpleCalc));
+    emitterCalc[EmitterType_Simple] = new (emitterSimpleCalcWork) EmitterSimpleCalc(this);
+
+    emitterComplexCalcWork = heap->Alloc(sizeof(EmitterComplexCalc));
+    emitterCalc[EmitterType_Complex] = new (emitterComplexCalcWork) EmitterComplexCalc(this);
+
+    EmitterCalc::InitializeFluctuationTable(heap);
+
+    for (u32 i = 0; i < CpuCore_Max; i++)
+    {
+        particlesToRemove[i] = static_cast<PtclInstance**>(heap->Alloc(sizeof(PtclInstance*) * numParticleMax));
+        childParticles[i] = static_cast<PtclInstance**>(heap->Alloc(sizeof(PtclInstance*) * numParticleMax));
+        numParticleToRemove[i] = 0;
+        numChildParticle[i] = 0;
+
+        for (s32 j = 0; j < numParticleMax; j++)
+        {
+            particlesToRemove[i][j] = NULL;
+            childParticles[i][j] = NULL;
+        }
+    }
+
+    stripes = static_cast<PtclStripe*>(heap->Alloc(sizeof(PtclStripe) * numStripeMax));
+
+    for (s32 i = 0; i < numStripeMax; i++)
+    {
+        stripes[i].data = NULL;
+        stripes[i].queueFront = 0;
+        stripes[i].queueRear = 0;
+    }
+
+    for (u32 i = 0; i < CustomActionCallBackID_Max; i++)
+    {
+        customActionEmitterPreCalcCallback[i] = NULL;
+        customActionParticleEmitCallback[i] = NULL;
+        customActionParticleRemoveCallback[i] = NULL;
+        customActionParticleCalcCallback[i] = NULL;
+        customActionParticleMakeAttrCallback[i] = NULL;
+        customActionEmitterPostCalcCallback[i] = NULL;
+        customActionEmitterDrawOverrideCallback[i] = NULL;
+    }
+
+    for (u32 i = 0; i < CustomShaderCallBackID_Max; i++)
+    {
+        customShaderEmitterCalcPostCallback[i] = NULL;
+        customShaderDrawOverrideCallback[i] = NULL;
+        customShaderRenderStateSetCallback[i] = NULL;
+    }
+
+    for (u32 i = 0; i < CpuCore_Max; i++)
+    {
+        sortedEmitterSets[i] = static_cast<PtclViewZ*>(heap->Alloc(sizeof(PtclViewZ) * numEmitterSetMax));
+        numSortedEmitterSets[i] = 0;
+        _A14[i] = 0;
+    }
+
+    initialized = true;
 }
 
 } } // namespace nw::eft

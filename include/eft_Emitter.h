@@ -80,6 +80,29 @@ struct EmitterInstance
     EmitterDynamicUniformBlock* childEmitterDynamicUniformBlock;
 };
 
+class System;
+
+class EmitterCalc
+{
+public:
+    EmitterCalc(System* system)
+    {
+        mSys = system;
+    }
+
+    virtual ~EmitterCalc() { } // deleted
+
+    virtual void CalcEmitter(EmitterInstance* emitter) = 0;
+    virtual EmitterType GetEmitterType() const = 0;
+    virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool, bool) = 0;
+    virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool, bool) = 0;
+
+    static void InitializeFluctuationTable(Heap* heap);
+
+    static f32* sFluctuationTbl;
+    static System* mSys;
+};
+
 } } // namespace nw::eft
 
 #endif // EFT_EMITTER_H_

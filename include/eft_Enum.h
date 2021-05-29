@@ -32,6 +32,13 @@ enum CustomShaderCallBackID
     CustomShaderCallBackID_Max = 9,
 };
 
+enum EmitterType
+{
+    EmitterType_Simple = 0,
+    EmitterType_Complex = 1,
+    EmitterType_Max = 2,
+};
+
 enum PtclFollowType
 {
     PtclFollowType_SRT = 0,

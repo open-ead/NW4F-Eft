@@ -22,10 +22,20 @@ struct ScaleAnim; // ?
 class System
 {
 public:
+    struct PtclViewZ // Actual name not known
+    {
+        EmitterSet* emitterSet;
+        u32 z;
+    };
+
+public:
     System(const Config& config);
     virtual ~System(); // deleted
 
     virtual void Initialize(Heap* heap, const Config& config);
+
+    // For qsort
+    static int ComparePtclViewZ(const void* a, const void* b);
 
     bool initialized;
     Heap* heap;
@@ -70,7 +80,7 @@ public:
     u32 _570[CpuCore_Max][64]; // Maximum of 64 groups
     Renderer* renderers[CpuCore_Max];
     u32 currentEmitterSetCreateID;
-    EmitterCalc* emitterCalc[2];
+    EmitterCalc* emitterCalc[EmitterType_Max];
     void* resourceWork;
     void* emitterSetWork;
     void* rendererWork[CpuCore_Max];
@@ -89,7 +99,7 @@ public:
     void* customShaderEmitterCalcPostCallback[CustomShaderCallBackID_Max];
     void* customShaderDrawOverrideCallback[CustomShaderCallBackID_Max];
     void* customShaderRenderStateSetCallback[CustomShaderCallBackID_Max];
-    void* sortedEmitterSets[CpuCore_Max];
+    PtclViewZ* sortedEmitterSets[CpuCore_Max];
     u32 numSortedEmitterSets[CpuCore_Max];
     u32 _A14[CpuCore_Max];
     u32 _A20;

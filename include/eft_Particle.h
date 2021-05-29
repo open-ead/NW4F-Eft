@@ -67,6 +67,33 @@ struct PtclInstance
     u8 _160[32];
 };
 
+struct PtclStripeQueue // Actual name not known
+{
+    f32 pos[3]; // VEC3
+    f32 scale;
+    math::MTX34 emitterMatrixSRT;
+    f32 outer[3]; // VEC3
+    f32 dir[3]; // VEC3
+};
+
+struct PtclStripe
+{
+    PtclInstance* particle;
+    u32 queueFront;
+    u32 queueRear;
+    PtclStripeQueue queue[256];
+    u32 queueCount;
+    u32 groupID;
+    SimpleEmitterData* data;
+    s32 counter;
+    math::MTX34 emitterMatrixSRT;
+    u8 _584C[36];
+    PtclStripe* prev;
+    PtclStripe* next;
+    u32 _5878;
+    u32 _587C;
+};
+
 } } // namespace nw::eft
 
 #endif // EFT_PARTICLE_H_
