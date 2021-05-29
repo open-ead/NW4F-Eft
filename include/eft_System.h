@@ -34,6 +34,9 @@ public:
 
     virtual void Initialize(Heap* heap, const Config& config);
 
+    void ClearResource(Heap* heap, u32 resourceID);
+    void EntryResource(Heap* heap, void* resource, u32 resourceID);
+
     // For qsort
     static int ComparePtclViewZ(const void* a, const void* b);
 
