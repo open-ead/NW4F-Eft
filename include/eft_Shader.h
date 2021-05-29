@@ -18,6 +18,7 @@ struct VertexShaderKey
     u32 shaderUserSwitchFlag;
     char shaderUserMacro[16];
 };
+static_assert(sizeof(VertexShaderKey) == 0x20, "VertexShaderKey size mismatch");
 
 struct FragmentShaderKey
 {
@@ -44,13 +45,15 @@ struct FragmentShaderKey
     u32 shaderUserSwitchFlag;
     char shaderUserMacro[16];
     u16 _2C; // Unused
-    u8 pad[2];
+    //u8 pad[2];
 };
+static_assert(sizeof(FragmentShaderKey) == 0x30, "FragmentShaderKey size mismatch");
 
 struct GeometryShaderKey // Not certain
 {
     u8 _0[4];
 };
+static_assert(sizeof(GeometryShaderKey) == 4, "GeometryShaderKey size mismatch");
 
 struct ShaderTable // Actual name not known
 {
@@ -59,6 +62,7 @@ struct ShaderTable // Actual name not known
     u32 shaderSrcOffs;
     u32 shaderProgOffs;
 };
+static_assert(sizeof(ShaderTable) == 0x10, "ShaderTable size mismatch");
 
 struct ShaderProgram // Actual name not known
 {
@@ -68,6 +72,7 @@ struct ShaderProgram // Actual name not known
     u32 binSize;
     u32 binOffs;
 };
+static_assert(sizeof(ShaderProgram) == 0x5C, "ShaderProgram size mismatch");
 
 class Heap;
 

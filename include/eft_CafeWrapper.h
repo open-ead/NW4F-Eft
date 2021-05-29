@@ -1,7 +1,8 @@
 #ifndef EFT_CAFE_WRAPPER_H_
 #define EFT_CAFE_WRAPPER_H_
 
-#include <cafe.h>
+#define INCLUDE_CAFE
+#include <eft_Types.h>
 
 namespace nw { namespace eft {
 
@@ -28,6 +29,20 @@ public:
     ~TextureSampler();
 
     GX2Sampler sampler;
+};
+
+class VertexBuffer
+{
+public:
+    VertexBuffer();
+
+    void* AllocateVertexBuffer(Heap* heap, u32 bufSize, u32 size);
+    void Invalidate();
+
+    u32 _0;
+    u32 size;
+    u32 bufferSize;
+    void* buffer;
 };
 
 } } // namespace nw::eft
