@@ -1,3 +1,4 @@
+#include <math/math_VEC4.h>
 #include <eft_Heap.h>
 #include <eft_Primitive.h>
 #include <eft_ResData.h>
@@ -108,14 +109,9 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
                 else
                 {
                     void* colorBuf = primitive->vbColor.AllocateVertexBuffer(argHeap, primitive->numIndex * 0x10, 4);
-                    //primitive->color = reinterpret_cast<f32*>(colorBuf); <-- Game doesn't do this. Bug?
                     for (u32 j = 0; j < primitive->numIndex; j++)
-                    {
-                        ((f32*)colorBuf)[j + 0] = 1.0f;
-                        ((f32*)colorBuf)[j + 1] = 1.0f;
-                        ((f32*)colorBuf)[j + 2] = 1.0f;
-                        ((f32*)colorBuf)[j + 3] = 1.0f;
-                    }
+                        ((math::VEC4*)colorBuf)[j] = (math::VEC4){ 1.0f, 1.0f, 1.0f, 1.0f };
+                    //primitive->color = reinterpret_cast<f32*>(colorBuf); <-- NSMBU doesn't do this, but MK8 does. Bug in older Eft?
                     primitive->vbColor.Invalidate();
                 }
 
