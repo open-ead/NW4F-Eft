@@ -13,4 +13,15 @@
 
 #define static_assert(condition, ...) typedef int TOKENPASTE2(static_assert_, __LINE__)[(condition) ? 1 : -1]
 
+#include <cstddef>
+
+template<typename T>
+struct __alignment_of
+{
+    char c;
+    T a;
+};
+
+#define alignof(Type) offsetof(__alignment_of<Type>, a)
+
 #endif // EFT_TYPES_H_

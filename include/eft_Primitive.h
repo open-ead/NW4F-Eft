@@ -28,6 +28,6 @@ public:
     u32* index;
 };
 
-} }
+} } // namespace nw::eft
 
 #endif // EFT_PRIMITIVE_H_

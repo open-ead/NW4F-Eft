@@ -1,6 +1,7 @@
 #ifndef EFT_SYSTEM_H_
 #define EFT_SYSTEM_H_
 
+#include <math/math_MTX34.h>
 #include <math/math_MTX44.h>
 #include <eft_Enum.h>
 
@@ -12,12 +13,14 @@ class EmitterCalc;
 struct EmitterInstance;
 class EmitterSet;
 struct EmitterStaticUniformBlock;
+class Handle;
 class Heap;
 struct PtclInstance;
 class PtclStripe;
 class Renderer;
 class Resource;
 struct ScaleAnim; // ?
+struct SimpleEmitterData;
 
 class System
 {
@@ -34,6 +37,11 @@ public:
 
     virtual void Initialize(Heap* heap, const Config& config);
 
+    EmitterSet* AllocEmitterSet(Handle* handle);
+    EmitterInstance* AllocEmitter(u8 groupID);
+    void AddEmitterSetToDrawList(EmitterSet* emitterSet, u8 groupID);
+    void InitializeEmitter(EmitterInstance* emitter, const SimpleEmitterData* data, u32 resourceID, s32 emitterSetID, u32 seed, bool keepCreateID);
+    bool CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s32 emitterSetID, u32 resourceID, u8 groupID, u32 emitterEnableMask = 0xFFFFFFFF);
     void ClearResource(Heap* heap, u32 resourceID);
     void EntryResource(Heap* heap, void* resource, u32 resourceID);
 

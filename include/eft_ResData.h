@@ -56,7 +56,11 @@ static_assert(sizeof(EmitterData) == 0x280, "EmitterData size mismatch");
 
 struct SimpleEmitterData : EmitterData
 {
-    u8 _280[0x6F4 - 0x280];
+    u8 _280[0x29C - 0x280];
+    s32 _29C;
+    u8 _2A0[0x410 - 0x2A0];
+    s32 ptclMaxLifespan;
+    u8 _414[0x6F4 - 0x414];
 };
 static_assert(sizeof(SimpleEmitterData) == 0x6F4, "SimpleEmitterData size mismatch");
 
@@ -150,6 +154,6 @@ struct PrimitiveTable
 };
 static_assert(sizeof(PrimitiveTable) == 0xC, "PrimitiveTable size mismatch");
 
-} }
+} } // namespace nw::eft
 
 #endif // EFT_RES_DATA_H_

@@ -1,6 +1,7 @@
 #include <eft_Config.h>
 #include <eft_EmitterComplex.h>
 #include <eft_EmitterSet.h>
+#include <eft_Handle.h>
 #include <eft_Heap.h>
 #include <eft_Particle.h>
 #include <eft_Random.h>
@@ -152,6 +153,26 @@ void System::Initialize(Heap* argHeap, const Config& config)
     }
 
     initialized = true;
+}
+
+EmitterSet* System::AllocEmitterSet(Handle* handle)
+{
+    s32 i = 0;
+    do
+    {
+        currentEmitterSetIdx++;
+        currentEmitterSetIdx &= numEmitterSetMaxMask;
+
+        EmitterSet* emitterSet = &emitterSets[currentEmitterSetIdx];
+        if (emitterSet->numEmitter == 0)
+        {
+            handle->emitterSet = emitterSet;
+            return emitterSet;
+        }
+    } while (++i < numEmitterSetMax);
+
+    handle->emitterSet = NULL;
+    return NULL;
 }
 
 } } // namespace nw::eft

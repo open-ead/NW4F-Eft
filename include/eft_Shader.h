@@ -122,6 +122,6 @@ public:
     s32 fragmentUserSamplerLocations[8];
 };
 
-} }
+} } // namespace nw::eft
 
 #endif // EFT_SHADER_H_
