@@ -21,6 +21,7 @@ public:
     // TODO
     u8 _2C[0x17C - 0x2C];
 };
+static_assert(sizeof(Renderer) == 0x17C, "Renderer size mismatch");
 
 } } // namespace nw::eft
 

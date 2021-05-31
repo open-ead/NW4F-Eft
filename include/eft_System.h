@@ -30,6 +30,7 @@ public:
         EmitterSet* emitterSet;
         u32 z;
     };
+    static_assert(sizeof(PtclViewZ) == 8, "PtclViewZ size mismatch");
 
 public:
     System(const Config& config);
@@ -115,6 +116,7 @@ public:
     u32 _A14[CpuCore_Max];
     u32 _A20;
 };
+static_assert(sizeof(System) == 0xA28, "System size mismatch");
 
 } } // namespace nw::eft
 

@@ -1,6 +1,8 @@
 #ifndef EFT_ENUM_H_
 #define EFT_ENUM_H_
 
+#include <eft_Types.h>
+
 namespace nw { namespace eft {
 
 enum BlendType
@@ -12,6 +14,7 @@ enum BlendType
     BlendType_Type4 = 4,
     BlendType_Max = 5,
 };
+static_assert(sizeof(BlendType) == 4, "BlendType size mismatch");
 
 enum CpuCore
 {
@@ -20,17 +23,20 @@ enum CpuCore
     CpuCore_2 = 2,
     CpuCore_Max = 3,
 };
+static_assert(sizeof(CpuCore) == 4, "CpuCore size mismatch");
 
 enum CustomActionCallBackID
 {
     CustomActionCallBackID_Invalid = 0xFFFFFFFF,
     CustomActionCallBackID_Max = 8,
 };
+static_assert(sizeof(CustomActionCallBackID) == 4, "CustomActionCallBackID size mismatch");
 
 enum CustomShaderCallBackID
 {
     CustomShaderCallBackID_Max = 9,
 };
+static_assert(sizeof(CustomShaderCallBackID) == 4, "CustomShaderCallBackID size mismatch");
 
 enum EmitterType // Actual name not known
 {
@@ -38,6 +44,7 @@ enum EmitterType // Actual name not known
     EmitterType_Complex = 1,
     EmitterType_Max = 2,
 };
+static_assert(sizeof(EmitterType) == 4, "EmitterType size mismatch");
 
 enum PtclFollowType
 {
@@ -46,6 +53,7 @@ enum PtclFollowType
     PtclFollowType_Trans = 2,
     PtclFollowType_Max = 3,
 };
+static_assert(sizeof(PtclFollowType) == 4, "PtclFollowType size mismatch");
 
 enum ShaderType
 {
@@ -54,6 +62,7 @@ enum ShaderType
     ShaderType_UserMacro2 = 2,
     ShaderType_Max,
 };
+static_assert(sizeof(ShaderType) == 4, "ShaderType size mismatch");
 
 enum TextureResFormat // Actual name not known
 {
@@ -75,6 +84,7 @@ enum TextureResFormat // Actual name not known
     TextureResFormat_RGBA8_SRGB = 15,
     TextureResFormat_Max,
 };
+static_assert(sizeof(TextureResFormat) == 4, "TextureResFormat size mismatch");
 
 enum ZBufATestType
 {
@@ -83,6 +93,7 @@ enum ZBufATestType
     ZBufATestType_Type2 = 2,
     ZBufATestType_Max = 3,
 };
+static_assert(sizeof(ZBufATestType) == 4, "ZBufATestType size mismatch");
 
 } } // namespace nw::eft
 

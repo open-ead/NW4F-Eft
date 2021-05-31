@@ -2,6 +2,7 @@
 #define EFT_EMITTER_H_
 
 #include <math/math_MTX34.h>
+#include <math/math_VEC3.h>
 #include <eft_Enum.h>
 #include <eft_Random.h>
 
@@ -39,12 +40,12 @@ struct EmitterInstance
     s32 emissionInterval;
     f32 fadeAlpha;
     f32 emissionSpeed;
-    f32 prevPos[3]; // VEC3, used for equidistant emission
+    math::VEC3 prevPos; // Used for equidistant emission
     bool prevPosSet;
     f32 emitLostDistance;
-    f32 scaleRandom[3]; // VEC3
-    f32 rotateRandom[3]; // VEC3
-    f32 translateRandom[3]; // VEC3
+    math::VEC3 scaleRandom;
+    math::VEC3 rotateRandom;
+    math::VEC3 translateRandom;
     PtclFollowType ptclFollowType;
     EmitterInstance* prev;
     EmitterInstance* next;
@@ -79,6 +80,7 @@ struct EmitterInstance
     EmitterDynamicUniformBlock* emitterDynamicUniformBlock;
     EmitterDynamicUniformBlock* childEmitterDynamicUniformBlock;
 };
+static_assert(sizeof(EmitterInstance) == 0x220, "EmitterInstance size mismatch");
 
 class System;
 
@@ -102,6 +104,7 @@ public:
     static f32* sFluctuationTbl;
     static System* mSys;
 };
+static_assert(sizeof(EmitterCalc) == 4, "EmitterCalc size mismatch");
 
 } } // namespace nw::eft
 

@@ -127,7 +127,7 @@ struct Header // Actual name not known
 };
 static_assert(sizeof(Header) == 0x40, "Header size mismatch");
 
-struct PrimitiveAttrib
+struct PrimitiveAttrib // Actual name not known
 {
     u32 count;
     u32 size;
@@ -136,7 +136,7 @@ struct PrimitiveAttrib
 };
 static_assert(sizeof(PrimitiveAttrib) == 0x10, "PrimitiveAttrib size mismatch");
 
-struct PrimitiveData
+struct PrimitiveData // Actual name not known
 {
     PrimitiveAttrib pos;
     PrimitiveAttrib normal;
@@ -146,7 +146,7 @@ struct PrimitiveData
 };
 static_assert(sizeof(PrimitiveData) == 0x50, "PrimitiveData size mismatch");
 
-struct PrimitiveTable
+struct PrimitiveTable // Actual name not known
 {
     u32 numPrimitive;
     u32 size;

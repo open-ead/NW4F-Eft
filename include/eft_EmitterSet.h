@@ -5,6 +5,7 @@
 #include <math/math_VEC2.h>
 #include <math/math_VEC3.h>
 #include <ut/ut_Color4f.h>
+#include <eft_Types.h>
 
 namespace nw { namespace eft {
 
@@ -19,6 +20,7 @@ public:
     u32 _C;
     EmitterInstance* emitter;
 };
+static_assert(sizeof(EmitterController) == 0x14, "EmitterController size mismatch");
 
 class System;
 
@@ -77,6 +79,7 @@ public:
     u8 _28D;
     u8 _28E[6];
 };
+static_assert(sizeof(EmitterSet) == 0x294, "EmitterSet size mismatch");
 
 } } // namespace nw::eft
 

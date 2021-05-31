@@ -21,6 +21,7 @@ public:
     u32 attributeBuffer[16];
     bool initialized;
 };
+static_assert(sizeof(Shader) == 0x278, "Shader size mismatch");
 
 class TextureSampler
 {
@@ -30,6 +31,7 @@ public:
 
     GX2Sampler sampler;
 };
+static_assert(sizeof(TextureSampler) == 0xC, "TextureSampler size mismatch");
 
 class VertexBuffer
 {
@@ -44,6 +46,7 @@ public:
     u32 bufferSize;
     void* buffer;
 };
+static_assert(sizeof(VertexBuffer) == 0x10, "VertexBuffer size mismatch");
 
 } } // namespace nw::eft
 

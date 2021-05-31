@@ -18,6 +18,7 @@ public:
     virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool, bool);
     virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool, bool);
 };
+static_assert(sizeof(EmitterSimpleCalc) == 4, "EmitterSimpleCalc size mismatch");
 
 } } // namespace nw::eft
 

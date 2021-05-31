@@ -20,6 +20,6 @@ struct Color4f
     };
 };
 
-} }
+} } // namespace nw::ut
 
 #endif // UT_COLOR4F_H_

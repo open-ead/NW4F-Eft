@@ -93,6 +93,7 @@ private:
     u32 mZ;
     u32 mW;
 };
+static_assert(sizeof(Random) == 0x10, "Random size mismatch");
 
 class Heap;
 
@@ -112,6 +113,7 @@ public:
     u16 randomNormVec3Idx;
     u32 val;
 };
+static_assert(sizeof(PtclRandom) == 8, "PtclRandom size mismatch");
 
 } } // namespace nw::eft
 

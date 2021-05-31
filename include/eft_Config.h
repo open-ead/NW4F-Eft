@@ -1,7 +1,7 @@
 #ifndef EFT_CONFIG_H_
 #define EFT_CONFIG_H_
 
-#include <types.h>
+#include <eft_Types.h>
 
 namespace nw { namespace eft {
 
@@ -41,6 +41,7 @@ public:
     u32 numStripeMax;
     u32 _18;
 };
+static_assert(sizeof(Config) == 0x20, "Config size mismatch");
 
 } } // namespace nw::eft
 

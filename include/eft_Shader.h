@@ -121,6 +121,7 @@ public:
     s32 vertexUserSamplerLocations[8];
     s32 fragmentUserSamplerLocations[8];
 };
+static_assert(sizeof(ParticleShader) == 0x61C, "ParticleShader size mismatch");
 
 } } // namespace nw::eft
 

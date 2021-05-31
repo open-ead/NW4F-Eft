@@ -27,6 +27,7 @@ public:
     f32* texCoord;
     u32* index;
 };
+static_assert(sizeof(Primitive) == 0x6C, "Primitive size mismatch");
 
 } } // namespace nw::eft
 

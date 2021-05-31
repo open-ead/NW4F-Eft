@@ -16,6 +16,7 @@ public:
     BlendType blendType;
     ZBufATestType zBufATestType;
 };
+static_assert(sizeof(RenderContext) == 0x20, "RenderContext size mismatch");
 
 } } // namespace nw::eft
 

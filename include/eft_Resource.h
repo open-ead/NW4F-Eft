@@ -1,7 +1,7 @@
 #ifndef EFT_RESOURCE_H_
 #define EFT_RESOURCE_H_
 
-#include <types.h>
+#include <eft_Types.h>
 
 namespace nw { namespace eft {
 
@@ -37,6 +37,7 @@ public:
         Primitive** primitives;
         u32 numPrimitive;
     };
+    static_assert(sizeof(EmitterSet) == 0x38, "EmitterSet size mismatch");
 
 public:
     Resource(Heap* heap, void* resource, u32 resourceID, System* system);
@@ -59,6 +60,7 @@ public:
     Primitive** primitives;
     u32 numPrimitive;
 };
+static_assert(sizeof(Resource) == 0x30, "Resource size mismatch");
 
 } } // namespace nw::eft
 
