@@ -18,7 +18,7 @@ extern const SinCosSample gSinCosTbl[0x100+1];
 
 } // namespace nw::math::internal
 
-inline void sinCosIdx(f32* sin_val, f32* cos_val, u32 angle)
+inline void SinCosIdx(f32* sin_val, f32* cos_val, u32 angle)
 {
     u32 idx = (angle >> 24) & 0xff;
     f32 del = static_cast<f32>(angle & 0xffffff) / 0x1000000;
@@ -28,10 +28,10 @@ inline void sinCosIdx(f32* sin_val, f32* cos_val, u32 angle)
     /*if (cos_val != NULL)*/ *cos_val = sample.cos_val + sample.cos_delta * del;
 }
 
-inline f32 sinIdx(u32 angle)
+inline f32 SinIdx(u32 angle)
 {
-    // Does not match if using sinCosIdx
-    // f32 sin_val; sinCosIdx(&sin_val, NULL, angle);
+    // Does not match if using SinCosIdx
+    // f32 sin_val; SinCosIdx(&sin_val, NULL, angle);
     // return sin_val;
 
     u32 idx = (angle >> 24) & 0xff;
@@ -41,10 +41,10 @@ inline f32 sinIdx(u32 angle)
     return sample.sin_val + sample.sin_delta * del;
 }
 
-inline f32 cosIdx(u32 angle)
+inline f32 CosIdx(u32 angle)
 {
-    // Does not match if using sinCosIdx
-    // f32 cos_val; sinCosIdx(NULL, &cos_val, angle);
+    // Does not match if using SinCosIdx
+    // f32 cos_val; SinCosIdx(NULL, &cos_val, angle);
     // return cos_val;
 
     u32 idx = (angle >> 24) & 0xff;
@@ -54,32 +54,32 @@ inline f32 cosIdx(u32 angle)
     return sample.cos_val + sample.cos_delta * del;
 }
 
-inline u32 rad2Idx(f32 rad)
+inline u32 Rad2Idx(f32 rad)
 {
     return static_cast<s64>(rad * (I_HALF_ROUND_IDX / F_PI));
 }
 
-inline void sinCosRad(f32* sin_val, f32* cos_val, f32 rad)
+inline void SinCosRad(f32* sin_val, f32* cos_val, f32 rad)
 {
-    sinCosIdx(sin_val, cos_val, rad2Idx(rad));
+    SinCosIdx(sin_val, cos_val, Rad2Idx(rad));
 }
 
-inline f32 sinRad(f32 rad)
+inline f32 SinRad(f32 rad)
 {
-    // Does not match if using sinCosRad
-    // f32 sin_val; sinCosRad(&sin_val, NULL, rad);
+    // Does not match if using SinCosRad
+    // f32 sin_val; SinCosRad(&sin_val, NULL, rad);
     // return sin_val;
 
-    return sinIdx(rad2Idx(rad));
+    return SinIdx(Rad2Idx(rad));
 }
 
-inline f32 cosRad(f32 rad)
+inline f32 CosRad(f32 rad)
 {
-    // Does not match if using sinCosRad
-    // f32 cos_val; sinCosRad(NULL, &cos_val, rad);
+    // Does not match if using SinCosRad
+    // f32 cos_val; SinCosRad(NULL, &cos_val, rad);
     // return cos_val;
 
-    return cosIdx(rad2Idx(rad));
+    return CosIdx(Rad2Idx(rad));
 }
 
 } } // namespace nw::math
