@@ -5,7 +5,7 @@
 
 namespace nw { namespace eft {
 
-struct EmitterReference;
+struct EmitterTblData;
 struct EmitterSetData;
 struct FragmentShaderKey;
 struct Header;
@@ -22,13 +22,13 @@ public:
     struct EmitterSet // Actual name not known
     {
         EmitterSetData* data;
-        EmitterReference* emitterRef;
+        EmitterTblData* emitterRef;
         u32 numEmitter;
         u32 userData;
 
-        // No idea why there are repeated
+        // No idea why these are repeated
         EmitterSetData* _data;
-        EmitterReference* _emitterRef;
+        EmitterTblData* _emitterRef;
         u32 _numEmitter;
         u32 _userData;
 

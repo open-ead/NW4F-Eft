@@ -226,12 +226,12 @@ struct ChildData
 };
 static_assert(sizeof(ChildData) == 0x2FC, "ChildData size mismatch");
 
-struct EmitterReference // Actual name not known
+struct EmitterTblData
 {
     u32 dataOffs;
     EmitterData* data;
 };
-static_assert(sizeof(EmitterReference) == 8, "EmitterReference size mismatch");
+static_assert(sizeof(EmitterTblData) == 8, "EmitterTblData size mismatch");
 
 struct EmitterSetData // Actual name not known
 {
@@ -241,7 +241,7 @@ struct EmitterSetData // Actual name not known
     const char* name;
     s32 numEmitter;
     u32 emitterRefOffs;
-    EmitterReference* emitterRef;
+    EmitterTblData* emitterRef;
 };
 static_assert(sizeof(EmitterSetData) == 0x1C, "EmitterSetData size mismatch");
 

@@ -236,11 +236,11 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
 
             if(emitterSet->data->emitterRefOffs != 0)
             {
-                emitterSet->emitterRef = (/*emitterSet->data->emitterRef =*/ reinterpret_cast<EmitterReference*>((u32)argResource + emitterSet->data->emitterRefOffs));
+                emitterSet->emitterRef = (/*emitterSet->data->emitterRef =*/ reinterpret_cast<EmitterTblData*>((u32)argResource + emitterSet->data->emitterRefOffs));
 
                 for (u32 j = 0; j < emitterSet->numEmitter; j++)
                 {
-                    EmitterReference* emitterRef = &emitterSet->emitterRef[j];
+                    EmitterTblData* emitterRef = &emitterSet->emitterRef[j];
 
                     if (emitterRef->dataOffs == 0)
                         emitterRef->data = NULL;
@@ -318,7 +318,7 @@ void Resource::Finalize(Heap* heap)
         Resource::EmitterSet* emitterSet = &emitterSets[i];
         for (s32 j = 0; j < emitterSet->data->numEmitter; j++)
         {
-            EmitterReference* emitterRef = &emitterSet->emitterRef[j];
+            EmitterTblData* emitterRef = &emitterSet->emitterRef[j];
 
             {
                 TextureRes* const texture = &emitterRef->data->textures[0];
