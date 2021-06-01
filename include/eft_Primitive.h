@@ -14,6 +14,16 @@ public:
         numIndex = 0;
     }
 
+    // For convenience
+    void Finalize(Heap* heap)
+    {
+        vbPos.Finalize(heap);
+        vbNormal.Finalize(heap);
+        vbColor.Finalize(heap);
+        vbTexCoord.Finalize(heap);
+        vbIndex.Finalize(heap);
+    }
+
     bool initialized;
     u32 numIndex;
     VertexBuffer vbPos;

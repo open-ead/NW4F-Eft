@@ -7,12 +7,14 @@ namespace nw { namespace eft {
 
 struct EmitterReference;
 struct EmitterSetData;
+struct FragmentShaderKey;
 struct Header;
 class Heap;
 class ParticleShader;
 class Primitive;
 class System;
 struct TextureRes;
+struct VertexShaderKey;
 
 class Resource
 {
@@ -41,12 +43,26 @@ public:
 
 public:
     Resource(Heap* heap, void* resource, u32 resourceID, System* system);
-    virtual ~Resource();
+    virtual ~Resource(); // deleted
 
     void CreateFtexbTextureHandle(Heap* heap, void* data, TextureRes& texture);
     void CreateOriginalTextureHandle(Heap* heap, void* data, TextureRes& texture);
     void Initialize(Heap* heap, void* resource, u32 resourceID, System* system);
+    static void DeleteTextureHandle(Heap* heap, TextureRes& texture, bool originalTexture);
     void Finalize(Heap* heap);
+    ParticleShader* GetShader(s32 emitterSetID, const VertexShaderKey* vertexShaderKey, const FragmentShaderKey* fragmentShaderKey);
+
+    Primitive* GetPrimitive(s32 emitterSetID, u32 index)
+    {
+        u32 numPrimitive = emitterSets[emitterSetID].numPrimitive;
+        Primitive** primitives = emitterSets[emitterSetID].primitives;
+
+        for (u32 i = 0; i < numPrimitive; i++)
+            if (primitives[i] != NULL && index == i)
+                return primitives[i];
+
+        return NULL;
+    }
 
     System* system;
     u32 resourceID;

@@ -15,8 +15,8 @@ public:
 
     virtual void CalcEmitter(EmitterInstance* emitter) { EmitterSimpleCalc::CalcEmitter(emitter); }
     virtual EmitterType GetEmitterType() const { return EmitterType_Complex; }
-    virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool, bool);
-    virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool, bool);
+    virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer);
+    virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer);
 };
 static_assert(sizeof(EmitterComplexCalc) == 4, "EmitterComplexCalc size mismatch");
 

@@ -14,6 +14,86 @@ Resource::Resource(Heap* heap, void* resource, u32 resourceID, System* system)
     Initialize(heap, resource, resourceID, system);
 }
 
+Resource::~Resource()
+{
+}
+
+void Resource::CreateFtexbTextureHandle(Heap* heap, void* data, TextureRes& texture)
+{
+    GX2SurfaceFormat formats[] = {
+        GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_UNORM,
+        GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_UNORM,
+        GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_UNORM,
+        GX2_SURFACE_FORMAT_T_BC1_UNORM,
+        GX2_SURFACE_FORMAT_T_BC1_SRGB,
+        GX2_SURFACE_FORMAT_T_BC2_UNORM,
+        GX2_SURFACE_FORMAT_T_BC2_SRGB,
+        GX2_SURFACE_FORMAT_T_BC3_UNORM,
+        GX2_SURFACE_FORMAT_T_BC3_SRGB,
+        GX2_SURFACE_FORMAT_T_BC4_UNORM,
+        GX2_SURFACE_FORMAT_T_BC4_SNORM,
+        GX2_SURFACE_FORMAT_T_BC5_UNORM,
+        GX2_SURFACE_FORMAT_T_BC5_SNORM,
+        GX2_SURFACE_FORMAT_TC_R8_UNORM,
+        GX2_SURFACE_FORMAT_TC_R8_G8_UNORM,
+        GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_SRGB,
+    };
+
+    GX2SurfaceFormat format = GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_UNORM;
+    if (TextureResFormat_Invalid < texture.cafeTexFormat && texture.cafeTexFormat < TextureResFormat_Max)
+        format = formats[texture.cafeTexFormat];
+
+    GX2InitTexture(&texture.gx2Texture, texture.width, texture.height, 1, texture.numMips, format, GX2_SURFACE_DIM_2D);
+    texture.gx2Texture.surface.tileMode = texture.tileMode;
+
+    GX2CalcSurfaceSizeAndAlignment(&texture.gx2Texture.surface);
+    GX2SetSurfaceSwizzle(&texture.gx2Texture.surface, texture.swizzle);
+    GX2InitTexturePtrs(&texture.gx2Texture, data, NULL);
+    GX2InitTextureCompSel(&texture.gx2Texture, texture.compSel);
+    GX2InitTextureRegs(&texture.gx2Texture);
+    DCFlushRange(texture.gx2Texture.surface.imagePtr, texture.gx2Texture.surface.imageSize + texture.gx2Texture.surface.mipSize);
+
+    texture.initialized = 1;
+}
+
+void Resource::CreateOriginalTextureHandle(Heap* heap, void* data, TextureRes& texture)
+{
+    GX2SurfaceFormat format = GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_UNORM;
+    GX2InitTexture(&texture.gx2Texture, texture.width, texture.height, 1, 0, format, GX2_SURFACE_DIM_2D);
+    texture.gx2Texture.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
+
+    GX2CalcSurfaceSizeAndAlignment(&texture.gx2Texture.surface);
+    GX2InitTextureRegs(&texture.gx2Texture);
+
+    void* data_aligned = heap->Alloc(texture.gx2Texture.surface.imageSize, texture.gx2Texture.surface.alignment);
+    GX2InitTexturePtrs(&texture.gx2Texture, data_aligned, NULL);
+
+    const u8* dataU8 = static_cast<const u8*>(data);
+
+    if (texture.originalTexFormat == TextureResFormat_RGBA8_Unorm)
+    {
+        for (u32 y = 0; y < texture.height; y++)
+            for (u32 x = 0; x < texture.width; x++)
+                ((u32*)data_aligned)[y * texture.gx2Texture.surface.pitch + x] = (  *dataU8++ << 24
+                                                                                  | *dataU8++ << 16
+                                                                                  | *dataU8++ << 8
+                                                                                  | *dataU8++  );
+    }
+    else
+    {
+        for (u32 y = 0; y < texture.height; y++)
+            for (u32 x = 0; x < texture.width; x++)
+                ((u32*)data_aligned)[y * texture.gx2Texture.surface.pitch + x] = (  *dataU8++ << 24
+                                                                                  | *dataU8++ << 16
+                                                                                  | *dataU8++ << 8
+                                                                                  | 0xFF  );
+    }
+
+    DCFlushRange(texture.gx2Texture.surface.imagePtr, texture.gx2Texture.surface.imageSize);
+
+    texture.initialized = 1;
+}
+
 void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, System* argSystem)
 {
     system = argSystem;
@@ -108,7 +188,7 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
                 }
                 else
                 {
-                    void* colorBuf = primitive->vbColor.AllocateVertexBuffer(argHeap, primitive->numIndex * 0x10, 4);
+                    void* colorBuf = primitive->vbColor.AllocateVertexBuffer(argHeap, sizeof(math::VEC4) * primitive->numIndex, 4);
                     for (u32 j = 0; j < primitive->numIndex; j++)
                         ((math::VEC4*)colorBuf)[j] = (math::VEC4){ 1.0f, 1.0f, 1.0f, 1.0f };
                     //primitive->color = reinterpret_cast<f32*>(colorBuf); <-- NSMBU doesn't do this, but MK8 does. Bug in older Eft?
@@ -202,8 +282,8 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
                                 CreateOriginalTextureHandle(heap, textureDataTbl + texture->originalTexDataOffs, *texture);
                         }
 
-                        if (emitterRef->data->keyAnimSize != 0)
-                            emitterRef->data->keyAnim = reinterpret_cast<void*>((u32)argResource + resource->keyAnimTblOffs + emitterRef->data->keyAnimOffs);
+                        if (emitterRef->data->keyAnimArraySize != 0)
+                            emitterRef->data->keyAnimArray = reinterpret_cast<void*>((u32)argResource + resource->keyAnimArrayTblOffs + emitterRef->data->keyAnimArrayOffs);
                     }
                 }
             }
@@ -218,6 +298,86 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
             emitterSet->_userData = emitterSet->userData;
         }
     }
+}
+
+void Resource::DeleteTextureHandle(Heap* heap, TextureRes& texture, bool originalTexture)
+{
+    if (heap != NULL && originalTexture)
+        heap->Free(texture.gx2Texture.surface.imagePtr);
+
+    texture.initialized = 0;
+}
+
+void Resource::Finalize(Heap* heap)
+{
+    if (heap == NULL)
+        heap = this->heap;
+
+    for (s32 i = 0; i < resource->numEmitterSet; i++)
+    {
+        Resource::EmitterSet* emitterSet = &emitterSets[i];
+        for (s32 j = 0; j < emitterSet->data->numEmitter; j++)
+        {
+            EmitterReference* emitterRef = &emitterSet->emitterRef[j];
+
+            {
+                TextureRes* const texture = &emitterRef->data->textures[0];
+                if (texture->initialized)
+                    DeleteTextureHandle(heap, *texture, !texture->cafeTexDataSize);
+            }
+
+            {
+                TextureRes* const texture = &emitterRef->data->textures[1];
+                if (texture->initialized)
+                    DeleteTextureHandle(heap, *texture, !texture->cafeTexDataSize);
+            }
+
+            if (emitterRef->data->type == EmitterType_Complex
+                && (static_cast<ComplexEmitterData*>(emitterRef->data)->childFlags & 1))
+            {
+                TextureRes* const texture = &reinterpret_cast<ChildData*>(static_cast<ComplexEmitterData*>(emitterRef->data) + 1)->texture;
+                if (texture->initialized)
+                    DeleteTextureHandle(heap, *texture, !texture->cafeTexDataSize);
+            }
+        }
+    }
+
+    for (u32 i = 0; i < numShader; i++)
+    {
+        shaders[i]->Finalize(heap);
+        heap->Free(shaders[i]);
+    }
+
+    heap->Free(shaders);
+
+    if (emitterSets != NULL)
+    {
+        heap->Free(emitterSets);
+        emitterSets = NULL;
+    }
+
+    if (primitives != NULL)
+    {
+        for (u32 i = 0; i < numPrimitive; i++)
+        {
+            primitives[i]->Finalize(heap);
+            heap->Free(primitives[i]);
+        }
+
+        heap->Free(primitives);
+    }
+}
+
+ParticleShader* Resource::GetShader(s32 emitterSetID, const VertexShaderKey* vertexShaderKey, const FragmentShaderKey* fragmentShaderKey)
+{
+    u32 numShader = emitterSets[emitterSetID].numShader;
+    ParticleShader** shaders = emitterSets[emitterSetID].shaders;
+
+    for (u32 i = 0; i < numShader; i++)
+        if (shaders[i]->vertexShaderKey == *vertexShaderKey && shaders[i]->fragmentShaderKey == *fragmentShaderKey)
+            return shaders[i];
+
+    return NULL;
 }
 
 } } // namespace nw::eft

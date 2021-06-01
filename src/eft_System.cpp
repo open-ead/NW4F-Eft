@@ -21,6 +21,10 @@ System::System(const Config& config)
         Initialize(config.GetHeap(), config);
 }
 
+System::~System()
+{
+}
+
 void System::Initialize(Heap* argHeap, const Config& config)
 {
     heap = argHeap;
@@ -157,22 +161,74 @@ void System::Initialize(Heap* argHeap, const Config& config)
 
 EmitterSet* System::AllocEmitterSet(Handle* handle)
 {
+    EmitterSet* emitterSet = NULL;
     s32 i = 0;
     do
     {
         currentEmitterSetIdx++;
         currentEmitterSetIdx &= numEmitterSetMaxMask;
 
-        EmitterSet* emitterSet = &emitterSets[currentEmitterSetIdx];
-        if (emitterSet->numEmitter == 0)
+        if (emitterSets[currentEmitterSetIdx].numEmitter == 0)
         {
-            handle->emitterSet = emitterSet;
-            return emitterSet;
+            emitterSet = &emitterSets[currentEmitterSetIdx];
+            break;
         }
     } while (++i < numEmitterSetMax);
 
-    handle->emitterSet = NULL;
-    return NULL;
+    handle->emitterSet = emitterSet;
+    return emitterSet;
+}
+
+EmitterInstance* System::AllocEmitter(u8 groupID)
+{
+    EmitterInstance* emitter = NULL;
+    s32 i = 0;
+    do
+    {
+        currentEmitterIdx++;
+        currentEmitterIdx &= numEmitterMaxMask;
+
+        if (emitters[currentEmitterIdx].calc == NULL)
+        {
+            emitter = &emitters[currentEmitterIdx];
+            break;
+        }
+    } while (++i < numEmitterMax);
+
+    if (emitterGroups[groupID] == NULL)
+    {
+        emitterGroups[groupID] = emitter;
+        emitter->next = NULL;
+        emitter->prev = NULL;
+    }
+    else
+    {
+        emitterGroups[groupID]->prev = emitter;
+        emitter->next = emitterGroups[groupID];
+        emitterGroups[groupID] = emitter;
+        emitter->prev = NULL;
+    }
+
+    numUnusedEmitters--;
+    return emitter;
+}
+
+void System::AddEmitterSetToDrawList(EmitterSet* emitterSet, u8 groupID)
+{
+    if(emitterSetGroupHead[groupID] == NULL)
+    {
+        emitterSetGroupHead[groupID] = emitterSet;
+        emitterSet->prev = NULL;
+        emitterSet->next = NULL;
+    }
+    else
+    {
+        emitterSetGroupTail[groupID]->next = emitterSet;
+        emitterSet->prev = emitterSetGroupTail[groupID];
+        emitterSet->next = NULL;
+    }
+
+    emitterSetGroupTail[groupID] = emitterSet;
 }
 
 } } // namespace nw::eft

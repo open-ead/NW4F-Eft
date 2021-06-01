@@ -17,7 +17,7 @@ public:
         , numEmitterSetMax(0x80)
         , numResourceMax(1)
         , numStripeMax(0x100)
-        , _18(0x20000)
+        , doubleBufferSize(0x20000)
     {
     }
 
@@ -39,7 +39,7 @@ public:
     u32 numEmitterSetMax;
     u32 numResourceMax;
     u32 numStripeMax;
-    u32 _18;
+    u32 doubleBufferSize;
 };
 static_assert(sizeof(Config) == 0x20, "Config size mismatch");
 

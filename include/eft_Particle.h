@@ -19,18 +19,21 @@ static_assert(sizeof(AlphaAnim) == 0x10, "AlphaAnim size mismatch");
 
 struct ScaleAnim // Name is not certain
 {
-    u8 _0[0x18];
+    math::VEC2 startDiff;
+    math::VEC2 endDiff;
+    s32 time2;
+    s32 time3;
 };
 static_assert(sizeof(ScaleAnim) == 0x18, "ScaleAnim size mismatch");
 
-struct StripeUV // Actual name not known
+struct TexUVParam // Actual name not known
 {
     f32 rotate;
-    math::VEC2 cameraOffset;
+    math::VEC2 offset;
     math::VEC2 scroll;
     math::VEC2 scale;
 };
-static_assert(sizeof(StripeUV) == 0x1C, "StripeUV size mismatch");
+static_assert(sizeof(TexUVParam) == 0x1C, "TexUVParam size mismatch");
 
 struct EmitterInstance;
 struct PtclAttributeBuffer;
@@ -53,7 +56,7 @@ struct PtclInstance
     AlphaAnim* alphaAnim;
     math::VEC2 scale;
     ScaleAnim* scaleAnim;
-    StripeUV stripUVs[2]; // For each texture
+    TexUVParam texAnimParam[2]; // For each texture
     f32 _AC;
     f32 _B0;
     f32 color[2][4];

@@ -4,9 +4,118 @@
 #include <eft_Random.h>
 #include <eft_ResData.h>
 #include <eft_Resource.h>
+#include <eft_Shader.h>
 #include <eft_System.h>
 
 namespace nw { namespace eft {
+
+void System::InitializeEmitter(EmitterInstance* emitter, const SimpleEmitterData* data, u32 resourceID, s32 emitterSetID, u32 seed, bool keepCreateID)
+{
+    Random* gRandom = PtclRandom::GetGlobalRandom();
+
+    const u32 data_seed = data->seed;
+    if (data_seed == 0xFFFFFFFF)
+        emitter->random.Init(seed);
+    else if (data_seed == 0)
+        emitter->random.Init(gRandom->GetU32());
+    else
+        emitter->random.Init(data_seed);
+
+    if (!keepCreateID)
+        emitter->emitterSetCreateID = currentEmitterSetCreateID;
+
+    emitter->Init(data);
+    emitter->calc = emitterCalc[emitter->data->type];
+    emitter->controller->SetFollowType(data->ptclFollowType);
+
+    {
+        {
+            VertexShaderKey vertexShaderKey;
+            vertexShaderKey.Initialize(emitter->data);
+
+            FragmentShaderKey fragmentShaderKey;
+            fragmentShaderKey.Initialize(emitter->data);
+
+            emitter->shader[ShaderType_Normal] = resources[resourceID]->GetShader(emitterSetID, &vertexShaderKey, &fragmentShaderKey);
+        }
+
+        if (strlen(emitter->data->userMacro1) != 0)
+        {
+            VertexShaderKey vertexShaderKey;
+            vertexShaderKey.Initialize(emitter->data, emitter->data->userMacro1);
+
+            FragmentShaderKey fragmentShaderKey;
+            fragmentShaderKey.Initialize(emitter->data, emitter->data->userMacro1);
+
+            emitter->shader[ShaderType_UserMacro1] = resources[resourceID]->GetShader(emitterSetID, &vertexShaderKey, &fragmentShaderKey);
+        }
+
+        if (strlen(emitter->data->userMacro2) != 0)
+        {
+            VertexShaderKey vertexShaderKey;
+            vertexShaderKey.Initialize(emitter->data, emitter->data->userMacro2);
+
+            FragmentShaderKey fragmentShaderKey;
+            fragmentShaderKey.Initialize(emitter->data, emitter->data->userMacro2);
+
+            emitter->shader[ShaderType_UserMacro2] = resources[resourceID]->GetShader(emitterSetID, &vertexShaderKey, &fragmentShaderKey);
+        }
+    }
+
+    const ComplexEmitterData* cdata;
+
+    if (emitter->data->type == EmitterType_Complex
+        && (cdata = static_cast<const ComplexEmitterData*>(emitter->data), cdata->childFlags & 1))
+    {
+        const ChildData* childData = reinterpret_cast<const ChildData*>(cdata + 1);
+        {
+            VertexShaderKey vertexShaderKey;
+            vertexShaderKey.Initialize(childData);
+
+            FragmentShaderKey fragmentShaderKey;
+            fragmentShaderKey.Initialize(childData, cdata->childFlags);
+
+            emitter->childShader[ShaderType_Normal] = resources[resourceID]->GetShader(emitterSetID, &vertexShaderKey, &fragmentShaderKey);
+        }
+
+        if (strlen(childData->userMacro1) != 0)
+        {
+            VertexShaderKey vertexShaderKey;
+            vertexShaderKey.Initialize(childData, childData->userMacro1);
+
+            FragmentShaderKey fragmentShaderKey;
+            fragmentShaderKey.Initialize(childData, cdata->childFlags, childData->userMacro1);
+
+            emitter->childShader[ShaderType_UserMacro1] = resources[resourceID]->GetShader(emitterSetID, &vertexShaderKey, &fragmentShaderKey);
+        }
+
+        if (strlen(childData->userMacro2) != 0)
+        {
+            VertexShaderKey vertexShaderKey;
+            vertexShaderKey.Initialize(childData, childData->userMacro2);
+
+            FragmentShaderKey fragmentShaderKey;
+            fragmentShaderKey.Initialize(childData, cdata->childFlags, childData->userMacro2);
+
+            emitter->childShader[ShaderType_UserMacro2] = resources[resourceID]->GetShader(emitterSetID, &vertexShaderKey, &fragmentShaderKey);
+        }
+    }
+
+    emitter->UpdateResInfo();
+
+    emitter->primitive = NULL;
+    if (emitter->data->meshType == MeshType_Primitive)
+        emitter->primitive = resources[resourceID]->GetPrimitive(emitterSetID, emitter->data->primitiveIdx);
+
+    emitter->childPrimitive = NULL;
+    if (emitter->data->type == EmitterType_Complex
+        && (cdata = static_cast<const ComplexEmitterData*>(emitter->data), cdata->childFlags & 1))
+    {
+        const ChildData* childData = reinterpret_cast<const ChildData*>(cdata + 1);
+        if(childData->meshType == MeshType_Primitive)
+            emitter->childPrimitive = resources[resourceID]->GetPrimitive(emitterSetID, childData->primitiveIdx);
+    }
+}
 
 bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s32 emitterSetID, u32 resourceID, u8 groupID, u32 emitterEnableMask)
 {

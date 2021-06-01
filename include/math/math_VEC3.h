@@ -8,9 +8,19 @@ namespace nw { namespace math {
 
 struct VEC3
 {
+    f32 MagnitudeSquare() const
+    {
+        return x*x + y*y + z*z;
+    }
+
+    f32 Magnitude() const
+    {
+        return sqrtf(MagnitudeSquare());
+    }
+
     void Normalize()
     {
-        f32 inv_mag = 1.0f / sqrtf(x*x + y*y + z*z); // No division by zero check...
+        f32 inv_mag = 1.0f / Magnitude(); // No division by zero check...
         x *= inv_mag;
         y *= inv_mag;
         z *= inv_mag;

@@ -5,7 +5,7 @@
 #include <math/math_VEC2.h>
 #include <math/math_VEC3.h>
 #include <ut/ut_Color4f.h>
-#include <eft_Types.h>
+#include <eft_Enum.h>
 
 namespace nw { namespace eft {
 
@@ -14,6 +14,8 @@ struct EmitterInstance;
 class EmitterController
 {
 public:
+    void SetFollowType(PtclFollowType followType);
+
     f32 _0;
     f32 _4;
     f32 _8;

@@ -102,6 +102,45 @@ class PtclRandom
 public:
     PtclRandom();
 
+    void Init(u32 seed)
+    {
+        randomVec3Idx = (u16)seed;
+        randomNormVec3Idx = (u16)(seed >> 16);
+        val = seed;
+    }
+
+    u32 GetU32()
+    {
+        u32 x = val;
+        val = val * 0x41C64E6D + 12345;
+        return x;
+    }
+
+    u32 GetU32(u32 max)
+    {
+        return GetU32() * u64(max) >> 32u;
+    }
+
+    s32 GetS32Range(s32 a, s32 b)
+    {
+        return GetU32(b - a) + a;
+    }
+
+    f32 GetF32()
+    {
+        return GetU32() * (1.0f / 4294967296.0f);
+    }
+
+    f32 GetF32(f32 max)
+    {
+        return GetF32() * max;
+    }
+
+    f32 GetF32Range(f32 a, f32 b)
+    {
+        return GetF32(b - a) + a;
+    }
+
     static void Initialize(Heap* heap);
     static Random* GetGlobalRandom();
 

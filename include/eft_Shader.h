@@ -2,12 +2,106 @@
 #define EFT_SHADER_H_
 
 #include <eft_CafeWrapper.h>
+#include <eft_ResData.h>
 #include <eft_UniformBlock.h>
 
 namespace nw { namespace eft {
 
 struct VertexShaderKey
 {
+    void InitializeSimple(const SimpleEmitterData* data)
+    {
+        transformMode = data->vertexTransformMode;
+        rotationMode = (u8)(data->rotationMode != 0);
+        shaderUserSetting = data->shaderUserSetting;
+        shaderUserFlag = data->shaderUserFlag;
+        shaderUserSwitchFlag = data->shaderUserSwitchFlag;
+        stripeType = 0;
+        //stripeEmitterCoord = false; <-- Nintendo forgot to do this
+        isPrimitive = data->meshType == MeshType_Primitive;
+    }
+
+    void InitializeComplex(const ComplexEmitterData* cdata)
+    {
+        InitializeSimple(cdata);
+
+        if (cdata->vertexTransformMode == VertexTransformMode_Stripe
+            || cdata->vertexTransformMode == VertexTransformMode_Complex_Stripe)
+        {
+            stripeType = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs)->type;
+            if (cdata->stripeFlags & 1) stripeEmitterCoord = true;
+            else                        stripeEmitterCoord = false;
+        }
+        else
+        {
+            stripeEmitterCoord = false;
+        }
+    }
+
+    void Initialize(const SimpleEmitterData* data)
+    {
+        if (data->type == EmitterType_Complex)
+            InitializeComplex(static_cast<const ComplexEmitterData*>(data));
+        else
+            InitializeSimple(data);
+
+        shaderUserMacro[0] = '\0';
+    }
+
+    void Initialize(const SimpleEmitterData* data, const char* userMacro)
+    {
+        if (data->type == EmitterType_Complex)
+            InitializeComplex(static_cast<const ComplexEmitterData*>(data));
+        else
+            InitializeSimple(data);
+
+        if (userMacro != NULL)
+            strcpy(shaderUserMacro, userMacro);
+        else
+            shaderUserMacro[0] = '\0';
+    }
+
+    void InitializeChild(const ChildData* data)
+    {
+        transformMode = data->vertexTransformMode;
+        rotationMode = (u8)(data->rotationMode != 0);
+        shaderUserSetting = data->shaderUserSetting;
+        shaderUserFlag = data->shaderUserFlag;
+        shaderUserSwitchFlag = data->shaderUserSwitchFlag;
+        stripeType = 3;
+        //stripeEmitterCoord = false; <-- Nintendo forgot to do this
+        isPrimitive = data->meshType == MeshType_Primitive;
+    }
+
+    void Initialize(const ChildData* data)
+    {
+        InitializeChild(data);
+        shaderUserMacro[0] = '\0';
+    }
+
+    void Initialize(const ChildData* data, const char* userMacro)
+    {
+        InitializeChild(data);
+
+        if (userMacro != NULL)
+            strcpy(shaderUserMacro, userMacro);
+        else
+            shaderUserMacro[0] = '\0';
+    }
+
+    bool operator==(const VertexShaderKey& other)
+    {
+        return (transformMode == other.transformMode
+                && rotationMode == other.rotationMode
+                && shaderUserSetting == other.shaderUserSetting
+                && shaderUserFlag == other.shaderUserFlag
+                && shaderUserSwitchFlag == other.shaderUserSwitchFlag
+                && stripeType == other.stripeType
+                && stripeEmitterCoord == other.stripeEmitterCoord
+                && isPrimitive == other.isPrimitive
+                && strcmp(shaderUserMacro, other.shaderUserMacro) == 0);
+    }
+
     u8 transformMode;
     u8 rotationMode;
     u8 shaderUserSetting;
@@ -22,6 +116,155 @@ static_assert(sizeof(VertexShaderKey) == 0x20, "VertexShaderKey size mismatch");
 
 struct FragmentShaderKey
 {
+    void InitializeSimple(const SimpleEmitterData* data)
+    {
+        shaderMode = data->fragmentShaderMode;
+        softEdge = data->fragmentSoftEdge;
+        textureMode = (data->textures[1].width != 0 && data->textures[1].height != 0) ? 1 : 0;
+        colorMode = data->fragmentColorMode;
+        alphaMode = data->fragmentAlphaMode;
+        shaderUserSetting = data->shaderUserSetting;
+        shaderUserFlag = data->shaderUserFlag;
+        shaderUserSwitchFlag = data->shaderUserSwitchFlag;
+        refractionApplyAlpha = data->refractionApplyAlpha;
+        isPrimitive = data->meshType == MeshType_Primitive;
+
+        switch (data->textureColorBlend)
+        {
+        case FragmentComposite_Mul: textureColorBlend = 0; break;
+        case FragmentComposite_Add: textureColorBlend = 1; break;
+        case FragmentComposite_Sub: textureColorBlend = 2; break;
+        }
+
+        switch (data->textureAlphaBlend)
+        {
+        case FragmentComposite_Mul: textureAlphaBlend = 0; break;
+        case FragmentComposite_Add: textureAlphaBlend = 1; break;
+        case FragmentComposite_Sub: textureAlphaBlend = 2; break;
+        }
+
+        switch (data->primitiveColorBlend)
+        {
+        case FragmentComposite_Mul: primitiveColorBlend = 0; break;
+        case FragmentComposite_Add: primitiveColorBlend = 1; break;
+        case FragmentComposite_Sub: primitiveColorBlend = 2; break;
+        }
+
+        switch (data->primitiveAlphaBlend)
+        {
+        case FragmentComposite_Mul: primitiveAlphaBlend = 0; break;
+        case FragmentComposite_Add: primitiveAlphaBlend = 1; break;
+        case FragmentComposite_Sub: primitiveAlphaBlend = 2; break;
+        }
+
+        texture0ColorSrc  = data->flags >> 11 & 1;
+        texture1ColorSrc  = data->flags >> 12 & 1;
+        primitiveColorSrc = data->flags >> 13 & 1;
+        texture0AlphaSrc  = data->flags >> 14 & 1;
+        texture1AlphaSrc  = data->flags >> 15 & 1;
+        primitiveAlphaSrc = data->flags >> 16 & 1;
+
+        _12 = 0;
+        _2C = 0;
+    }
+
+    void Initialize(const SimpleEmitterData* data)
+    {
+        InitializeSimple(data);
+        shaderUserMacro[0] = '\0';
+    }
+
+    void Initialize(const SimpleEmitterData* data, const char* userMacro)
+    {
+        InitializeSimple(data);
+
+        if (userMacro != NULL)
+            strcpy(shaderUserMacro, userMacro);
+        else
+            shaderUserMacro[0] = '\0';
+    }
+
+    void InitializeChild(const ChildData* data, u32 childFlags)
+    {
+        shaderMode = data->fragmentShaderMode;
+        softEdge = data->fragmentSoftEdge;
+        textureMode = 0;
+        colorMode = data->fragmentColorMode;
+        alphaMode = data->fragmentAlphaMode;
+        shaderUserSetting = data->shaderUserSetting;
+        shaderUserFlag = data->shaderUserFlag;
+        shaderUserSwitchFlag = data->shaderUserSwitchFlag;
+        refractionApplyAlpha = data->refractionApplyAlpha;
+        textureColorBlend = 0;
+        textureAlphaBlend = 0;
+        isPrimitive = data->meshType == MeshType_Primitive;
+
+        switch (data->primitiveColorBlend)
+        {
+        case FragmentComposite_Mul: primitiveColorBlend = 0; break;
+        case FragmentComposite_Add: primitiveColorBlend = 1; break;
+        case FragmentComposite_Sub: primitiveColorBlend = 2; break;
+        }
+
+        switch (data->primitiveAlphaBlend)
+        {
+        case FragmentComposite_Mul: primitiveAlphaBlend = 0; break;
+        case FragmentComposite_Add: primitiveAlphaBlend = 1; break;
+        case FragmentComposite_Sub: primitiveAlphaBlend = 2; break;
+        }
+
+        texture0ColorSrc  = childFlags >> 17 & 1;
+        texture1ColorSrc  = 0;
+        primitiveColorSrc = childFlags >> 18 & 1;
+        texture0AlphaSrc  = childFlags >> 19 & 1;
+        texture1AlphaSrc  = 0;
+        primitiveAlphaSrc = childFlags >> 20 & 1;
+
+        _12 = 0;
+        _2C = 0;
+    }
+
+    void Initialize(const ChildData* data, u32 childFlags)
+    {
+        InitializeChild(data, childFlags);
+        shaderUserMacro[0] = '\0';
+    }
+
+    void Initialize(const ChildData* data, u32 childFlags, const char* userMacro)
+    {
+        InitializeChild(data, childFlags);
+
+        if (userMacro != NULL)
+            strcpy(shaderUserMacro, userMacro);
+        else
+            shaderUserMacro[0] = '\0';
+    }
+
+    bool operator==(const FragmentShaderKey& other)
+    {
+        return (shaderMode == other.shaderMode
+                && softEdge == other.softEdge
+                && textureMode == other.textureMode
+                && colorMode == other.colorMode
+                && alphaMode == other.alphaMode
+                && shaderUserSetting == other.shaderUserSetting
+                && isPrimitive == other.isPrimitive
+                && textureColorBlend == other.textureColorBlend
+                && textureAlphaBlend == other.textureAlphaBlend
+                && primitiveColorBlend == other.primitiveColorBlend
+                && primitiveAlphaBlend == other.primitiveAlphaBlend
+                && texture0ColorSrc == other.texture0ColorSrc
+                && texture1ColorSrc == other.texture1ColorSrc
+                && primitiveColorSrc == other.primitiveColorSrc
+                && texture0AlphaSrc == other.texture0AlphaSrc
+                && texture1AlphaSrc == other.texture1AlphaSrc
+                && primitiveAlphaSrc == other.primitiveAlphaSrc
+                && refractionApplyAlpha == other.refractionApplyAlpha
+                && shaderUserFlag == other.shaderUserFlag
+                && shaderUserSwitchFlag == other.shaderUserSwitchFlag
+                && strcmp(shaderUserMacro, other.shaderUserMacro) == 0);
+    }
+
     u8 shaderMode;
     bool softEdge;
     u8 textureMode;
@@ -39,7 +282,7 @@ struct FragmentShaderKey
     u8 texture0AlphaSrc;
     u8 texture1AlphaSrc;
     u8 primitiveAlphaSrc;
-    u8 reflectionApplyAlpha;
+    u8 refractionApplyAlpha;
     u16 _12; // Unused
     u32 shaderUserFlag;
     u32 shaderUserSwitchFlag;
@@ -81,6 +324,12 @@ class ParticleShader
 public:
     ParticleShader();
 
+    void Finalize(Heap* heap);
+    void InitializeVertexShaderLocation();
+    void InitializeFragmentShaderLocation();
+    void InitializeAttribute();
+    void InitializeStripeVertexShaderLocation();
+    void InitializeStripeAttribute();
     bool SetupShaderResource(Heap* heap, void* binary, u32 binarySize);
 
     u8 displayList[512];
@@ -89,26 +338,28 @@ public:
     VertexShaderKey vertexShaderKey;
     FragmentShaderKey fragmentShaderKey;
     GeometryShaderKey geometryShaderKey; // ?
-    s32 attrPosLocation;
-    s32 attrNormalLocation;
-    s32 attrColorLocation;
-    s32 attrTexCoordLocation;
-    s32 _4E0; // Unused
-    s32 attrIndexLocation;
-    s32 attrOuterLocation;
-    s32 attrDirLocation;
-    s32 fragmentSamplerLocations[4];
-    s32 attrSclLocation;
-    s32 attrTexAnimLocation;
-    s32 attrSubTexAnimLocation;
-    s32 attrWldPosLocation;
-    s32 attrWldPosDfLocation;
-    s32 attrColor0Location;
-    s32 attrColor1Location;
-    s32 attrRotLocation;
-    s32 attrEmMat0Location;
-    s32 attrEmMat1Location;
-    s32 attrEmMat2Location;
+    u32 attrPosBuffer;
+    u32 attrNormalBuffer;
+    u32 attrColorBuffer;
+    u32 attrTexCoordBuffer;
+    u32 _4E0; // Unused
+    u32 attrIndexBuffer;
+    u32 attrOuterBuffer;
+    u32 attrDirBuffer;
+    s32 fragmentSamplerLocations[2];
+    s32 fragmentDepthBufferSamplerLocation;
+    s32 fragmentFrameBufferSamplerLocation;
+    u32 attrSclBuffer;
+    u32 attrTexAnimBuffer;
+    u32 attrSubTexAnimBuffer;
+    u32 attrWldPosBuffer;
+    u32 attrWldPosDfBuffer;
+    u32 attrColor0Buffer;
+    u32 attrColor1Buffer;
+    u32 attrRotBuffer;
+    u32 attrEmMat0Buffer;
+    u32 attrEmMat1Buffer;
+    u32 attrEmMat2Buffer;
     UniformBlock vertexViewUniformBlock;
     UniformBlock fragmentViewUniformBlock;
     UniformBlock vertexEmitterStaticUniformBlock;
@@ -117,7 +368,7 @@ public:
     UniformBlock fragmentEmitterStaticUniformBlock;
     UniformBlock stripeUniformBlock;
     UniformBlock vertexUserUniformBlocks[2];
-    UniformBlock fragmentUserUniformBlock[2];
+    UniformBlock fragmentUserUniformBlocks[2];
     s32 vertexUserSamplerLocations[8];
     s32 fragmentUserSamplerLocations[8];
 };

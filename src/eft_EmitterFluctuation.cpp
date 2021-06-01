@@ -4,6 +4,8 @@
 
 namespace nw { namespace eft {
 
+f32* EmitterCalc::sFluctuationTbl = NULL;
+
 void EmitterCalc::InitializeFluctuationTable(Heap* heap)
 {
     sFluctuationTbl = static_cast<f32*>(heap->Alloc(sizeof(f32) * 128));

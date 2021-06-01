@@ -16,6 +16,15 @@ enum BlendType
 };
 static_assert(sizeof(BlendType) == 4, "BlendType size mismatch");
 
+enum ColorSourceType // Actual name not known
+{
+    ColorSourceType_First = 0,
+    ColorSourceType_Random = 1,
+    ColorSourceType_3v4k = 2,
+    ColorSourceType_Max = 3,
+};
+static_assert(sizeof(ColorSourceType) == 4, "ColorSourceType size mismatch");
+
 enum CpuCore
 {
     CpuCore_0 = 0,
@@ -46,6 +55,24 @@ enum EmitterType // Actual name not known
 };
 static_assert(sizeof(EmitterType) == 4, "EmitterType size mismatch");
 
+enum FragmentComposite // Actual name not known
+{
+    FragmentComposite_Mul = 0,
+    FragmentComposite_Add = 1,
+    FragmentComposite_Sub = 2,
+    FragmentComposite_Max = 3,
+};
+static_assert(sizeof(FragmentComposite) == 4, "FragmentComposite size mismatch");
+
+enum MeshType
+{
+    MeshType_Particle = 0,
+    MeshType_Primitive = 1,
+    MeshType_Stripe = 2,
+    MeshType_Max = 3,
+};
+static_assert(sizeof(MeshType) == 4, "MeshType size mismatch");
+
 enum PtclFollowType
 {
     PtclFollowType_SRT = 0,
@@ -60,9 +87,17 @@ enum ShaderType
     ShaderType_Normal = 0,
     ShaderType_UserMacro1 = 1,
     ShaderType_UserMacro2 = 2,
-    ShaderType_Max,
+    ShaderType_Max = 3,
 };
 static_assert(sizeof(ShaderType) == 4, "ShaderType size mismatch");
+
+enum TextureFilterMode
+{
+    TextureFilterMode_Linear = 0,
+    TextureFilterMode_Point = 1,
+    TextureFilterMode_Max = 2,
+};
+static_assert(sizeof(TextureFilterMode) == 4, "TextureFilterMode size mismatch");
 
 enum TextureResFormat // Actual name not known
 {
@@ -82,9 +117,33 @@ enum TextureResFormat // Actual name not known
     TextureResFormat_R8_Unorm = 13,
     TextureResFormat_RG8_Unorm = 14,
     TextureResFormat_RGBA8_SRGB = 15,
-    TextureResFormat_Max,
+    TextureResFormat_Max = 16,
 };
 static_assert(sizeof(TextureResFormat) == 4, "TextureResFormat size mismatch");
+
+enum TextureWrapMode
+{
+    TextureWrapMode_Mirror = 0,
+    TextureWrapMode_Wrap = 1,
+    TextureWrapMode_Clamp = 2,
+    TextureWrapMode_Mirror_Once = 3,
+    TextureWrapMode_Max = 4,
+};
+static_assert(sizeof(TextureWrapMode) == 4, "TextureWrapMode size mismatch");
+
+enum VertexTransformMode // Actual name not known
+{
+    VertexTransformMode_Billboard = 0,
+    VertexTransformMode_Plate_XY = 1,
+    VertexTransformMode_Plate_XZ = 2,
+    VertexTransformMode_Directional_Y = 3,
+    VertexTransformMode_Directional_Polygon = 4,
+    VertexTransformMode_Stripe = 5,
+    VertexTransformMode_Complex_Stripe = 6,
+    VertexTransformMode_Primitive = 7,
+    VertexTransformMode_Y_Billboard = 8,
+};
+static_assert(sizeof(VertexTransformMode) == 4, "VertexTransformMode size mismatch");
 
 enum ZBufATestType
 {
