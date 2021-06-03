@@ -45,12 +45,12 @@ void System::Initialize(Heap* argHeap, const Config& config)
     numCalcEmitterSet = 0;
     numCalcEmitter = 0;
     currentEmitterSetIdx = 0;
-    _564 = 0;
+    numCalcStripe = 0;
     _538 = 0;
     currentEmitterIdx = 0;
     currentEmitterSetCreateID = 0;
     numParticleMaxMask = numParticleMax - 1;
-    _A20 = 0;
+    doubleBufferSwapped = 0;
     currentParticleIdx = 0;
 
     memset(emitterGroups,       0, 64 * sizeof(EmitterInstance*));
@@ -144,7 +144,7 @@ void System::Initialize(Heap* argHeap, const Config& config)
 
     for (u32 i = 0; i < CustomShaderCallBackID_Max; i++)
     {
-        customShaderEmitterCalcPostCallback[i] = NULL;
+        customShaderEmitterPostCalcCallback[i] = NULL;
         customShaderDrawOverrideCallback[i] = NULL;
         customShaderRenderStateSetCallback[i] = NULL;
     }
@@ -157,6 +157,165 @@ void System::Initialize(Heap* argHeap, const Config& config)
     }
 
     initialized = true;
+}
+
+void System::RemoveStripe(PtclStripe* stripe)
+{
+    stripe->data = NULL;
+
+    if (stripeGroups[stripe->groupID] == stripe)
+    {
+        stripeGroups[stripe->groupID] = stripe->next;
+
+        if (stripeGroups[stripe->groupID] != NULL)
+            stripeGroups[stripe->groupID]->prev = NULL;
+    }
+    else
+    {
+        if (stripe->next != NULL)
+            stripe->next->prev = stripe->prev;
+
+        //if (stripe->prev != NULL) <-- No check, because... Nintendo
+            stripe->prev->next = stripe->next;
+    }
+}
+
+void System::RemovePtcl_()
+{
+    for (u32 i = 0; i < CpuCore_Max; i++)
+    {
+        for (s32 j = 0; j < numParticleToRemove[i]; j++)
+        {
+            PtclInstance* ptcl = particlesToRemove[i][j];
+
+            // EmitterCalc::RemoveParticle(PtclInstance*, CpuCore)
+            {
+                EmitterInstance* emitter = ptcl->emitter;
+
+                if (ptcl->type == PtclType_Child) emitter->numChildParticles--;
+                else                              emitter->numParticles--;
+
+                if (emitter->particleHead == ptcl)
+                {
+                    emitter->particleHead = ptcl->next;
+
+                    if (emitter->particleHead != NULL)
+                        emitter->particleHead->prev = NULL;
+
+                    if (emitter->particleTail == ptcl)
+                        emitter->particleTail = NULL;
+                }
+                else if (emitter->childParticleHead == ptcl)
+                {
+                    emitter->childParticleHead = ptcl->next;
+
+                    if (emitter->childParticleHead != NULL)
+                        emitter->childParticleHead->prev = NULL;
+
+                    if (emitter->childParticleTail == ptcl)
+                        emitter->childParticleTail = NULL;
+                }
+                else if (emitter->particleTail == ptcl)
+                {
+                    emitter->particleTail = ptcl->prev;
+
+                    if (emitter->particleTail != NULL)
+                        emitter->particleTail->next = NULL;
+                }
+                else if (emitter->childParticleTail == ptcl)
+                {
+                    emitter->childParticleTail = ptcl->prev;
+
+                    if (emitter->childParticleTail != NULL)
+                        emitter->childParticleTail->next = NULL;
+                }
+                else
+                {
+                    if (ptcl->next != NULL)
+                        ptcl->next->prev = ptcl->prev;
+
+                    //if (ptcl->prev != NULL) <-- No check, because... Nintendo
+                        ptcl->prev->next = ptcl->next;
+                }
+
+                CustomActionParticleRemoveCallback callback = GetCurrentCustomActionParticleRemoveCallback( ptcl->emitter );
+                if(callback != NULL)
+                {
+                    ParticleRemoveArg arg = { .ptcl = ptcl };
+                    callback(arg);
+                }
+
+                ptcl->data = NULL;
+            }
+
+            if (ptcl->stripe != NULL)
+            {
+                RemoveStripe(ptcl->stripe);
+                ptcl->stripe = NULL;
+            }
+
+            particlesToRemove[i][j] = NULL;
+        }
+
+        numParticleToRemove[i] = 0;
+    }
+}
+
+EmitterSet* System::RemoveEmitterSetFromDrawList(EmitterSet* emitterSet)
+{
+    EmitterSet* next = emitterSet->next;
+
+    if (emitterSet == emitterSetGroupHead[emitterSet->groupID])
+    {
+        emitterSetGroupHead[emitterSet->groupID] = emitterSet->next;
+
+        if (emitterSetGroupHead[emitterSet->groupID] != NULL)
+            emitterSetGroupHead[emitterSet->groupID]->prev = NULL;
+
+        if (emitterSet == emitterSetGroupTail[emitterSet->groupID])
+            emitterSetGroupTail[emitterSet->groupID] = NULL;
+    }
+    else
+    {
+        if (emitterSet == emitterSetGroupTail[emitterSet->groupID])
+            emitterSetGroupTail[emitterSet->groupID] = emitterSet->prev;
+
+        if (emitterSet->next != NULL)
+            emitterSet->next->prev = emitterSet->prev;
+
+        if (emitterSet->prev != NULL)
+            emitterSet->prev->next = emitterSet->next;
+    }
+
+    emitterSet->next = NULL;
+    emitterSet->prev = NULL;
+
+    return next;
+}
+
+void System::RemovePtcl()
+{
+    RemovePtcl_();
+
+    for(u32 i = 0; i < 64u; i++)
+        for (EmitterSet* emitterSet = emitterSetGroupHead[i]; emitterSet != NULL; )
+            emitterSet = (emitterSet->numEmitter == 0) ? RemoveEmitterSetFromDrawList(emitterSet)
+                                                       : emitterSet->next;
+}
+
+void System::EmitChildParticle()
+{
+    for (u32 i = 0; i < 64u; i++)
+    {
+        for (s32 j = 0; j < numChildParticle[i]; j++)
+        {
+            PtclInstance* ptcl = childParticles[i][j];
+            EmitterComplexCalc::EmitChildParticle(ptcl->emitter, ptcl);
+            childParticles[i][j] = NULL;
+        }
+
+        numChildParticle[i] = 0;
+    }
 }
 
 EmitterSet* System::AllocEmitterSet(Handle* handle)

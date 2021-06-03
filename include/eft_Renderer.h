@@ -21,6 +21,9 @@ public:
     Renderer(Heap* heap, System* system, const Config& config);
     ~Renderer();
 
+    void SwapDoubleBuffer();
+    void FlushCache();
+
     System* system;
     Heap* heap;
     RenderContext renderContext;

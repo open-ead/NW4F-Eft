@@ -82,6 +82,15 @@ enum PtclFollowType
 };
 static_assert(sizeof(PtclFollowType) == 4, "PtclFollowType size mismatch");
 
+enum PtclType // Actual name unknown
+{
+    PtclType_Simple = 0,
+    PtclType_Complex = 1,
+    PtclType_Child = 2,
+    PtclType_Max = 3,
+};
+static_assert(sizeof(PtclFollowType) == 4, "PtclFollowType size mismatch");
+
 enum ShaderType
 {
     ShaderType_Normal = 0,

@@ -1,5 +1,4 @@
 #include <eft_Config.h>
-#include <eft_Heap.h>
 #include <eft_Renderer.h>
 
 namespace nw { namespace eft {

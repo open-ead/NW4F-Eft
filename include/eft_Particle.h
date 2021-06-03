@@ -71,7 +71,7 @@ struct PtclInstance
     PtclInstance* next;
     EmitterInstance* emitter;
     PtclStripe* stripe;
-    u32 particleType;
+    PtclType type;
     u32 randomUnk2;
     u8 _160[32];
 };
