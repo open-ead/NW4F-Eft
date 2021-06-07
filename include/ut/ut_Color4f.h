@@ -7,6 +7,11 @@ namespace nw { namespace ut {
 
 struct Color4f
 {
+    math::VEC3& rgb()
+    {
+        return v.xyz();
+    }
+
     union
     {
         math::VEC4 v;

@@ -96,19 +96,24 @@ static_assert(sizeof(anim3v4Key) == 0x14, "anim3v4Key size mismatch");
 
 struct SimpleEmitterData : EmitterData
 {
-    u8 _280[0x28C - 0x280];
+    u8 _280[0x288 - 0x280];
+    u8 displayParent;
+    u8 _289[0x28C - 0x289];
     u32 rotationMode;
     PtclFollowType ptclFollowType;
     u32 fragmentColorMode;
     u32 fragmentAlphaMode;
     s32 _29C;
-    u8 _2A0[0x308 - 0x2A0];
+    DisplaySideType displaySideType;
+    u8 _2A4[0x308 - 0x2A4];
     math::VEC3 emitterScale;
     math::VEC3 emitterRotate;
     math::VEC3 emitterTranslate;
     math::VEC3 emitterRotateRandom;
     math::VEC3 emitterTranslateRandom;
-    u8 _344[0x37C - 0x344];
+    BlendType blendType;
+    ZBufATestType zBufATestType;
+    u8 _34C[0x37C - 0x34C];
     math::VEC3 emissionShapeScale;
     ut::Color4f emitterColor0;
     ut::Color4f emitterColor1;
@@ -137,7 +142,8 @@ struct SimpleEmitterData : EmitterData
     ColorSourceType ptclColor1Src;
     ut::Color4f ptclColor0Tbl[3];
     ut::Color4f ptclColor1Tbl[3];
-    u8 _584[0x5B0 - 0x584];
+    u8 _584[0x5AC - 0x584];
+    f32 colorScaleFactor;
     anim3v4Key alphaAnim;
     FragmentComposite textureColorBlend;
     FragmentComposite primitiveColorBlend;
@@ -193,12 +199,13 @@ struct ChildData
     u32 _2C;
     u32 primitiveIdx;
     f32 _34;
-    u8 _38[4];
+    BlendType blendType;
     MeshType meshType;
     VertexTransformMode vertexTransformMode;
-    u8 _44[4];
+    ZBufATestType zBufATestType;
     TextureRes texture;
-    u8 _15C[0x17C - 0x15C];
+    DisplaySideType displaySideType;
+    u8 _160[0x17C - 0x160];
     FragmentComposite primitiveColorBlend;
     FragmentComposite primitiveAlphaBlend;
     u8 _184[0x1A0 - 0x184];
@@ -296,7 +303,13 @@ static_assert(sizeof(PrimitiveTable) == 0xC, "PrimitiveTable size mismatch");
 struct StripeData
 {
     u32 type;
-    u8 _4[0x34 - 0x4];
+    u32 crossType;
+    u32 connectionType;
+    u8 _C[8];
+    u32 numConnections;
+    f32 alphaStart;
+    f32 alphaEnd;
+    u8 _20[0x34 - 0x20];
 };
 static_assert(sizeof(StripeData) == 0x34, "StripeData size mismatch");
 

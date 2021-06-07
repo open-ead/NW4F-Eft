@@ -12,7 +12,8 @@ enum BlendType
     BlendType_Type2 = 2,
     BlendType_Type3 = 3,
     BlendType_Type4 = 4,
-    BlendType_Max = 5,
+    BlendType_User = 5,
+    BlendType_Max = 6,
 };
 static_assert(sizeof(BlendType) == 4, "BlendType size mismatch");
 
@@ -46,6 +47,15 @@ enum CustomShaderCallBackID
     CustomShaderCallBackID_Max = 9,
 };
 static_assert(sizeof(CustomShaderCallBackID) == 4, "CustomShaderCallBackID size mismatch");
+
+enum DisplaySideType
+{
+    DisplaySideType_Cull_None = 0,
+    DisplaySideType_Cull_Back = 1,
+    DisplaySideType_Cull_Front = 2,
+    DisplaySideType_Max = 3,
+};
+static_assert(sizeof(DisplaySideType) == 4, "DisplaySideType size mismatch");
 
 enum EmitterType // Actual name not known
 {
@@ -129,6 +139,17 @@ enum TextureResFormat // Actual name not known
     TextureResFormat_Max = 16,
 };
 static_assert(sizeof(TextureResFormat) == 4, "TextureResFormat size mismatch");
+
+enum TextureSlot
+{
+    TextureSlot_0 = 0,
+    TextureSlot_1 = 1,
+    TextureSlot_2 = 2,
+    TextureSlot_Depth_Buffer = TextureSlot_2,
+    TextureSlot_Frame_Buffer = 3,
+    TextureSlot_Max = 4,
+};
+static_assert(sizeof(TextureSlot) == 4, "TextureSlot size mismatch");
 
 enum TextureWrapMode
 {

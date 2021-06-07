@@ -2,6 +2,7 @@
 #define MATH_VEC4_H_
 
 #include <math/math_VEC2.h>
+#include <math/math_VEC3.h>
 
 namespace nw { namespace math {
 
@@ -34,6 +35,11 @@ struct VEC4
     VEC2& zw()
     {
         return ((VEC2*)this)[1];
+    }
+
+    VEC3& xyz()
+    {
+        return *((VEC3*)this);
     }
 
     f32 x;

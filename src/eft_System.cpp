@@ -303,6 +303,12 @@ void System::RemovePtcl()
                                                        : emitterSet->next;
 }
 
+void System::AddPtclRemoveList(PtclInstance* ptcl, CpuCore core)
+{
+    particlesToRemove[core][numParticleToRemove[core]++] = ptcl;
+    ptcl->lifespan = 0;
+}
+
 void System::EmitChildParticle()
 {
     for (u32 i = 0; i < 64u; i++)

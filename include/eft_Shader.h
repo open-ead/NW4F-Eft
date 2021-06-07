@@ -317,6 +317,18 @@ struct ShaderProgram // Actual name not known
 };
 static_assert(sizeof(ShaderProgram) == 0x5C, "ShaderProgram size mismatch");
 
+struct VertexTextureLocation
+{
+    u32 location;
+};
+static_assert(sizeof(VertexTextureLocation) == 4, "VertexTextureLocation size mismatch");
+
+struct FragmentTextureLocation
+{
+    u32 location;
+};
+static_assert(sizeof(FragmentTextureLocation) == 4, "FragmentTextureLocation size mismatch");
+
 class Heap;
 
 class ParticleShader
@@ -331,6 +343,9 @@ public:
     void InitializeStripeVertexShaderLocation();
     void InitializeStripeAttribute();
     bool SetupShaderResource(Heap* heap, void* binary, u32 binarySize);
+    void Bind();
+    void EnableInstanced();
+    void DisableInstanced();
 
     u8 displayList[512];
     u32 displatListSize;
@@ -346,9 +361,16 @@ public:
     u32 attrIndexBuffer;
     u32 attrOuterBuffer;
     u32 attrDirBuffer;
-    s32 fragmentSamplerLocations[2];
-    s32 fragmentDepthBufferSamplerLocation;
-    s32 fragmentFrameBufferSamplerLocation;
+    FragmentTextureLocation fragmentSamplerLocations[2];
+    union
+    {
+        FragmentTextureLocation fragmentSamplerLocations2[2];
+        struct
+        {
+            FragmentTextureLocation fragmentDepthBufferSamplerLocation;
+            FragmentTextureLocation fragmentFrameBufferSamplerLocation;
+        };
+    };
     u32 attrSclBuffer;
     u32 attrTexAnimBuffer;
     u32 attrSubTexAnimBuffer;
@@ -369,8 +391,8 @@ public:
     UniformBlock stripeUniformBlock;
     UniformBlock vertexUserUniformBlocks[2];
     UniformBlock fragmentUserUniformBlocks[2];
-    s32 vertexUserSamplerLocations[8];
-    s32 fragmentUserSamplerLocations[8];
+    VertexTextureLocation vertexUserSamplerLocations[8];
+    FragmentTextureLocation fragmentUserSamplerLocations[8];
 };
 static_assert(sizeof(ParticleShader) == 0x61C, "ParticleShader size mismatch");
 

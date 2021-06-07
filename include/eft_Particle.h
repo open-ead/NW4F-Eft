@@ -59,7 +59,8 @@ struct PtclInstance
     TexUVParam texAnimParam[2]; // For each texture
     f32 _AC;
     f32 _B0;
-    f32 color[2][4];
+    ut::Color4f color0;
+    ut::Color4f color1;
     PtclAttributeBuffer* ptclAttributeBuffer;
     math::MTX34 matrixRT;
     math::MTX34 matrixSRT;
@@ -95,14 +96,14 @@ struct PtclStripe
     PtclStripeQueue queue[256];
     u32 queueCount;
     u32 groupID;
-    SimpleEmitterData* data;
+    const ComplexEmitterData* data;
     s32 counter;
     math::MTX34 emitterMatrixSRT;
     u8 _584C[36];
     PtclStripe* prev;
     PtclStripe* next;
-    u32 _5878;
-    u32 _587C;
+    u32 drawFirstVertex;
+    u32 numDraw;
 };
 static_assert(sizeof(PtclStripe) == 0x5880, "PtclStripe size mismatch");
 

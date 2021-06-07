@@ -82,17 +82,9 @@ void System::CalcChildParticle(EmitterInstance* emitter, CpuCore core)
     if (emitter->emitterSet->noCalc != 0)
         noCalcBehavior = true;
 
-    if (emitter->data->type != EmitterType_Simple
-        && (static_cast<const ComplexEmitterData*>(emitter->data)->childFlags & 1))
+    if (emitter->HasChild())
     {
-        const ChildData* childData = NULL;
-        if (emitter->data->type != EmitterType_Simple
-            && (static_cast<const ComplexEmitterData*>(emitter->data)->childFlags & 1)) // ???????
-        {
-            childData = reinterpret_cast<const ChildData*>(static_cast<const ComplexEmitterData*>(emitter->data) + 1);
-        }
-
-        CustomShaderEmitterPostCalcCallback callback = GetCustomShaderEmitterPostCalcCallback(static_cast<CustomShaderCallBackID>(childData->shaderUserSetting));
+        CustomShaderEmitterPostCalcCallback callback = GetCustomShaderEmitterPostCalcCallback(static_cast<CustomShaderCallBackID>(emitter->GetChildData()->shaderUserSetting));
         if (callback != NULL)
         {
             ShaderEmitterPostCalcArg arg = {
@@ -104,11 +96,8 @@ void System::CalcChildParticle(EmitterInstance* emitter, CpuCore core)
         }
     }
 
-    if (emitter->data->type != EmitterType_Simple
-        && (static_cast<const ComplexEmitterData*>(emitter->data)->childFlags & 1))
-    {
+    if (emitter->HasChild())
         numCalcParticle += emitter->calc->CalcChildParticle(emitter, core, noCalcBehavior, false);
-    }
 }
 
 void System::FlushCache()
@@ -195,6 +184,55 @@ void System::Calc(bool flushCache)
     }
 
     doubleBufferSwapped = 0;
+}
+
+void System::BeginRender(const math::MTX44& proj, const math::MTX34& view, const math::VEC3& cameraWorldPos, f32 zNear, f32 zFar)
+{
+    this->view[OSGetCoreId()] = math::MTX44(view);
+    renderers[OSGetCoreId()]->BeginRender(proj, view, cameraWorldPos, zNear, zFar);
+}
+
+void System::RenderEmitter(EmitterInstance* emitter, bool flushCache, void* argData)
+{
+    if (emitter == NULL)
+        return;
+
+    CpuCore core = static_cast<CpuCore>(OSGetCoreId());
+
+    if (!emitter->isCalculated && (emitter->numParticles != 0 || emitter->numChildParticles != 0))
+    {
+        if (emitter->numParticles > 0)
+            emitter->calc->CalcParticle(emitter, core, true, false);
+
+        if (emitter->HasChild() && emitter->numChildParticles > 0)
+            emitter->calc->CalcChildParticle(emitter, core, true, false);
+
+        if (flushCache)
+        {
+            FlushCache();
+            FlushGpuCache();
+        }
+    }
+
+    if (GetCurrentCustomActionEmitterDrawOverrideCallback(emitter) != NULL)
+    {
+        EmitterDrawOverrideArg arg = {
+            .emitter = emitter,
+            .renderer = renderers[core],
+            .flushCache = flushCache,
+            .argData = argData,
+        };
+        GetCurrentCustomActionEmitterDrawOverrideCallback(emitter)(arg);
+    }
+    else
+    {
+        renderers[core]->EntryParticle(emitter, flushCache, argData);
+    }
+}
+
+void System::EndRender()
+{
+    renderers[OSGetCoreId()]->EndRender();
 }
 
 } } // namespace nw::eft

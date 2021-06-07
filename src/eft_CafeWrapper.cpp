@@ -150,6 +150,12 @@ bool TextureSampler::Setup(TextureFilterMode filterMode, TextureWrapMode wrapMod
     return true;
 }
 
+bool TextureSampler::SetupLOD(f32 maxLOD, f32 biasLOD)
+{
+    GX2InitSamplerLOD(&sampler, 0.0f, maxLOD, biasLOD);
+    return true;
+}
+
 VertexBuffer::VertexBuffer()
 {
     bufferSize = 0;
@@ -176,6 +182,16 @@ void VertexBuffer::Finalize(Heap* heap)
 void VertexBuffer::Invalidate()
 {
     DCFlushRange(buffer, bufferSize);
+}
+
+void VertexBuffer::BindBuffer(u32 index, u32 size, u32 stride)
+{
+    GX2SetAttribBuffer(index, size, stride, buffer);
+}
+
+void VertexBuffer::BindExtBuffer(u32 index, u32 size, u32, u32 stride, void* buffer)
+{
+    GX2SetAttribBuffer(index, size, stride, buffer);
 }
 
 Shader::Shader()
@@ -301,6 +317,25 @@ bool UniformBlock::InitializePixelUniformBlock(Shader* shader, const char* name,
     initialized = true;
 
     return true;
+}
+
+void UniformBlock::BindUniformBlock(const void* buffer)
+{
+    if (bufferSize == 0)
+        return;
+
+    switch (shaderStage)
+    {
+    case 0:
+        GX2SetVertexUniformBlock(location, bufferSize, buffer);
+        break;
+    case 1:
+        GX2SetPixelUniformBlock(location, bufferSize, buffer);
+        break;
+    case 2:
+        GX2SetGeometryUniformBlock(location, bufferSize, buffer);
+        break;
+    }
 }
 
 } } // namespace nw::eft

@@ -9,21 +9,34 @@ namespace nw { namespace eft {
 
 struct EmitterInstance;
 struct PtclInstance;
+class Renderer;
 
 struct EmitterPreCalcArg
 {
     EmitterInstance* emitter;
 };
+static_assert(sizeof(EmitterPreCalcArg) == 4, "EmitterPreCalcArg size mismatch");
 
 struct EmitterPostCalcArg
 {
     EmitterInstance* emitter;
 };
+static_assert(sizeof(EmitterPostCalcArg) == 4, "EmitterPostCalcArg size mismatch");
 
 struct ParticleRemoveArg
 {
     PtclInstance* ptcl;
 };
+static_assert(sizeof(ParticleRemoveArg) == 4, "ParticleRemoveArg size mismatch");
+
+struct EmitterDrawOverrideArg
+{
+    const EmitterInstance* emitter;
+    Renderer* renderer;
+    bool flushCache;
+    void* argData;
+};
+static_assert(sizeof(EmitterDrawOverrideArg) == 0x10, "EmitterDrawOverrideArg size mismatch");
 
 struct ShaderEmitterPostCalcArg
 {
@@ -31,11 +44,33 @@ struct ShaderEmitterPostCalcArg
     bool noCalcBehavior;
     bool childParticle;
 };
+static_assert(sizeof(ShaderEmitterPostCalcArg) == 8, "ShaderEmitterPostCalcArg size mismatch");
+
+struct ShaderDrawOverrideArg
+{
+    const EmitterInstance* emitter;
+    Renderer* renderer;
+    bool flushCache;
+    void* argData;
+};
+static_assert(sizeof(ShaderDrawOverrideArg) == 0x10, "ShaderDrawOverrideArg size mismatch");
+
+struct RenderStateSetArg
+{
+    const EmitterInstance* emitter;
+    Renderer* renderer;
+    bool flushCache;
+    void* argData;
+};
+static_assert(sizeof(RenderStateSetArg) == 0x10, "RenderStateSetArg size mismatch");
 
 typedef void (*CustomActionEmitterPreCalcCallback)(EmitterPreCalcArg& arg);
 typedef void (*CustomActionEmitterPostCalcCallback)(EmitterPostCalcArg& arg);
 typedef bool (*CustomActionParticleRemoveCallback)(ParticleRemoveArg& arg);
+typedef void (*CustomActionEmitterDrawOverrideCallback)(EmitterDrawOverrideArg& arg);
 typedef void (*CustomShaderEmitterPostCalcCallback)(ShaderEmitterPostCalcArg& arg);
+typedef void (*CustomShaderDrawOverrideCallback)(ShaderDrawOverrideArg& arg);
+typedef void (*CustomShaderRenderStateSetCallback)(RenderStateSetArg& arg);
 
 struct AlphaAnim;
 class Config;
@@ -45,7 +80,6 @@ struct EmitterStaticUniformBlock;
 class Handle;
 class Heap;
 class PtclStripe;
-class Renderer;
 class Resource;
 struct ScaleAnim; // ?
 struct SimpleEmitterData;
@@ -70,6 +104,7 @@ public:
     void RemovePtcl_();
     EmitterSet* RemoveEmitterSetFromDrawList(EmitterSet* emitterSet);
     void RemovePtcl();
+    void AddPtclRemoveList(PtclInstance* ptcl, CpuCore core);
     void EmitChildParticle();
     EmitterSet* AllocEmitterSet(Handle* handle);
     EmitterInstance* AllocEmitter(u8 groupID);
@@ -88,14 +123,23 @@ public:
     inline void CalcEmitter(EmitterInstance* emitter, f32 emissionSpeed);
     void CalcParticle(bool flushCache);
     void Calc(bool flushCache);
+    void BeginRender(const math::MTX44& proj, const math::MTX34& view, const math::VEC3& cameraWorldPos, f32 zNear, f32 zFar);
+    void RenderEmitter(EmitterInstance* emitter, bool flushCache, void* argData);
+    void EndRender();
 
     void ClearResource(Heap* heap, u32 resourceID);
     void EntryResource(Heap* heap, void* resource, u32 resourceID);
+    void KillEmitter(EmitterInstance* emitter);
+    void KillEmitterGroup(u8 groupID);
+    void KillEmitterSet(EmitterSet* emitterSet);
 
     CustomActionEmitterPreCalcCallback GetCurrentCustomActionEmitterPreCalcCallback(const EmitterInstance* emitter);
     CustomActionEmitterPostCalcCallback GetCurrentCustomActionEmitterPostCalcCallback(const EmitterInstance* emitter);
     CustomActionParticleRemoveCallback GetCurrentCustomActionParticleRemoveCallback(const EmitterInstance* emitter);
+    CustomActionEmitterDrawOverrideCallback GetCurrentCustomActionEmitterDrawOverrideCallback(const EmitterInstance* emitter);
     CustomShaderEmitterPostCalcCallback GetCustomShaderEmitterPostCalcCallback(CustomShaderCallBackID callbackID);
+    CustomShaderDrawOverrideCallback GetCustomShaderDrawOverrideCallback(CustomShaderCallBackID callbackID);
+    CustomShaderRenderStateSetCallback GetCustomShaderRenderStateSetCallback(CustomShaderCallBackID callbackID);
 
     // For qsort
     static int ComparePtclViewZ(const void* a, const void* b);
@@ -158,10 +202,10 @@ public:
     void* customActionParticleCalcCallback[CustomActionCallBackID_Max];
     void* customActionParticleMakeAttrCallback[CustomActionCallBackID_Max];
     CustomActionEmitterPostCalcCallback customActionEmitterPostCalcCallback[CustomActionCallBackID_Max];
-    void* customActionEmitterDrawOverrideCallback[CustomActionCallBackID_Max];
+    CustomActionEmitterDrawOverrideCallback customActionEmitterDrawOverrideCallback[CustomActionCallBackID_Max];
     CustomShaderEmitterPostCalcCallback customShaderEmitterPostCalcCallback[CustomShaderCallBackID_Max];
-    void* customShaderDrawOverrideCallback[CustomShaderCallBackID_Max];
-    void* customShaderRenderStateSetCallback[CustomShaderCallBackID_Max];
+    CustomShaderDrawOverrideCallback customShaderDrawOverrideCallback[CustomShaderCallBackID_Max];
+    CustomShaderRenderStateSetCallback customShaderRenderStateSetCallback[CustomShaderCallBackID_Max];
     PtclViewZ* sortedEmitterSets[CpuCore_Max];
     u32 numSortedEmitterSets[CpuCore_Max];
     u32 _A14[CpuCore_Max];

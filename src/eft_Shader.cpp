@@ -26,15 +26,15 @@ ParticleShader::ParticleShader()
     attrEmMat2Buffer = 0xFFFFFFFF;
 
     for (u32 i = 0; i < 2u; i++)
-        fragmentSamplerLocations[i] = -1;
+        fragmentSamplerLocations[i].location = 0xFFFFFFFF;
 
-    fragmentDepthBufferSamplerLocation = -1;
-    fragmentFrameBufferSamplerLocation = -1;
+    fragmentDepthBufferSamplerLocation.location = 0xFFFFFFFF;
+    fragmentFrameBufferSamplerLocation.location = 0xFFFFFFFF;
 
     for (u32 i = 0; i < 8u; i++)
     {
-        vertexUserSamplerLocations[i] = -1;
-        fragmentUserSamplerLocations[i] = -1;
+        vertexUserSamplerLocations[i].location = 0xFFFFFFFF;
+        fragmentUserSamplerLocations[i].location = 0xFFFFFFFF;
     }
 }
 
@@ -55,12 +55,12 @@ void ParticleShader::InitializeFragmentShaderLocation()
     fragmentViewUniformBlock.InitializePixelUniformBlock(&shader, "viewUniformBlock", 5);
     fragmentEmitterStaticUniformBlock.InitializePixelUniformBlock(&shader, "emitterStaticUniformBlock", 4);
 
-    fragmentSamplerLocations[0] = shader.GetFragmentSamplerLocation("s_firstTexture");
+    fragmentSamplerLocations[0].location = shader.GetFragmentSamplerLocation("s_firstTexture");
     if (fragmentShaderKey.textureMode == 1)
-        fragmentSamplerLocations[1] = shader.GetFragmentSamplerLocation("s_secondTexture");
+        fragmentSamplerLocations[1].location = shader.GetFragmentSamplerLocation("s_secondTexture");
 
-    fragmentDepthBufferSamplerLocation = shader.GetFragmentSamplerLocation("s_depthBufferTexture");
-    fragmentFrameBufferSamplerLocation = shader.GetFragmentSamplerLocation("s_frameBufferTexture");
+    fragmentDepthBufferSamplerLocation.location = shader.GetFragmentSamplerLocation("s_depthBufferTexture");
+    fragmentFrameBufferSamplerLocation.location = shader.GetFragmentSamplerLocation("s_frameBufferTexture");
 }
 
 void ParticleShader::InitializeAttribute()
@@ -128,6 +128,19 @@ bool ParticleShader::SetupShaderResource(Heap* heap, void* binary, u32 binarySiz
     displatListSize = GX2EndDisplayList(displayList);
 
     return true;
+}
+
+void ParticleShader::Bind()
+{
+    GX2CallDisplayList(displayList, displatListSize);
+}
+
+void ParticleShader::EnableInstanced()
+{
+}
+
+void ParticleShader::DisableInstanced()
+{
 }
 
 } } // namespace nw::eft

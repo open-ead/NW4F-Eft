@@ -50,6 +50,7 @@ public:
     ~TextureSampler();
 
     bool Setup(TextureFilterMode filterMode, TextureWrapMode wrapModeX, TextureWrapMode wrapModeY);
+    bool SetupLOD(f32 maxLOD, f32 biasLOD);
 
     GX2Sampler sampler;
 };
@@ -69,6 +70,7 @@ public:
 
     bool InitializeVertexUniformBlock(Shader* shader, const char* name, u32);
     bool InitializePixelUniformBlock(Shader* shader, const char* name, u32);
+    void BindUniformBlock(const void* buffer);
 
     bool initialized;
     bool blockNotExist;
@@ -88,6 +90,9 @@ public:
     void* AllocateVertexBuffer(Heap* heap, u32 bufSize, u32 size);
     void Finalize(Heap* heap);
     void Invalidate();
+    void BindBuffer(u32 index, u32 size, u32 stride);
+
+    static void BindExtBuffer(u32 index, u32 size, u32, u32 stride, void* buffer);
 
     u32 _0;
     u32 size;

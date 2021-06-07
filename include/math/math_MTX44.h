@@ -1,7 +1,10 @@
 #ifndef MATH_MTX44_H_
 #define MATH_MTX44_H_
 
+#include <math/math_MTX34.h>
 #include <math/math_VEC4.h>
+
+#include <cafe.h>
 
 namespace nw { namespace math {
 
@@ -9,6 +12,15 @@ struct MTX44
 {
     MTX44() { }
     MTX44(const MTX44& other) { Copy(this, &other); }
+
+    MTX44(const MTX34& other)
+    {
+        MTX34::Copy((MTX34*)this, &other);
+        m[3][0] = 0.0f;
+        m[3][1] = 0.0f;
+        m[3][2] = 0.0f;
+        m[3][3] = 1.0f;
+    }
 
     MTX44(
         f32 _00, f32 _01, f32 _02, f32 _03,
@@ -52,20 +64,61 @@ struct MTX44
     static MTX44* Copy(MTX44* dst, const MTX44* src)
     {
         if (src != dst)
-        {
-            VEC4* vDst = dst->v;
-            const VEC4* vSrc = src->v;
-
-            for (s32 i = 0; i < 4; i++)
-                *vDst++ = *vSrc++;
-        }
+            *dst = *src;
 
         return dst;
     }
 
-    MTX44& operator=(const MTX44& other)
+    static MTX44* Transpose(MTX44* dst, const MTX44* src)
     {
-        return *Copy(this, &other);
+        if (src == dst)
+        {
+            MTX44 temp;
+            temp.m[0][0] = src->m[0][0];
+            temp.m[0][1] = src->m[1][0];
+            temp.m[0][2] = src->m[2][0];
+            temp.m[0][3] = src->m[3][0];
+            temp.m[1][0] = src->m[0][1];
+            temp.m[1][1] = src->m[1][1];
+            temp.m[1][2] = src->m[2][1];
+            temp.m[1][3] = src->m[3][1];
+            temp.m[2][0] = src->m[0][2];
+            temp.m[2][1] = src->m[1][2];
+            temp.m[2][2] = src->m[2][2];
+            temp.m[2][3] = src->m[3][2];
+            temp.m[3][0] = src->m[0][3];
+            temp.m[3][1] = src->m[1][3];
+            temp.m[3][2] = src->m[2][3];
+            temp.m[3][3] = src->m[3][3];
+            Copy(dst, &temp);
+        }
+        else
+        {
+            dst->m[0][0] = src->m[0][0];
+            dst->m[0][1] = src->m[1][0];
+            dst->m[0][2] = src->m[2][0];
+            dst->m[0][3] = src->m[3][0];
+            dst->m[1][0] = src->m[0][1];
+            dst->m[1][1] = src->m[1][1];
+            dst->m[1][2] = src->m[2][1];
+            dst->m[1][3] = src->m[3][1];
+            dst->m[2][0] = src->m[0][2];
+            dst->m[2][1] = src->m[1][2];
+            dst->m[2][2] = src->m[2][2];
+            dst->m[2][3] = src->m[3][2];
+            dst->m[3][0] = src->m[0][3];
+            dst->m[3][1] = src->m[1][3];
+            dst->m[3][2] = src->m[2][3];
+            dst->m[3][3] = src->m[3][3];
+        }
+        return dst;
+    }
+
+    static MTX44* Concat(MTX44* dst, const MTX44* a, const MTX44* b)
+    {
+        // Nintendo used their own paired-singles implementation for this, which I will not bother with.
+        ASM_MTX44Concat(const_cast<MTX44*>(a)->m, const_cast<MTX44*>(b)->m, dst->m);
+        return dst;
     }
 
     union

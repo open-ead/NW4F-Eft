@@ -1,5 +1,4 @@
 #include <eft_Emitter.h>
-#include <eft_ResData.h>
 #include <eft_Shader.h>
 
 namespace nw { namespace eft {
@@ -58,8 +57,8 @@ void EmitterInstance::Init(const SimpleEmitterData* data)
     primitive = NULL;
     childPrimitive = NULL;
 
-    animMatrixRT = math::MTX34::Identity();
-    animMatrixSRT = math::MTX34::Identity();
+    math::MTX34::Copy(&animMatrixRT,  &math::MTX34::Identity());
+    math::MTX34::Copy(&animMatrixSRT, &math::MTX34::Identity());
 
     prevPosSet = false;
     emitLostDistance = 0.0f;
@@ -257,18 +256,8 @@ void EmitterInstance::UpdateResInfo()
 
     UpdateEmitterStaticUniformBlock(emitterStaticUniformBlock, data);
 
-    if (data->type != EmitterType_Simple
-        && (static_cast<const ComplexEmitterData*>(data)->childFlags & 1))
-    {
-        const ChildData* childData = NULL;
-        if (data->type != EmitterType_Simple
-            && (static_cast<const ComplexEmitterData*>(data)->childFlags & 1)) // ???????
-        {
-            childData = reinterpret_cast<const ChildData*>(static_cast<const ComplexEmitterData*>(data) + 1);
-        }
-
-        UpdateChildStaticUniformBlock(childEmitterStaticUniformBlock, childData);
-    }
+    if (HasChild())
+        UpdateChildStaticUniformBlock(childEmitterStaticUniformBlock, GetChildData());
 }
 
 } } // namespace nw::eft

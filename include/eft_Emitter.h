@@ -3,12 +3,11 @@
 
 #include <math/math_MTX34.h>
 #include <math/math_VEC3.h>
-#include <eft_Enum.h>
 #include <eft_Random.h>
+#include <eft_ResData.h>
 
 namespace nw { namespace eft {
 
-struct ChildData;
 class EmitterCalc;
 class EmitterController;
 struct EmitterDynamicUniformBlock;
@@ -19,7 +18,6 @@ class ParticleShader;
 class Primitive;
 struct PtclAttributeBuffer;
 struct PtclInstance;
-struct SimpleEmitterData;
 class StripeVertexBuffer;
 
 struct EmitterInstance
@@ -28,6 +26,27 @@ struct EmitterInstance
     inline void UpdateEmitterStaticUniformBlock(EmitterStaticUniformBlock* uniformBlock, const SimpleEmitterData* data);
     inline void UpdateChildStaticUniformBlock(EmitterStaticUniformBlock* uniformBlock, const ChildData* data);
     void UpdateResInfo();
+
+    const ComplexEmitterData* GetComplexEmitterData() const
+    {
+        if (data->type != EmitterType_Complex)
+            return NULL;
+
+        return static_cast<const ComplexEmitterData*>(data);
+    }
+
+    bool HasChild() const
+    {
+        return data->type != EmitterType_Simple && (static_cast<const ComplexEmitterData*>(data)->childFlags & 1);
+    }
+
+    const ChildData* GetChildData() const
+    {
+        if (!HasChild())
+            return NULL;
+
+        return reinterpret_cast<const ChildData*>(static_cast<const ComplexEmitterData*>(data) + 1);
+    }
 
     f32 counter;
     f32 counter2;

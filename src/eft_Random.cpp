@@ -23,12 +23,12 @@ void PtclRandom::Initialize(Heap* heap)
 
     for (s32 i = 0; i < 0x200; i++)
     {
-        mVec3Tbl[i].x = random.GetF32() * 2.0f - 1.0f;
-        mVec3Tbl[i].y = random.GetF32() * 2.0f - 1.0f;
-        mVec3Tbl[i].z = random.GetF32() * 2.0f - 1.0f;
-        mNormalizedVec3Tbl[i].x = random.GetF32() * 2.0f - 1.0f;
-        mNormalizedVec3Tbl[i].y = random.GetF32() * 2.0f - 1.0f;
-        mNormalizedVec3Tbl[i].z = random.GetF32() * 2.0f - 1.0f;
+        mVec3Tbl[i].x = random.GetF32Range(-1.0f, 1.0f);
+        mVec3Tbl[i].y = random.GetF32Range(-1.0f, 1.0f);
+        mVec3Tbl[i].z = random.GetF32Range(-1.0f, 1.0f);
+        mNormalizedVec3Tbl[i].x = random.GetF32Range(-1.0f, 1.0f);
+        mNormalizedVec3Tbl[i].y = random.GetF32Range(-1.0f, 1.0f);
+        mNormalizedVec3Tbl[i].z = random.GetF32Range(-1.0f, 1.0f);
         mNormalizedVec3Tbl[i].Normalize();
     }
 }

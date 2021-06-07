@@ -45,20 +45,46 @@ struct MTX34
     static MTX34* Copy(MTX34* dst, const MTX34* src)
     {
         if (src != dst)
-        {
-            VEC4* vDst = dst->v;
-            const VEC4* vSrc = src->v;
-
-            for (s32 i = 0; i < 3; i++)
-                *vDst++ = *vSrc++;
-        }
+            *dst = *src;
 
         return dst;
     }
 
-    MTX34& operator=(const MTX34& other)
+    static MTX34* Transpose(MTX34* dst, const MTX34* src)
     {
-        return *Copy(this, &other);
+        if (src == dst)
+        {
+            MTX34 temp;
+            temp.m[0][0] = src->m[0][0];
+            temp.m[0][1] = src->m[1][0];
+            temp.m[0][2] = src->m[2][0];
+            temp.m[0][3] = 0.0f;
+            temp.m[1][0] = src->m[0][1];
+            temp.m[1][1] = src->m[1][1];
+            temp.m[1][2] = src->m[2][1];
+            temp.m[1][3] = 0.0f;
+            temp.m[2][0] = src->m[0][2];
+            temp.m[2][1] = src->m[1][2];
+            temp.m[2][2] = src->m[2][2];
+            temp.m[2][3] = 0.0f;
+            Copy(dst, &temp);
+        }
+        else
+        {
+            dst->m[0][0] = src->m[0][0];
+            dst->m[0][1] = src->m[1][0];
+            dst->m[0][2] = src->m[2][0];
+            dst->m[0][3] = 0.0f;
+            dst->m[1][0] = src->m[0][1];
+            dst->m[1][1] = src->m[1][1];
+            dst->m[1][2] = src->m[2][1];
+            dst->m[1][3] = 0.0f;
+            dst->m[2][0] = src->m[0][2];
+            dst->m[2][1] = src->m[1][2];
+            dst->m[2][2] = src->m[2][2];
+            dst->m[2][3] = 0.0f;
+        }
+        return dst;
     }
 
     union

@@ -43,9 +43,11 @@ public:
             emitters[i] = NULL;
     }
 
+    void Kill();
+
     System* system;
-    u32 numEmitter;
-    u32 numEmitterAtCreate;
+    s32 numEmitter;
+    s32 numEmitterAtCreate;
     u32 createID;
     EmitterInstance* emitters[16];
     EmitterController controllers[16];

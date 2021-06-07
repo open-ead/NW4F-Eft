@@ -40,12 +40,40 @@ CustomActionParticleRemoveCallback System::GetCurrentCustomActionParticleRemoveC
     return customActionParticleRemoveCallback[callbackID];
 }
 
+CustomActionEmitterDrawOverrideCallback System::GetCurrentCustomActionEmitterDrawOverrideCallback(const EmitterInstance* emitter)
+{
+    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+        return customActionEmitterDrawOverrideCallback[currentCallbackID];
+
+    CustomActionCallBackID callbackID = emitter->data->callbackID;
+    if (callbackID == CustomActionCallBackID_Invalid)
+        return NULL;
+
+    return customActionEmitterDrawOverrideCallback[callbackID];
+}
+
 CustomShaderEmitterPostCalcCallback System::GetCustomShaderEmitterPostCalcCallback(CustomShaderCallBackID callbackID)
 {
     if (callbackID > CustomShaderCallBackID_Max) // No idea why not >=
         return NULL;
 
     return customShaderEmitterPostCalcCallback[callbackID];
+}
+
+CustomShaderDrawOverrideCallback System::GetCustomShaderDrawOverrideCallback(CustomShaderCallBackID callbackID)
+{
+    if (callbackID > CustomShaderCallBackID_Max) // No idea why not >=
+        return NULL;
+
+    return customShaderDrawOverrideCallback[callbackID];
+}
+
+CustomShaderRenderStateSetCallback System::GetCustomShaderRenderStateSetCallback(CustomShaderCallBackID callbackID)
+{
+    if (callbackID > CustomShaderCallBackID_Max) // No idea why not >=
+        return NULL;
+
+    return customShaderRenderStateSetCallback[callbackID];
 }
 
 } } // namespace nw::eft
