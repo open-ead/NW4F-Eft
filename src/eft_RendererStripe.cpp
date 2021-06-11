@@ -109,13 +109,13 @@ void Renderer::EntryConnectionStripe(EmitterInstance* emitter, bool flushCache, 
     if (ptcl == NULL)
         return;
 
-    currentParticleType = 1;
+    currentParticleType = PtclType_Complex;
 
     StripeVertexBuffer* stripeVertexBuffer = MakeConnectionStripeAttributeBlock(emitter, flushCache);
     if (stripeVertexBuffer == NULL || emitter->numDrawStripe < 4)
         return;
 
-    currentParticleType = 1;
+    currentParticleType = PtclType_Complex;
 
     if (!SetupStripeDrawSetting(emitter, flushCache, argData))
         return;
@@ -251,7 +251,7 @@ void Renderer::EntryStripe(EmitterInstance* emitter, bool flushCache, void* argD
     if (stripeVertexBuffer == NULL)
         return;
 
-    currentParticleType = 1;
+    currentParticleType = PtclType_Complex;
 
     if (!SetupStripeDrawSetting(emitter, flushCache, argData))
         return;

@@ -87,7 +87,7 @@ public:
     math::VEC2 frameBufferTextureScale;
     TemporaryBuffer doubleBuffer;
     u32 stripeNumDrawVertex;
-    u32 currentParticleType; // 0 = Simple, 1 = Complex, 2 = Child, 3 = Invalid
+    PtclType currentParticleType;
     ShaderType shaderType;
     u32 _178;
 };

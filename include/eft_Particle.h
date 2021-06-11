@@ -67,7 +67,7 @@ struct PtclInstance
     math::MTX34* pMatrixRT;
     math::MTX34* pMatrixSRT;
     u32 _140;
-    SimpleEmitterData* data;
+    const SimpleEmitterData* data;
     PtclInstance* prev;
     PtclInstance* next;
     EmitterInstance* emitter;

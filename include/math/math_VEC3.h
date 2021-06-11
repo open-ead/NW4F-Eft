@@ -8,6 +8,54 @@ namespace nw { namespace math {
 
 struct VEC3
 {
+    static const VEC3& Zero()
+    {
+        static const VEC3 zero = (VEC3){ 0.0f, 0.0f, 0.0f };
+        return zero;
+    }
+
+    VEC3& operator+=(const VEC3& rhs)
+    {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
+
+    VEC3& operator-=(const VEC3& rhs)
+    {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
+
+    VEC3& operator*=(f32 a)
+    {
+        x *= a;
+        y *= a;
+        z *= a;
+        return *this;
+    }
+
+    VEC3 operator+(const VEC3& rhs) const
+    {
+        VEC3 ret = *this;
+        return (ret += rhs);
+    }
+
+    VEC3 operator-(const VEC3& rhs) const
+    {
+        VEC3 ret = *this;
+        return (ret -= rhs);
+    }
+
+    VEC3 operator*(f32 a) const
+    {
+        VEC3 ret = *this;
+        return (ret *= a);
+    }
+
     f32 MagnitudeSquare() const
     {
         return x*x + y*y + z*z;

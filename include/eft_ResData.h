@@ -194,7 +194,12 @@ static_assert(sizeof(ComplexEmitterData) == 0x70C, "ComplexEmitterData size mism
 
 struct ChildData
 {
-    u8 _0[0x28];
+    s32 numChildParticles;
+    u8 _4[4];
+    s32 ptclMaxLifespan;
+    u8 _C[4];
+    f32 velocityScaleFactor;
+    u8 _14[0x28 - 0x14];
     u32 _28;
     u32 _2C;
     u32 primitiveIdx;

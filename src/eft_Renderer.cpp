@@ -48,7 +48,7 @@ Renderer::Renderer(Heap* argHeap, System* argSystem, const Config& config)
     depthBufferTexture = NULL;
     frameBufferTexture = NULL;
 
-    currentParticleType = 3;
+    currentParticleType = PtclType_Max;
     shaderType = ShaderType_Normal;
     _178 = 0x3F;
 
@@ -408,7 +408,7 @@ void Renderer::EntryParticle(EmitterInstance* emitter, bool flushCache, void* ar
 
         if (cdata->childFlags & 0x1000 && emitter->numDrawChildParticle != 0 && emitter->childPtclAttributeBuffer != NULL)
         {
-            currentParticleType = 2;
+            currentParticleType = PtclType_Child;
 
             if (childCallback != NULL)
                 childCallback(arg);
@@ -419,7 +419,7 @@ void Renderer::EntryParticle(EmitterInstance* emitter, bool flushCache, void* ar
 
         if (cdata->displayParent != 0 && !stripe && emitter->numDrawParticle != 0 && emitter->ptclAttributeBuffer != NULL)
         {
-            currentParticleType = 1;
+            currentParticleType = PtclType_Complex;
 
             if (callback != NULL)
                 callback(arg);
@@ -430,7 +430,7 @@ void Renderer::EntryParticle(EmitterInstance* emitter, bool flushCache, void* ar
 
         if (!(cdata->childFlags & 0x1000) && emitter->numDrawChildParticle != 0 && emitter->childPtclAttributeBuffer != NULL)
         {
-            currentParticleType = 2;
+            currentParticleType = PtclType_Child;
 
             if (childCallback != NULL)
                 childCallback(arg);
@@ -443,7 +443,7 @@ void Renderer::EntryParticle(EmitterInstance* emitter, bool flushCache, void* ar
     {
         if (emitter->data->displayParent != 0 && !stripe && emitter->numDrawParticle != 0 && emitter->ptclAttributeBuffer != NULL)
         {
-            currentParticleType = 0;
+            currentParticleType = PtclType_Simple;
 
             if (callback != NULL)
                 callback(arg);
@@ -453,7 +453,7 @@ void Renderer::EntryParticle(EmitterInstance* emitter, bool flushCache, void* ar
         }
     }
 
-    currentParticleType = 3;
+    currentParticleType = PtclType_Max;
 }
 
 void Renderer::EndRender()

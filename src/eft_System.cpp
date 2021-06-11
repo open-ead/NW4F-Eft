@@ -324,6 +324,27 @@ void System::EmitChildParticle()
     }
 }
 
+PtclInstance* System::AllocPtcl(PtclType type)
+{
+    PtclInstance* ptcl = NULL;
+    s32 i = 0;
+    do
+    {
+        currentParticleIdx++;
+        currentParticleIdx &= numParticleMaxMask;
+
+        if (particles[currentParticleIdx].data == NULL)
+        {
+            numEmittedParticle++;
+            ptcl = &particles[currentParticleIdx];
+            ptcl->type = type;
+            break;
+        }
+    } while (++i < numParticleMax);
+
+    return ptcl;
+}
+
 EmitterSet* System::AllocEmitterSet(Handle* handle)
 {
     EmitterSet* emitterSet = NULL;
