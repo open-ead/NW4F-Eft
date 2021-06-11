@@ -12,7 +12,7 @@ struct VertexShaderKey
     void InitializeSimple(const SimpleEmitterData* data)
     {
         transformMode = data->vertexTransformMode;
-        rotationMode = (u8)(data->rotationMode != 0);
+        rotationMode = (u8)(data->rotationMode != VertexRotationMode_None);
         shaderUserSetting = data->shaderUserSetting;
         shaderUserFlag = data->shaderUserFlag;
         shaderUserSwitchFlag = data->shaderUserSwitchFlag;
@@ -64,7 +64,7 @@ struct VertexShaderKey
     void InitializeChild(const ChildData* data)
     {
         transformMode = data->vertexTransformMode;
-        rotationMode = (u8)(data->rotationMode != 0);
+        rotationMode = (u8)(data->rotationMode != VertexRotationMode_None);
         shaderUserSetting = data->shaderUserSetting;
         shaderUserFlag = data->shaderUserFlag;
         shaderUserSwitchFlag = data->shaderUserSwitchFlag;

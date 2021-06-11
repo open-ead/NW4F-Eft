@@ -161,6 +161,17 @@ enum TextureWrapMode
 };
 static_assert(sizeof(TextureWrapMode) == 4, "TextureWrapMode size mismatch");
 
+enum VertexRotationMode // Actual name not known
+{
+    VertexRotationMode_None = 0,
+    VertexRotationMode_Rotate_X = 1,
+    VertexRotationMode_Rotate_Y = 2,
+    VertexRotationMode_Rotate_Z = 3,
+    VertexRotationMode_Rotate_XYZ = 4,
+    VertexRotationMode_Max = 5,
+};
+static_assert(sizeof(VertexRotationMode) == 4, "VertexRotationMode size mismatch");
+
 enum VertexTransformMode // Actual name not known
 {
     VertexTransformMode_Billboard = 0,

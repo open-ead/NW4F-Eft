@@ -140,7 +140,7 @@ void EmitterInstance::UpdateEmitterStaticUniformBlock(EmitterStaticUniformBlock*
     if (data->gravity.Magnitude() != 0.0f)
         particleBehaviorFlg |= 0x0002;
 
-    if (data->rotationMode != 0)
+    if (data->rotationMode != VertexRotationMode_None)
         particleBehaviorFlg |= 0x0004;
 
     if (data->rotInertia != 1.0f)

@@ -99,7 +99,7 @@ struct SimpleEmitterData : EmitterData
     u8 _280[0x288 - 0x280];
     u8 displayParent;
     u8 _289[0x28C - 0x289];
-    u32 rotationMode;
+    VertexRotationMode rotationMode;
     PtclFollowType ptclFollowType;
     u32 fragmentColorMode;
     u32 fragmentAlphaMode;
@@ -214,7 +214,7 @@ struct ChildData
     FragmentComposite primitiveColorBlend;
     FragmentComposite primitiveAlphaBlend;
     u8 _184[0x1A0 - 0x184];
-    u32 rotationMode;
+    VertexRotationMode rotationMode;
     u8 _1A4[0x1D8 - 0x1A4];
     math::VEC2 rotBasis;
     u8 _1E0[0x204 - 0x1E0];
