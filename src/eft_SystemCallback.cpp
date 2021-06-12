@@ -28,6 +28,18 @@ CustomActionEmitterPostCalcCallback System::GetCurrentCustomActionEmitterPostCal
     return customActionEmitterPostCalcCallback[callbackID];
 }
 
+CustomActionParticleEmitCallback System::GetCurrentCustomActionParticleEmitCallback(const EmitterInstance* emitter)
+{
+    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+        return customActionParticleEmitCallback[currentCallbackID];
+
+    CustomActionCallBackID callbackID = emitter->data->callbackID;
+    if (callbackID == CustomActionCallBackID_Invalid)
+        return NULL;
+
+    return customActionParticleEmitCallback[callbackID];
+}
+
 CustomActionParticleRemoveCallback System::GetCurrentCustomActionParticleRemoveCallback(const EmitterInstance* emitter)
 {
     if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)

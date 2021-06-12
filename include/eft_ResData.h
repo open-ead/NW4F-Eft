@@ -62,9 +62,9 @@ struct TextureEmitterData
     bool hasTexPtnAnim;
     bool texPtnAnimRandStart;
     bool texPtnAnimLimitStart;
-    u8 idxDiv;
+    u8 texPtnAnimIdxDiv;
     u8 _4; // unused
-    u8 idxRand;
+    u8 texPtnAnimIdxRand;
     u8 _6[2]; // unused
     s16 texPtnFreq;
     s16 texPtnAnimDataSize;
@@ -256,14 +256,13 @@ struct ChildData
     s32 _1F0;
     s32 _1F4;
     math::VEC2 _1F8;
-    u16 _200;
-    u8 _202;
-    u8 _203;
+    u16 texPtnAnimIdxRand;
+    u8 texPtnAnimIdxDiv;
     math::VEC2 uvScaleInit;
-    u8 _20C[32];
-    s16 _22C;
-    s16 _22E;
-    u8 _230;
+    u8 texPtnAnimData[32];
+    s16 texPtnFreq;
+    s16 texPtnAnimDataSize;
+    bool texPtnAnimLimitStart;
     u32 fragmentColorMode;
     u32 fragmentAlphaMode;
     f32 _23C;

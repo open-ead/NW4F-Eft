@@ -141,6 +141,16 @@ public:
         return GetF32(b - a) + a;
     }
 
+    const math::VEC3& GetVec3()
+    {
+        return mVec3Tbl[randomVec3Idx++ & 0x1FF];
+    }
+
+    const math::VEC3& GetNormalizedVec3()
+    {
+        return mNormalizedVec3Tbl[randomNormVec3Idx++ & 0x1FF];
+    }
+
     static void Initialize(Heap* heap);
     static Random* GetGlobalRandom();
 

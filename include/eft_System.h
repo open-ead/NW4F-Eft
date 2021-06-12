@@ -23,6 +23,12 @@ struct EmitterPostCalcArg
 };
 static_assert(sizeof(EmitterPostCalcArg) == 4, "EmitterPostCalcArg size mismatch");
 
+struct ParticleEmitArg
+{
+    PtclInstance* ptcl;
+};
+static_assert(sizeof(ParticleEmitArg) == 4, "ParticleEmitArg size mismatch");
+
 struct ParticleRemoveArg
 {
     PtclInstance* ptcl;
@@ -66,6 +72,7 @@ static_assert(sizeof(RenderStateSetArg) == 0x10, "RenderStateSetArg size mismatc
 
 typedef void (*CustomActionEmitterPreCalcCallback)(EmitterPreCalcArg& arg);
 typedef void (*CustomActionEmitterPostCalcCallback)(EmitterPostCalcArg& arg);
+typedef bool (*CustomActionParticleEmitCallback)(ParticleEmitArg& arg);
 typedef bool (*CustomActionParticleRemoveCallback)(ParticleRemoveArg& arg);
 typedef void (*CustomActionEmitterDrawOverrideCallback)(EmitterDrawOverrideArg& arg);
 typedef void (*CustomShaderEmitterPostCalcCallback)(ShaderEmitterPostCalcArg& arg);
@@ -136,6 +143,7 @@ public:
 
     CustomActionEmitterPreCalcCallback GetCurrentCustomActionEmitterPreCalcCallback(const EmitterInstance* emitter);
     CustomActionEmitterPostCalcCallback GetCurrentCustomActionEmitterPostCalcCallback(const EmitterInstance* emitter);
+    CustomActionParticleEmitCallback GetCurrentCustomActionParticleEmitCallback(const EmitterInstance* emitter);
     CustomActionParticleRemoveCallback GetCurrentCustomActionParticleRemoveCallback(const EmitterInstance* emitter);
     CustomActionEmitterDrawOverrideCallback GetCurrentCustomActionEmitterDrawOverrideCallback(const EmitterInstance* emitter);
     CustomShaderEmitterPostCalcCallback GetCustomShaderEmitterPostCalcCallback(CustomShaderCallBackID callbackID);
@@ -198,7 +206,7 @@ public:
     s32 _8A8;
     CustomActionCallBackID currentCallbackID;
     CustomActionEmitterPreCalcCallback customActionEmitterPreCalcCallback[CustomActionCallBackID_Max];
-    void* customActionParticleEmitCallback[CustomActionCallBackID_Max];
+    CustomActionParticleEmitCallback customActionParticleEmitCallback[CustomActionCallBackID_Max];
     CustomActionParticleRemoveCallback customActionParticleRemoveCallback[CustomActionCallBackID_Max];
     void* customActionParticleCalcCallback[CustomActionCallBackID_Max];
     void* customActionParticleMakeAttrCallback[CustomActionCallBackID_Max];

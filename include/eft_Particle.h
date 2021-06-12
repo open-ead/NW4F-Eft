@@ -4,7 +4,8 @@
 #include <math/math_MTX34.h>
 #include <math/math_VEC2.h>
 #include <math/math_VEC3.h>
-#include <eft_Types.h>
+#include <ut/ut_Color4f.h>
+#include <eft_Enum.h>
 
 namespace nw { namespace eft {
 
@@ -87,6 +88,8 @@ struct PtclStripeQueue // Actual name not known
     math::VEC3 dir;
 };
 static_assert(sizeof(PtclStripeQueue) == 0x58, "PtclStripeQueue size mismatch");
+
+struct ComplexEmitterData;
 
 struct PtclStripe
 {

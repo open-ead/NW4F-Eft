@@ -1,8 +1,7 @@
 #ifndef EFT_EMITTER_H_
 #define EFT_EMITTER_H_
 
-#include <math/math_MTX34.h>
-#include <math/math_VEC3.h>
+#include <eft_Particle.h>
 #include <eft_Random.h>
 #include <eft_ResData.h>
 
@@ -17,7 +16,6 @@ class KeyFrameAnimArray;
 class ParticleShader;
 class Primitive;
 struct PtclAttributeBuffer;
-struct PtclInstance;
 class StripeVertexBuffer;
 
 struct EmitterInstance
@@ -125,12 +123,37 @@ public:
     virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer) = 0;
     virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer) = 0;
 
+    static void RemoveParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
+    static inline void AddChildPtclToList(EmitterInstance* emitter, PtclInstance* childPtcl);
+    static inline void AddPtclToList(EmitterInstance* emitter, PtclInstance* ptcl);
     static void InitializeFluctuationTable(Heap* heap);
 
     static f32* sFluctuationTbl;
     static System* mSys;
 };
 static_assert(sizeof(EmitterCalc) == 4, "EmitterCalc size mismatch");
+
+void EmitterCalc::AddChildPtclToList(EmitterInstance* emitter, PtclInstance* childPtcl)
+{
+    if (emitter->childParticleHead == NULL)
+    {
+        emitter->childParticleHead = childPtcl;
+        childPtcl->next = NULL;
+        childPtcl->prev = NULL;
+    }
+    else
+    {
+        emitter->childParticleHead->prev = childPtcl;
+        childPtcl->next = emitter->childParticleHead;
+        emitter->childParticleHead = childPtcl;
+        childPtcl->prev = NULL;
+    }
+
+    if (emitter->childParticleTail == NULL)
+        emitter->childParticleTail = childPtcl;
+
+    emitter->numChildParticles++;
+}
 
 } } // namespace nw::eft
 

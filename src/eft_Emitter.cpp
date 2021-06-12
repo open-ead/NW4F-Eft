@@ -1,5 +1,6 @@
 #include <eft_Emitter.h>
 #include <eft_Shader.h>
+#include <eft_System.h>
 
 namespace nw { namespace eft {
 
@@ -258,6 +259,11 @@ void EmitterInstance::UpdateResInfo()
 
     if (HasChild())
         UpdateChildStaticUniformBlock(childEmitterStaticUniformBlock, GetChildData());
+}
+
+void EmitterCalc::RemoveParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
+{
+    mSys->AddPtclRemoveList(ptcl, core);
 }
 
 } } // namespace nw::eft
