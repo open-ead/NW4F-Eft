@@ -136,7 +136,7 @@ bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s3
     emitterSet->_244 = 1.0f;
     emitterSet->_248 = 1.0f;
     emitterSet->_24C = 1.0f;
-    emitterSet->_268 = 0;
+    emitterSet->startFrame = 0;
     emitterSet->_278 = 0;
     emitterSet->doFade = 0;
     emitterSet->_289 = 0;

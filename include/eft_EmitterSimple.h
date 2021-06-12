@@ -17,6 +17,8 @@ public:
     virtual EmitterType GetEmitterType() const { return EmitterType_Simple; }
     virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer);
     virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer) { return 0; }
+
+    void EmitSameDistance(const SimpleEmitterData* data, EmitterInstance* emitter);
 };
 static_assert(sizeof(EmitterSimpleCalc) == 4, "EmitterSimpleCalc size mismatch");
 

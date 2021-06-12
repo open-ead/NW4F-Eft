@@ -69,7 +69,7 @@ public:
     f32 _24C;
     math::VEC3 _250;
     math::VEC3 _25C;
-    u32 _268;
+    s32 startFrame;
     math::VEC3 _26C;
     u32 _278;
     math::VEC3* _27C;

@@ -130,6 +130,9 @@ public:
 
     static f32* sFluctuationTbl;
     static System* mSys;
+
+    typedef void (*EmitFunction)(EmitterInstance* emitter);
+    static EmitFunction mEmitFunctions[];
 };
 static_assert(sizeof(EmitterCalc) == 4, "EmitterCalc size mismatch");
 
