@@ -142,7 +142,7 @@ bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s3
     emitterSet->_289 = 0;
     emitterSet->noCalc = 0;
     emitterSet->noDraw = 0;
-    emitterSet->_28C = 0;
+    emitterSet->infiniteLifespan = 0;
     emitterSet->_28D = 0x80;
 
     emitterSet->_204    = (math::VEC3){ 1.0f, 1.0f, 1.0f };
@@ -199,7 +199,7 @@ bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s3
         InitializeEmitter(emitter, data, resourceID, emitterSetID, seed, false);
 
         if (emitter->data->ptclMaxLifespan == 0x7FFFFFFF)
-            emitterSet->_28C = 1;
+            emitterSet->infiniteLifespan = 1;
     }
 
     emitterSet->numEmitterAtCreate = emitterSet->numEmitter;

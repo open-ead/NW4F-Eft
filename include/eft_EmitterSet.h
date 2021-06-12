@@ -79,7 +79,7 @@ public:
     u8 _289;
     u8 noCalc;
     u8 noDraw;
-    u8 _28C;
+    u8 infiniteLifespan;
     u8 _28D;
     u8 _28E[6];
 };
