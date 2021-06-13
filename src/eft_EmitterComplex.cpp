@@ -159,4 +159,106 @@ u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, boo
     return emitter->numDrawParticle;
 }
 
+u32 EmitterComplexCalc::CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer)
+{
+    if (!noMakePtclAttributeBuffer)
+    {
+        Renderer** const renderers = emitter->emitterSet->system->renderers;
+
+        emitter->childPtclAttributeBuffer = static_cast<PtclAttributeBuffer*>(renderers[core]->AllocFromDoubleBuffer(sizeof(PtclAttributeBuffer) * emitter->numChildParticles));
+        if (emitter->childPtclAttributeBuffer == NULL)
+            return 0;
+
+        emitter->childEmitterDynamicUniformBlock = static_cast<EmitterDynamicUniformBlock*>(renderers[core]->AllocFromDoubleBuffer(sizeof(EmitterDynamicUniformBlock)));
+        if (emitter->childEmitterDynamicUniformBlock == NULL)
+        {
+            emitter->ptclAttributeBuffer = NULL; // NOT childPtclAttributeBuffer... bug?
+            return 0;
+        }
+
+        math::VEC3 emitterSetColor = emitter->emitterSet->color.rgb();
+        emitterSetColor.x *= emitter->data->colorScaleFactor;
+        emitterSetColor.y *= emitter->data->colorScaleFactor;
+        emitterSetColor.z *= emitter->data->colorScaleFactor;
+
+        emitter->childEmitterDynamicUniformBlock->emitterColor0.x = emitterSetColor.x * emitter->anim[11];
+        emitter->childEmitterDynamicUniformBlock->emitterColor0.y = emitterSetColor.y * emitter->anim[12];
+        emitter->childEmitterDynamicUniformBlock->emitterColor0.z = emitterSetColor.z * emitter->anim[13];
+        emitter->childEmitterDynamicUniformBlock->emitterColor0.w = emitter->emitterSet->color.a * emitter->anim[14] * emitter->fadeAlpha;
+
+        emitter->childEmitterDynamicUniformBlock->emitterColor1.x = emitterSetColor.x * emitter->anim[19];
+        emitter->childEmitterDynamicUniformBlock->emitterColor1.y = emitterSetColor.y * emitter->anim[20];
+        emitter->childEmitterDynamicUniformBlock->emitterColor1.z = emitterSetColor.z * emitter->anim[21];
+        emitter->childEmitterDynamicUniformBlock->emitterColor1.w = emitter->emitterSet->color.a * emitter->anim[14] * emitter->fadeAlpha;
+
+        GX2EndianSwap(emitter->childEmitterDynamicUniformBlock, sizeof(EmitterDynamicUniformBlock));
+    }
+    else
+    {
+        emitter->childPtclAttributeBuffer = NULL;
+        emitter->childEmitterDynamicUniformBlock = NULL;
+    }
+
+    emitter->numDrawChildParticle = 0;
+
+    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
+
+    CustomActionParticleCalcCallback callback1 = mSys->GetCurrentCustomActionParticleCalcCallback(emitter);
+    CustomActionParticleMakeAttributeCallback callback2 = mSys->GetCurrentCustomActionParticleMakeAttributeCallback(emitter);
+
+    for (PtclInstance* ptcl = emitter->childParticleHead; ptcl != NULL; ptcl = ptcl->next)
+    {
+        if (ptcl->data == NULL)
+            continue;
+
+        if (!noCalcBehavior)
+        {
+            if (ptcl->lifespan <= (s32)ptcl->counter || ptcl->lifespan == 1 && ptcl->counter != 0.0f)
+            {
+                RemoveParticle(emitter, ptcl, core);
+                continue;
+            }
+
+            if (data->childFlags & 0x40)
+            {
+                ptcl->matrixSRT = emitter->matrixSRT;
+                ptcl->matrixRT = emitter->matrixRT;
+            }
+
+            CalcChildParticleBehavior(emitter, ptcl);
+        }
+
+        if (callback1 != NULL)
+        {
+            ParticleCalcArg arg = {
+                .emitter = emitter,
+                .ptcl = ptcl,
+                .core = core,
+                .noCalcBehavior = noCalcBehavior,
+            };
+            callback1(arg);
+        }
+
+        if (!noMakePtclAttributeBuffer)
+        {
+            MakeParticleAttributeBuffer(&emitter->childPtclAttributeBuffer[emitter->numDrawChildParticle], ptcl, emitter->childShaderAvailableAttribFlg, 0.0f);
+            ptcl->ptclAttributeBuffer = &emitter->childPtclAttributeBuffer[emitter->numDrawChildParticle++];
+
+            if (callback2 != NULL)
+            {
+                ParticleMakeAttrArg arg = {
+                    .emitter = emitter,
+                    .ptcl = ptcl,
+                    .core = core,
+                    .noCalcBehavior = noCalcBehavior,
+                };
+                callback2(arg);
+            }
+        }
+    }
+
+    emitter->isCalculated = true;
+    return emitter->numDrawChildParticle;
+}
+
 } } // namespace nw::eft

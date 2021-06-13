@@ -129,8 +129,9 @@ public:
 
     static void InitializeFluctuationTable(Heap* heap);
 
-    static void CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
-    static void CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
+    static u32 CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
+    static u32 CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
+    static u32 CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl);
     static void MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttributeBuffer, PtclInstance* ptcl, u32 shaderAvailableAttribFlg, f32 cameraOffset);
 
     void ApplyAnim(EmitterInstance* emitter);
