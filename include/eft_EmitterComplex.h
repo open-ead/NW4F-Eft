@@ -19,6 +19,8 @@ public:
     virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer);
 
     static void EmitChildParticle(EmitterInstance* emitter, PtclInstance* ptcl);
+
+    static void CalcComplexParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
 };
 static_assert(sizeof(EmitterComplexCalc) == 4, "EmitterComplexCalc size mismatch");
 

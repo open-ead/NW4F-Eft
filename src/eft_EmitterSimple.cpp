@@ -183,11 +183,12 @@ u32 EmitterSimpleCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, bool
 
     emitter->numDrawParticle = 0;
 
-    PtclInstance* ptcl = emitter->particleHead;
     CustomActionParticleCalcCallback callback1 = mSys->GetCurrentCustomActionParticleCalcCallback(emitter);
     CustomActionParticleMakeAttributeCallback callback2 = mSys->GetCurrentCustomActionParticleMakeAttributeCallback(emitter);
 
+    PtclInstance* ptcl = emitter->particleHead;
     bool reversed = false;
+
     if (emitter->data->flags & 0x400)
     {
         ptcl = emitter->particleTail;

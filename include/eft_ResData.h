@@ -354,7 +354,7 @@ struct StripeData
     u32 crossType;
     u32 connectionType;
     u32 _C;
-    u32 _10;
+    u32 queueCount;
     u32 numConnections;
     f32 alphaStart;
     f32 alphaEnd;

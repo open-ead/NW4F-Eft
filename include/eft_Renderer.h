@@ -49,6 +49,7 @@ public:
     void* AllocFromDoubleBuffer(u32 size);
     void FlushCache();
 
+    bool MakeStripeAttributeBlock(EmitterInstance* emitter);
     bool ConnectionStripeUvScaleCalc(f32&, f32&, const EmitterInstance* emitter, s32, f32, s32);
     u32 MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex = 0);
     u32 MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex = 0);
