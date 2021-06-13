@@ -35,6 +35,24 @@ struct ParticleRemoveArg
 };
 static_assert(sizeof(ParticleRemoveArg) == 4, "ParticleRemoveArg size mismatch");
 
+struct ParticleCalcArg
+{
+    EmitterInstance* emitter;
+    PtclInstance* ptcl;
+    CpuCore core;
+    bool noCalcBehavior;
+};
+static_assert(sizeof(ParticleCalcArg) == 0x10, "ParticleCalcArg size mismatch");
+
+struct ParticleMakeAttrArg
+{
+    EmitterInstance* emitter;
+    PtclInstance* ptcl;
+    CpuCore core;
+    bool noCalcBehavior;
+};
+static_assert(sizeof(ParticleMakeAttrArg) == 0x10, "ParticleMakeAttrArg size mismatch");
+
 struct EmitterDrawOverrideArg
 {
     const EmitterInstance* emitter;
@@ -74,6 +92,8 @@ typedef void (*CustomActionEmitterPreCalcCallback)(EmitterPreCalcArg& arg);
 typedef void (*CustomActionEmitterPostCalcCallback)(EmitterPostCalcArg& arg);
 typedef bool (*CustomActionParticleEmitCallback)(ParticleEmitArg& arg);
 typedef bool (*CustomActionParticleRemoveCallback)(ParticleRemoveArg& arg);
+typedef void (*CustomActionParticleCalcCallback)(ParticleCalcArg& arg);
+typedef void (*CustomActionParticleMakeAttributeCallback)(const ParticleMakeAttrArg& arg); // const... ?
 typedef void (*CustomActionEmitterDrawOverrideCallback)(EmitterDrawOverrideArg& arg);
 typedef void (*CustomShaderEmitterPostCalcCallback)(ShaderEmitterPostCalcArg& arg);
 typedef void (*CustomShaderDrawOverrideCallback)(ShaderDrawOverrideArg& arg);
@@ -145,6 +165,8 @@ public:
     CustomActionEmitterPostCalcCallback GetCurrentCustomActionEmitterPostCalcCallback(const EmitterInstance* emitter);
     CustomActionParticleEmitCallback GetCurrentCustomActionParticleEmitCallback(const EmitterInstance* emitter);
     CustomActionParticleRemoveCallback GetCurrentCustomActionParticleRemoveCallback(const EmitterInstance* emitter);
+    CustomActionParticleCalcCallback GetCurrentCustomActionParticleCalcCallback(const EmitterInstance* emitter);
+    CustomActionParticleMakeAttributeCallback GetCurrentCustomActionParticleMakeAttributeCallback(const EmitterInstance* emitter);
     CustomActionEmitterDrawOverrideCallback GetCurrentCustomActionEmitterDrawOverrideCallback(const EmitterInstance* emitter);
     CustomShaderEmitterPostCalcCallback GetCustomShaderEmitterPostCalcCallback(CustomShaderCallBackID callbackID);
     CustomShaderDrawOverrideCallback GetCustomShaderDrawOverrideCallback(CustomShaderCallBackID callbackID);
@@ -208,8 +230,8 @@ public:
     CustomActionEmitterPreCalcCallback customActionEmitterPreCalcCallback[CustomActionCallBackID_Max];
     CustomActionParticleEmitCallback customActionParticleEmitCallback[CustomActionCallBackID_Max];
     CustomActionParticleRemoveCallback customActionParticleRemoveCallback[CustomActionCallBackID_Max];
-    void* customActionParticleCalcCallback[CustomActionCallBackID_Max];
-    void* customActionParticleMakeAttrCallback[CustomActionCallBackID_Max];
+    CustomActionParticleCalcCallback customActionParticleCalcCallback[CustomActionCallBackID_Max];
+    CustomActionParticleMakeAttributeCallback customActionParticleMakeAttributeCallback[CustomActionCallBackID_Max];
     CustomActionEmitterPostCalcCallback customActionEmitterPostCalcCallback[CustomActionCallBackID_Max];
     CustomActionEmitterDrawOverrideCallback customActionEmitterDrawOverrideCallback[CustomActionCallBackID_Max];
     CustomShaderEmitterPostCalcCallback customShaderEmitterPostCalcCallback[CustomShaderCallBackID_Max];

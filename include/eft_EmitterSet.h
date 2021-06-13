@@ -71,7 +71,7 @@ public:
     math::VEC3 _25C;
     s32 startFrame;
     math::VEC3 _26C;
-    u32 _278;
+    s32 _278;
     math::VEC3* _27C;
     EmitterSet* next;
     EmitterSet* prev;

@@ -17,6 +17,13 @@ struct EmitterStaticUniformBlock
 };
 static_assert(sizeof(EmitterStaticUniformBlock) == 0x100, "EmitterStaticUniformBlock size mismatch");
 
+struct EmitterDynamicUniformBlock
+{
+    math::VEC4 emitterColor0;
+    math::VEC4 emitterColor1;
+};
+static_assert(sizeof(EmitterDynamicUniformBlock) == 0x20, "EmitterDynamicUniformBlock size mismatch");
+
 struct ViewUniformBlock
 {
     math::MTX44 viewMat;

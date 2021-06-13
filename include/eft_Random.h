@@ -126,6 +126,12 @@ public:
         return GetU32(b - a) + a;
     }
 
+    s32 GetS32(s32 max)
+    {
+        // Using (s32)GetU32(max) does not match
+        return (s32)(GetU32() * u64(max) >> 32u);
+    }
+
     f32 GetF32()
     {
         return GetU32() * (1.0f / 4294967296.0f);

@@ -137,7 +137,7 @@ void System::Initialize(Heap* argHeap, const Config& config)
         customActionParticleEmitCallback[i] = NULL;
         customActionParticleRemoveCallback[i] = NULL;
         customActionParticleCalcCallback[i] = NULL;
-        customActionParticleMakeAttrCallback[i] = NULL;
+        customActionParticleMakeAttributeCallback[i] = NULL;
         customActionEmitterPostCalcCallback[i] = NULL;
         customActionEmitterDrawOverrideCallback[i] = NULL;
     }

@@ -126,7 +126,14 @@ public:
     static void RemoveParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
     static inline void AddChildPtclToList(EmitterInstance* emitter, PtclInstance* childPtcl);
     static inline void AddPtclToList(EmitterInstance* emitter, PtclInstance* ptcl);
+
     static void InitializeFluctuationTable(Heap* heap);
+
+    static void CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
+    static void MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttributeBuffer, PtclInstance* ptcl, u32 shaderAvailableAttribFlg, f32 cameraOffset);
+
+    void ApplyAnim(EmitterInstance* emitter);
+    void UpdateEmitterInfoByEmit(EmitterInstance* emitter);
 
     static f32* sFluctuationTbl;
     static System* mSys;

@@ -52,6 +52,30 @@ CustomActionParticleRemoveCallback System::GetCurrentCustomActionParticleRemoveC
     return customActionParticleRemoveCallback[callbackID];
 }
 
+CustomActionParticleCalcCallback System::GetCurrentCustomActionParticleCalcCallback(const EmitterInstance* emitter)
+{
+    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+        return customActionParticleCalcCallback[currentCallbackID];
+
+    CustomActionCallBackID callbackID = emitter->data->callbackID;
+    if (callbackID == CustomActionCallBackID_Invalid)
+        return NULL;
+
+    return customActionParticleCalcCallback[callbackID];
+}
+
+CustomActionParticleMakeAttributeCallback System::GetCurrentCustomActionParticleMakeAttributeCallback(const EmitterInstance* emitter)
+{
+    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+        return customActionParticleMakeAttributeCallback[currentCallbackID];
+
+    CustomActionCallBackID callbackID = emitter->data->callbackID;
+    if (callbackID == CustomActionCallBackID_Invalid)
+        return NULL;
+
+    return customActionParticleMakeAttributeCallback[callbackID];
+}
+
 CustomActionEmitterDrawOverrideCallback System::GetCurrentCustomActionEmitterDrawOverrideCallback(const EmitterInstance* emitter)
 {
     if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)

@@ -18,7 +18,7 @@ void EmitterInstance::Init(const SimpleEmitterData* data)
     numParticles = 0;
     numChildParticles = 0;
 
-    emissionInterval = data->emitInterval - (s32)random.GetU32(data->emitIntervalRandom);
+    emissionInterval = data->emitInterval - random.GetS32(data->emitIntervalRandom);
     fadeAlpha = 1.0f;
     emissionSpeed = 1.0f;
 
