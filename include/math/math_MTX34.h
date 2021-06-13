@@ -87,6 +87,9 @@ struct MTX34
         return dst;
     }
 
+    static inline VEC3* MultVec(VEC3* dst, const MTX34* a, const VEC3* b);
+    static inline VEC3* MultVecSR(VEC3* dst, const MTX34* a, const VEC3* b);
+
     union
     {
         f32  m[3][4];
@@ -94,6 +97,33 @@ struct MTX34
         f32  a[3 * 4];
     };
 };
+
+VEC3* MTX34::MultVec(VEC3* dst, const MTX34* a, const VEC3* b)
+{
+    const VEC3 tmp = *b;
+    dst->x = a->m[0][0] * tmp.x + a->m[0][1] * tmp.y + a->m[0][2] * tmp.z + a->m[0][3];
+    dst->y = a->m[1][0] * tmp.x + a->m[1][1] * tmp.y + a->m[1][2] * tmp.z + a->m[1][3];
+    dst->z = a->m[2][0] * tmp.x + a->m[2][1] * tmp.y + a->m[2][2] * tmp.z + a->m[2][3];
+    return dst;
+}
+
+VEC3* MTX34::MultVecSR(VEC3* dst, const MTX34* a, const VEC3* b)
+{
+    const VEC3 tmp = *b;
+    dst->x = a->m[0][0] * tmp.x + a->m[0][1] * tmp.y + a->m[0][2] * tmp.z;
+    dst->y = a->m[1][0] * tmp.x + a->m[1][1] * tmp.y + a->m[1][2] * tmp.z;
+    dst->z = a->m[2][0] * tmp.x + a->m[2][1] * tmp.y + a->m[2][2] * tmp.z;
+    return dst;
+}
+
+VEC3* VEC3::MultMTX(VEC3* dst, const VEC3* a, const MTX34* b)
+{
+    const VEC3 tmp = *a;
+    dst->x = tmp.x * b->m[0][0] + tmp.y * b->m[1][0] + tmp.z * b->m[2][0];
+    dst->y = tmp.x * b->m[0][1] + tmp.y * b->m[1][1] + tmp.z * b->m[2][1];
+    dst->z = tmp.x * b->m[0][2] + tmp.y * b->m[1][2] + tmp.z * b->m[2][2];
+    return dst;
+}
 
 } } // namespace nw::math
 

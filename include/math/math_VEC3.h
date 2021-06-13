@@ -4,7 +4,11 @@
 #include <cmath>
 #include <types.h>
 
+#include <cafe.h>
+
 namespace nw { namespace math {
+
+struct MTX34;
 
 struct VEC3
 {
@@ -72,6 +76,15 @@ struct VEC3
         x *= inv_mag;
         y *= inv_mag;
         z *= inv_mag;
+    }
+
+    static inline VEC3* MultMTX(VEC3* dst, const VEC3* a, const MTX34* b);
+
+    static VEC3* Scale(VEC3* dst, const VEC3* src, f32 a)
+    {
+        // Why does this even exist
+        ASM_VECScale((const Vec*)src, (Vec*)dst, a);
+        return dst;
     }
 
     f32 x;
