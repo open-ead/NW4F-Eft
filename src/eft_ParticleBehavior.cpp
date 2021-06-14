@@ -21,7 +21,7 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
         ptcl->matrixRT.m[2][3] = emitter->matrixRT.m[2][3];
     }
 
-    ptcl->pos += ptcl->velocity * ptcl->randomUnk * emitter->emissionSpeed;
+    ptcl->pos += ptcl->velocity * ptcl->randomF32 * emitter->emissionSpeed;
 
     if (emitter->particleBehaviorFlg & 1)
         ptcl->velocity *= data->airResist + (1.0f - data->airResist) * emissionSpeedInv;
@@ -74,12 +74,82 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
 
     if (emitter->particleBehaviorFlg & 0x100)
     {
-        // Color0 Anim...
+        // EmitterCalc::ptclAnim_Color0_4k3v(EmitterInstance*, PtclInstance*, f32)
+        {
+            const u32 colorIdx = 0;
+
+            // No division-by-zero checks whatsoever...
+
+            s32 period = ptcl->lifespan / data->colorNumRepetition[colorIdx];
+            if (period == 0)
+                period = ptcl->lifespan;
+
+            s32 colorCounter = (s32)ptcl->counter - 1;
+            if (data->colorRandomStart[colorIdx])
+                colorCounter += ptcl->randomU32 >> 6;
+            colorCounter %= period;
+
+            s32 time2 = (data->colorTime2[colorIdx] * period) / 100;
+            if (colorCounter < time2)
+                ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb();
+
+            else
+            {
+                s32 time3 = (data->colorTime3[colorIdx] * period) / 100;
+                if (colorCounter < time3)
+                    ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb() + (data->ptclColorTbl[colorIdx][1].rgb() - data->ptclColorTbl[colorIdx][0].rgb()) * ((f32)(colorCounter - time2) / (f32)(time3 - time2));
+
+                else
+                {
+                    s32 time4 = (data->colorTime4[colorIdx] * period) / 100;
+                    if (colorCounter < time4)
+                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][1].rgb() + (data->ptclColorTbl[colorIdx][2].rgb() - data->ptclColorTbl[colorIdx][1].rgb()) * ((f32)(colorCounter - time3) / (f32)(time4 - time3));
+
+                    else
+                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][2].rgb();
+                }
+            }
+        }
     }
 
     if (emitter->particleBehaviorFlg & 0x200)
     {
-        // Color1 Anim...
+        // EmitterCalc::ptclAnim_Color1_4k3v(EmitterInstance*, PtclInstance*, f32)
+        {
+            const u32 colorIdx = 1;
+
+            // No division-by-zero checks whatsoever...
+
+            s32 period = ptcl->lifespan / data->colorNumRepetition[colorIdx];
+            if (period == 0)
+                period = ptcl->lifespan;
+
+            s32 colorCounter = (s32)ptcl->counter - 1;
+            if (data->colorRandomStart[colorIdx])
+                colorCounter += ptcl->randomU32 >> 6;
+            colorCounter %= period;
+
+            s32 time2 = (data->colorTime2[colorIdx] * period) / 100;
+            if (colorCounter < time2)
+                ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb();
+
+            else
+            {
+                s32 time3 = (data->colorTime3[colorIdx] * period) / 100;
+                if (colorCounter < time3)
+                    ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb() + (data->ptclColorTbl[colorIdx][1].rgb() - data->ptclColorTbl[colorIdx][0].rgb()) * ((f32)(colorCounter - time2) / (f32)(time3 - time2));
+
+                else
+                {
+                    s32 time4 = (data->colorTime4[colorIdx] * period) / 100;
+                    if (colorCounter < time4)
+                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][1].rgb() + (data->ptclColorTbl[colorIdx][2].rgb() - data->ptclColorTbl[colorIdx][1].rgb()) * ((f32)(colorCounter - time3) / (f32)(time4 - time3));
+
+                    else
+                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][2].rgb();
+                }
+            }
+        }
     }
 
     if (emitter->particleBehaviorFlg & 0x1000)

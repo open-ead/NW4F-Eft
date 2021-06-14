@@ -159,11 +159,13 @@ struct SimpleEmitterData : EmitterData
     math::VEC2 rotBasis;
     f32 cameraOffset;
     TextureEmitterData texAnimParam[2];
-    ColorSourceType ptclColor0Src;
-    ColorSourceType ptclColor1Src;
-    ut::Color4f ptclColor0Tbl[3];
-    ut::Color4f ptclColor1Tbl[3];
-    s32 _584[5][2];
+    ColorSourceType ptclColorSrc[2];
+    ut::Color4f ptclColorTbl[2][3];
+    s32 colorTime2[2];
+    s32 colorTime3[2];
+    s32 colorTime4[2];
+    s32 colorNumRepetition[2];
+    s32 colorRandomStart[2];
     f32 colorScaleFactor;
     anim3v4Key alphaAnim;
     FragmentComposite textureColorBlend;

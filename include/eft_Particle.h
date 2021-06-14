@@ -52,7 +52,7 @@ struct PtclInstance
     math::VEC3 worldPosDiff;
     math::VEC3 rotation;
     math::VEC3 angularVelocity;
-    f32 randomUnk;
+    f32 randomF32;
     f32 alpha;
     AlphaAnim* alphaAnim;
     math::VEC2 scale;
@@ -60,8 +60,15 @@ struct PtclInstance
     TexUVParam texAnimParam[2]; // For each texture
     f32 _AC;
     f32 _B0;
-    ut::Color4f color0;
-    ut::Color4f color1;
+    union
+    {
+        ut::Color4f color[2];
+        struct
+        {
+            ut::Color4f color0;
+            ut::Color4f color1;
+        };
+    };
     PtclAttributeBuffer* ptclAttributeBuffer;
     math::MTX34 matrixRT;
     math::MTX34 matrixSRT;
@@ -74,7 +81,7 @@ struct PtclInstance
     EmitterInstance* emitter;
     PtclStripe* stripe;
     PtclType type;
-    u32 randomUnk2;
+    u32 randomU32;
     u8 _160[32];
 };
 static_assert(sizeof(PtclInstance) == 0x180, "PtclInstance size mismatch");

@@ -12,6 +12,11 @@ struct Color4f
         return v.xyz();
     }
 
+    const math::VEC3& rgb() const
+    {
+        return v.xyz();
+    }
+
     union
     {
         math::VEC4 v;

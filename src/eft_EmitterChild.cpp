@@ -149,7 +149,7 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         childPtcl->pos = randomNormVec3 * childData->_24 + ptcl->pos;
 
         childPtcl->counter = 0.0f;
-        childPtcl->randomUnk2 = emitter->random.GetU32();
+        childPtcl->randomU32 = emitter->random.GetU32();
 
         if (!(data->childFlags & 0x40))
         {
@@ -174,8 +174,8 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
             childPtcl->pMatrixSRT = &emitter->matrixSRT;
         }
 
-        childPtcl->randomUnk2 = emitter->random.GetU32(); // Again... ?
-        childPtcl->randomUnk = 1.0f - childData->_34 * emitter->random.GetF32Range(-1.0f, 1.0f);
+        childPtcl->randomU32 = emitter->random.GetU32(); // Again... ?
+        childPtcl->randomF32 = 1.0f - childData->_34 * emitter->random.GetF32Range(-1.0f, 1.0f);
         childPtcl->_140 = 0;
 
         CustomActionParticleEmitCallback callback = mSys->GetCurrentCustomActionParticleEmitCallback(emitter);

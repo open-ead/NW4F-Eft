@@ -156,10 +156,10 @@ void EmitterInstance::UpdateEmitterStaticUniformBlock(EmitterStaticUniformBlock*
     if (data->alphaAnim.time2 != 0 || data->alphaAnim.time3 != 100)
         particleBehaviorFlg |= 0x0080;
 
-    if (data->ptclColor0Src == ColorSourceType_3v4k)
+    if (data->ptclColorSrc[0] == ColorSourceType_3v4k)
         particleBehaviorFlg |= 0x0100;
 
-    if (data->ptclColor1Src == ColorSourceType_3v4k)
+    if (data->ptclColorSrc[1] == ColorSourceType_3v4k)
         particleBehaviorFlg |= 0x0200;
 
     if (data->texAnimParam[0].uvShiftAnimMode != 0)

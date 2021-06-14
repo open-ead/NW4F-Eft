@@ -18,48 +18,6 @@ struct VEC3
         return zero;
     }
 
-    VEC3& operator+=(const VEC3& rhs)
-    {
-        x += rhs.x;
-        y += rhs.y;
-        z += rhs.z;
-        return *this;
-    }
-
-    VEC3& operator-=(const VEC3& rhs)
-    {
-        x -= rhs.x;
-        y -= rhs.y;
-        z -= rhs.z;
-        return *this;
-    }
-
-    VEC3& operator*=(f32 a)
-    {
-        x *= a;
-        y *= a;
-        z *= a;
-        return *this;
-    }
-
-    VEC3 operator+(const VEC3& rhs) const
-    {
-        VEC3 ret = *this;
-        return (ret += rhs);
-    }
-
-    VEC3 operator-(const VEC3& rhs) const
-    {
-        VEC3 ret = *this;
-        return (ret -= rhs);
-    }
-
-    VEC3 operator*(f32 a) const
-    {
-        VEC3 ret = *this;
-        return (ret *= a);
-    }
-
     f32 MagnitudeSquare() const
     {
         return x*x + y*y + z*z;
@@ -72,14 +30,13 @@ struct VEC3
 
     void Normalize()
     {
-        f32 inv_mag = 1.0f / Magnitude(); // No division by zero check...
+        f32 inv_mag = 1.0f / Magnitude(); // No division-by-zero check...
         x *= inv_mag;
         y *= inv_mag;
         z *= inv_mag;
     }
 
     static inline VEC3* MultMTX(VEC3* dst, const VEC3* a, const MTX34* b);
-
     static VEC3* Scale(VEC3* dst, const VEC3* src, f32 a)
     {
         // Why does this even exist
@@ -91,6 +48,53 @@ struct VEC3
     f32 y;
     f32 z;
 };
+
+inline VEC3& operator+=(VEC3& lhs, const VEC3& rhs)
+{
+    lhs.x += rhs.x;
+    lhs.y += rhs.y;
+    lhs.z += rhs.z;
+    return lhs;
+}
+
+inline VEC3& operator-=(VEC3& lhs, const VEC3& rhs)
+{
+    lhs.x -= rhs.x;
+    lhs.y -= rhs.y;
+    lhs.z -= rhs.z;
+    return lhs;
+}
+
+inline VEC3& operator*=(VEC3& lhs, f32 a)
+{
+    lhs.x *= a;
+    lhs.y *= a;
+    lhs.z *= a;
+    return lhs;
+}
+
+inline VEC3 operator+(const VEC3& lhs, const VEC3& rhs)
+{
+    VEC3 ret = lhs;
+    return (ret += rhs);
+}
+
+inline VEC3 operator-(const VEC3& lhs, const VEC3& rhs)
+{
+    VEC3 ret = lhs;
+    return (ret -= rhs);
+}
+
+inline VEC3 operator*(const VEC3& lhs, f32 a)
+{
+    VEC3 ret = lhs;
+    return (ret *= a);
+}
+
+inline VEC3 operator*(f32 a, const VEC3& rhs)
+{
+    return (VEC3){ a * rhs.x, a * rhs.y, a * rhs.z };
+}
 
 } } // namespace nw::math
 

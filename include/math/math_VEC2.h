@@ -20,7 +20,7 @@ struct VEC2
 
     void Normalize()
     {
-        f32 inv_mag = 1.0f / Magnitude(); // No division by zero check...
+        f32 inv_mag = 1.0f / Magnitude(); // No division-by-zero check...
         x *= inv_mag;
         y *= inv_mag;
     }
@@ -28,6 +28,50 @@ struct VEC2
     f32 x;
     f32 y;
 };
+
+inline VEC2& operator+=(VEC2& lhs, const VEC2& rhs)
+{
+    lhs.x += rhs.x;
+    lhs.y += rhs.y;
+    return lhs;
+}
+
+inline VEC2& operator-=(VEC2& lhs, const VEC2& rhs)
+{
+    lhs.x -= rhs.x;
+    lhs.y -= rhs.y;
+    return lhs;
+}
+
+inline VEC2& operator*=(VEC2& lhs, f32 a)
+{
+    lhs.x *= a;
+    lhs.y *= a;
+    return lhs;
+}
+
+inline VEC2 operator+(const VEC2& lhs, const VEC2& rhs)
+{
+    VEC2 ret = lhs;
+    return (ret += rhs);
+}
+
+inline VEC2 operator-(const VEC2& lhs, const VEC2& rhs)
+{
+    VEC2 ret = lhs;
+    return (ret -= rhs);
+}
+
+inline VEC2 operator*(const VEC2& lhs, f32 a)
+{
+    VEC2 ret = lhs;
+    return (ret *= a);
+}
+
+inline VEC2 operator*(f32 a, const VEC2& rhs)
+{
+    return (VEC2){ a * rhs.x, a * rhs.y };
+}
 
 } } // namespace nw::math
 
