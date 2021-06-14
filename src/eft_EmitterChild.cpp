@@ -125,11 +125,12 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         childPtcl->_AC = 1.0f;
         childPtcl->_B0 = 1.0f;
 
-        if (childData->texPtnAnimIdxRand > 1)
+        if (childData->texPtnAnimNum > 1) // TexPtnAnim Type Random
         {
-            s32 texPtnAnimIdx = emitter->random.GetU32(childData->texPtnAnimIdxRand);
-            s32 offsetX = texPtnAnimIdx % childData->texPtnAnimIdxDiv;
-            s32 offsetY = texPtnAnimIdx / childData->texPtnAnimIdxDiv;
+            s32 texPtnAnimIdx = emitter->random.GetU32(childData->texPtnAnimNum);
+            s32 texPtnAnimIdxDiv = childData->texPtnAnimIdxDiv;
+            s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
+            s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
 
             childPtcl->texAnimParam[0].offset.x = childData->uvScaleInit.x * (f32)offsetX;
             childPtcl->texAnimParam[0].offset.y = childData->uvScaleInit.y * (f32)offsetY;

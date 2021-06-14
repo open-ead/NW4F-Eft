@@ -4,6 +4,89 @@
 
 namespace nw { namespace eft {
 
+// No division-by-zero checks whatsoever...
+
+static inline void ColorAnim_4k3v(u32 colorIdx, PtclInstance* ptcl, const SimpleEmitterData* data)
+{
+    s32 period = ptcl->lifespan / data->colorNumRepetition[colorIdx];
+    if (period == 0)
+        period = ptcl->lifespan;
+
+    s32 counter = (s32)ptcl->counter - 1;
+    if (data->colorRandomStart[colorIdx])
+        counter += ptcl->randomU32 >> 6;
+    counter %= period;
+
+    s32 time2 = (data->colorTime2[colorIdx] * period) / 100;
+    if (counter < time2)
+        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb();
+
+    else
+    {
+        s32 time3 = (data->colorTime3[colorIdx] * period) / 100;
+        if (counter < time3)
+            ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb() + (data->ptclColorTbl[colorIdx][1].rgb() - data->ptclColorTbl[colorIdx][0].rgb()) * ((f32)(counter - time2) / (f32)(time3 - time2));
+
+        else
+        {
+            s32 time4 = (data->colorTime4[colorIdx] * period) / 100;
+            if (counter < time4)
+                ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][1].rgb() + (data->ptclColorTbl[colorIdx][2].rgb() - data->ptclColorTbl[colorIdx][1].rgb()) * ((f32)(counter - time3) / (f32)(time4 - time3));
+
+            else
+                ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][2].rgb();
+        }
+    }
+}
+
+static inline void TexPtnAnim(u32 texIdx, PtclInstance* ptcl, const SimpleEmitterData* data)
+{
+    s32 period = data->texAnimParam[texIdx].texPtnAnimPeriod;
+    s16 size = data->texAnimParam[texIdx].texPtnAnimUsedSize;
+    s32 idx, counter = (s32)ptcl->counter;
+
+    // Four animation types:
+    // 1. Fit to lifespan
+    // 2. Clamp
+    // 3. Loop
+    // 4. Random (Not handled here; handled in Emit function)
+
+    //const bool fitToLifespan = period == 0;
+    //const bool clamp         = data->texAnimParam[texIdx].texPtnAnimClamp;
+    //const bool loop          = !fitToLifespan && !clamp;
+
+    if (period == 0)
+        idx = (counter * size) / ptcl->lifespan; // (time / lifespan) * size
+    else
+        idx = counter / period;                  //  time / period
+
+    if (data->texAnimParam[texIdx].texPtnAnimClamp && idx >= size)
+        return;
+
+    if (period != 0 && !data->texAnimParam[texIdx].texPtnAnimClamp
+        && data->texAnimParam[texIdx].texPtnAnimRandStart)
+    {
+        idx += ptcl->randomU32;
+    }
+
+    s32 texPtnAnimIdxDiv = data->texAnimParam[texIdx].texPtnAnimIdxDiv;
+    s32 texPtnAnimIdx = data->texAnimParam[texIdx].texPtnAnimData[idx % size];
+    s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
+    s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
+
+    ptcl->texAnimParam[texIdx].offset.x = data->texAnimParam[texIdx].uvScaleInit.x * (f32)offsetX;
+    ptcl->texAnimParam[texIdx].offset.y = data->texAnimParam[texIdx].uvScaleInit.y * (f32)offsetY;
+}
+
+static inline void TexUvShiftAnim(u32 texIdx, PtclInstance* ptcl, const SimpleEmitterData* data, f32 emissionSpeed)
+{
+    ptcl->texAnimParam[texIdx].scroll.x += data->texAnimParam[texIdx].texIncScroll.x * emissionSpeed;
+    ptcl->texAnimParam[texIdx].scroll.y += data->texAnimParam[texIdx].texIncScroll.y * emissionSpeed;
+    ptcl->texAnimParam[texIdx].scale.x  += data->texAnimParam[texIdx].texIncScale.x  * emissionSpeed;
+    ptcl->texAnimParam[texIdx].scale.y  += data->texAnimParam[texIdx].texIncScale.y  * emissionSpeed;
+    ptcl->texAnimParam[texIdx].rotate   += data->texAnimParam[texIdx].texIncRotate   * emissionSpeed;
+}
+
 static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, const SimpleEmitterData* data)
 {
     s32 counter = (s32)ptcl->counter;
@@ -75,101 +158,30 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
     if (emitter->particleBehaviorFlg & 0x100)
     {
         // EmitterCalc::ptclAnim_Color0_4k3v(EmitterInstance*, PtclInstance*, f32)
-        {
-            const u32 colorIdx = 0;
-
-            // No division-by-zero checks whatsoever...
-
-            s32 period = ptcl->lifespan / data->colorNumRepetition[colorIdx];
-            if (period == 0)
-                period = ptcl->lifespan;
-
-            s32 colorCounter = (s32)ptcl->counter - 1;
-            if (data->colorRandomStart[colorIdx])
-                colorCounter += ptcl->randomU32 >> 6;
-            colorCounter %= period;
-
-            s32 time2 = (data->colorTime2[colorIdx] * period) / 100;
-            if (colorCounter < time2)
-                ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb();
-
-            else
-            {
-                s32 time3 = (data->colorTime3[colorIdx] * period) / 100;
-                if (colorCounter < time3)
-                    ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb() + (data->ptclColorTbl[colorIdx][1].rgb() - data->ptclColorTbl[colorIdx][0].rgb()) * ((f32)(colorCounter - time2) / (f32)(time3 - time2));
-
-                else
-                {
-                    s32 time4 = (data->colorTime4[colorIdx] * period) / 100;
-                    if (colorCounter < time4)
-                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][1].rgb() + (data->ptclColorTbl[colorIdx][2].rgb() - data->ptclColorTbl[colorIdx][1].rgb()) * ((f32)(colorCounter - time3) / (f32)(time4 - time3));
-
-                    else
-                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][2].rgb();
-                }
-            }
-        }
+        ColorAnim_4k3v(0, ptcl, data);
     }
 
     if (emitter->particleBehaviorFlg & 0x200)
     {
         // EmitterCalc::ptclAnim_Color1_4k3v(EmitterInstance*, PtclInstance*, f32)
-        {
-            const u32 colorIdx = 1;
-
-            // No division-by-zero checks whatsoever...
-
-            s32 period = ptcl->lifespan / data->colorNumRepetition[colorIdx];
-            if (period == 0)
-                period = ptcl->lifespan;
-
-            s32 colorCounter = (s32)ptcl->counter - 1;
-            if (data->colorRandomStart[colorIdx])
-                colorCounter += ptcl->randomU32 >> 6;
-            colorCounter %= period;
-
-            s32 time2 = (data->colorTime2[colorIdx] * period) / 100;
-            if (colorCounter < time2)
-                ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb();
-
-            else
-            {
-                s32 time3 = (data->colorTime3[colorIdx] * period) / 100;
-                if (colorCounter < time3)
-                    ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][0].rgb() + (data->ptclColorTbl[colorIdx][1].rgb() - data->ptclColorTbl[colorIdx][0].rgb()) * ((f32)(colorCounter - time2) / (f32)(time3 - time2));
-
-                else
-                {
-                    s32 time4 = (data->colorTime4[colorIdx] * period) / 100;
-                    if (colorCounter < time4)
-                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][1].rgb() + (data->ptclColorTbl[colorIdx][2].rgb() - data->ptclColorTbl[colorIdx][1].rgb()) * ((f32)(colorCounter - time3) / (f32)(time4 - time3));
-
-                    else
-                        ptcl->color[colorIdx].rgb() = data->ptclColorTbl[colorIdx][2].rgb();
-                }
-            }
-        }
+        ColorAnim_4k3v(1, ptcl, data);
     }
 
-    if (emitter->particleBehaviorFlg & 0x1000)
     {
-        // Tex0 Ptn Anim...
+        if (emitter->particleBehaviorFlg & 0x1000)
+            TexPtnAnim(0, ptcl, data);
+
+        if (emitter->particleBehaviorFlg & 0x400)
+            TexUvShiftAnim(0, ptcl, data, emitter->emissionSpeed);
     }
 
-    if (emitter->particleBehaviorFlg & 0x400)
+    if (emitter->particleBehaviorFlg & 0x4000)
     {
-        // Tex0 UV Shift Anim...
-    }
+        if (emitter->particleBehaviorFlg & 0x2000)
+            TexPtnAnim(1, ptcl, data);
 
-    if (emitter->particleBehaviorFlg & 0x4000 && emitter->particleBehaviorFlg & 0x2000)
-    {
-        // Tex1 Ptn Anim...
-    }
-
-    if (emitter->particleBehaviorFlg & 0x4000 && emitter->particleBehaviorFlg & 0x800)
-    {
-        // Tex1 UV Shift Anim...
+        if (emitter->particleBehaviorFlg & 0x800)
+            TexUvShiftAnim(1, ptcl, data, emitter->emissionSpeed);
     }
 }
 
