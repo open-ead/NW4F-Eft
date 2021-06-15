@@ -14,4 +14,16 @@ void EmitterCalc::InitializeFluctuationTable(Heap* heap)
         sFluctuationTbl[i] = nw::math::CosRad(i / 128.0f * 2.0f * 3.14159f) * 0.5f + 0.5f;
 }
 
+void EmitterCalc::CalcFluctuation(EmitterInstance* emitter, PtclInstance* ptcl)
+{
+    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
+    const FluctuationData* fluctuationData = reinterpret_cast<const FluctuationData*>((u32)data + data->fluctuationDataOffs);
+
+    s32 idx = ((s32)((s32)ptcl->counter * fluctuationData->frequency) + ptcl->randomU32 * fluctuationData->enableRandom) & 127;
+    f32 flux = 1.0f - sFluctuationTbl[idx] * fluctuationData->amplitude;
+
+    if (data->fluctuationFlags & 2) ptcl->fluctuationAlpha = flux;
+    if (data->fluctuationFlags & 4) ptcl->fluctuationScale = flux;
+}
+
 } } // namespace nw::eft

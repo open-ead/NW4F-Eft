@@ -283,6 +283,31 @@ struct ChildData
 };
 static_assert(sizeof(ChildData) == 0x2FC, "ChildData size mismatch");
 
+struct FluctuationData
+{
+    f32 amplitude;
+    f32 frequency;
+    u32 enableRandom;
+};
+static_assert(sizeof(FluctuationData) == 0xC, "FluctuationData size mismatch");
+
+struct StripeData
+{
+    u32 type;
+    u32 crossType;
+    u32 connectionType;
+    u32 _C;
+    u32 queueCount;
+    u32 numConnections;
+    f32 alphaStart;
+    f32 alphaEnd;
+    math::VEC2 _20;
+    u32 _28;
+    f32 _2C;
+    f32 _30;
+};
+static_assert(sizeof(StripeData) == 0x34, "StripeData size mismatch");
+
 struct EmitterTblData
 {
     u32 dataOffs;
@@ -349,23 +374,6 @@ struct PrimitiveTable // Actual name not known
     u32 primitiveOffs;
 };
 static_assert(sizeof(PrimitiveTable) == 0xC, "PrimitiveTable size mismatch");
-
-struct StripeData
-{
-    u32 type;
-    u32 crossType;
-    u32 connectionType;
-    u32 _C;
-    u32 queueCount;
-    u32 numConnections;
-    f32 alphaStart;
-    f32 alphaEnd;
-    math::VEC2 _20;
-    u32 _28;
-    f32 _2C;
-    f32 _30;
-};
-static_assert(sizeof(StripeData) == 0x34, "StripeData size mismatch");
 
 } } // namespace nw::eft
 
