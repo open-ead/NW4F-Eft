@@ -203,15 +203,15 @@ static_assert(sizeof(SimpleEmitterData) == 0x6F4, "SimpleEmitterData size mismat
 struct ComplexEmitterData : SimpleEmitterData
 {
     u32 childFlags;
-    u16 _6F8;
-    u16 _6FA;
+    u16 fieldFlags;
+    u16 fluctuationFlags;
     u16 stripeFlags;
     u8 _6FE[2];
     u16 childDataOffs;
-    u16 _702;
-    u16 _704;
+    u16 fieldDataOffs;
+    u16 fluctuationDataOffs;
     u16 stripeDataOffs;
-    u32 _708;
+    u32 dataSize;
 };
 static_assert(sizeof(ComplexEmitterData) == 0x70C, "ComplexEmitterData size mismatch");
 

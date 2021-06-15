@@ -29,7 +29,7 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         f32 alpha;
 
         if (data->childFlags & 4)
-            alpha = ptcl->alpha * ptcl->_AC;
+            alpha = ptcl->alpha * ptcl->fluctuationAlpha;
 
         else
             alpha = childData->_184;
@@ -38,8 +38,8 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
 
         if (data->childFlags & 8)
         {
-            childPtcl->scale.x = ptcl->scale.x * childData->_190 * ptcl->_B0 * scaleRandom * emitter->anim[17];
-            childPtcl->scale.y = ptcl->scale.y * childData->_190 * ptcl->_B0 * scaleRandom * emitter->anim[18];
+            childPtcl->scale.x = ptcl->scale.x * childData->_190 * ptcl->fluctuationScale * scaleRandom * emitter->anim[17];
+            childPtcl->scale.y = ptcl->scale.y * childData->_190 * ptcl->fluctuationScale * scaleRandom * emitter->anim[18];
         }
         else
         {
@@ -122,8 +122,8 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         childPtcl->scaleAnim->startDiff.x = (childData->_1F8.x - 1.0f) * scaleAnimDurationInv * childPtcl->scale.x;
         childPtcl->scaleAnim->startDiff.y = (childData->_1F8.y - 1.0f) * scaleAnimDurationInv * childPtcl->scale.y;
 
-        childPtcl->_AC = 1.0f;
-        childPtcl->_B0 = 1.0f;
+        childPtcl->fluctuationAlpha = 1.0f;
+        childPtcl->fluctuationScale = 1.0f;
 
         if (childData->texPtnAnimNum > 1) // TexPtnAnim Type Random
         {

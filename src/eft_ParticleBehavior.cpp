@@ -218,7 +218,20 @@ u32 EmitterCalc::CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInsta
 
     CalcParitcleBehavior(emitter, ptcl, data);
 
-    // Fluctuation and Field data...
+    if (data->fluctuationFlags & 1)
+        CalcFluctuation(emitter, ptcl);
+
+    if (data->fieldFlags != 0)
+    {
+        const void* fieldData = reinterpret_cast<const void*>((u32)data + data->fieldDataOffs);
+
+        if (data->fieldFlags & 0x01) fieldData = _ptclField_Random     (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x02) fieldData = _ptclField_Magnet     (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x04) fieldData = _ptclField_Spin       (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x08) fieldData = _ptclField_Collision  (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x10) fieldData = _ptclField_Convergence(emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x20) fieldData = _ptclField_PosAdd     (emitter, ptcl, fieldData);
+    }
 
     math::VEC3 posDiff = ptcl->pos - posBefore;
     if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
@@ -239,18 +252,18 @@ void EmitterCalc::MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttribute
     ptclAttributeBuffer->wldPos.xyz() = ptcl->worldPos;
     ptclAttributeBuffer->wldPos.w = cameraOffset;
 
-    ptclAttributeBuffer->scl.x = ptcl->scale.x * emitterSet->_220.x * ptcl->_B0;
-    ptclAttributeBuffer->scl.y = ptcl->scale.y * emitterSet->_220.y * ptcl->_B0;
+    ptclAttributeBuffer->scl.x = ptcl->scale.x * emitterSet->_220.x * ptcl->fluctuationScale;
+    ptclAttributeBuffer->scl.y = ptcl->scale.y * emitterSet->_220.y * ptcl->fluctuationScale;
     ptclAttributeBuffer->scl.z = ptcl->texAnimParam[0].rotate;
     ptclAttributeBuffer->scl.w = ptcl->texAnimParam[1].rotate;
 
     ptclAttributeBuffer->color0.xyz() = ptcl->color0.rgb();
-    ptclAttributeBuffer->color0.w = ptcl->alpha * ptcl->_AC;
+    ptclAttributeBuffer->color0.w = ptcl->alpha * ptcl->fluctuationAlpha;
 
     if (shaderAvailableAttribFlg & 0x40)
     {
         ptclAttributeBuffer->color1.xyz() = ptcl->color1.rgb();
-        ptclAttributeBuffer->color1.w = ptcl->alpha * ptcl->_AC;
+        ptclAttributeBuffer->color1.w = ptcl->alpha * ptcl->fluctuationAlpha;
     }
 
     ptclAttributeBuffer->texAnim.x    = ptcl->texAnimParam[0].offset.x + ptcl->texAnimParam[0].scroll.x;

@@ -58,8 +58,8 @@ struct PtclInstance
     math::VEC2 scale;
     ScaleAnim* scaleAnim;
     TexUVParam texAnimParam[2]; // For each texture
-    f32 _AC;
-    f32 _B0;
+    f32 fluctuationAlpha;
+    f32 fluctuationScale;
     union
     {
         ut::Color4f color[2];

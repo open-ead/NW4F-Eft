@@ -127,7 +127,15 @@ public:
     static inline void AddChildPtclToList(EmitterInstance* emitter, PtclInstance* childPtcl);
     static inline void AddPtclToList(EmitterInstance* emitter, PtclInstance* ptcl);
 
+    static const void* _ptclField_Random(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
+    static const void* _ptclField_Magnet(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
+    static const void* _ptclField_Spin(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
+    static const void* _ptclField_Collision(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
+    static const void* _ptclField_Convergence(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
+    static const void* _ptclField_PosAdd(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
+
     static void InitializeFluctuationTable(Heap* heap);
+    static void CalcFluctuation(EmitterInstance* emitter, PtclInstance* ptcl);
 
     static u32 CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
     static u32 CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
