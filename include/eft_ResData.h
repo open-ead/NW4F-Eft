@@ -283,6 +283,42 @@ struct ChildData
 };
 static_assert(sizeof(ChildData) == 0x2FC, "ChildData size mismatch");
 
+struct FieldRandomData
+{
+    s32 period;
+    math::VEC3 randomVelScale;
+};
+static_assert(sizeof(FieldRandomData) == 0x10, "FieldRandomData size mismatch");
+
+struct FieldMagnetData
+{
+    f32 strength;
+    math::VEC3 pos;
+    u32 flags;
+};
+static_assert(sizeof(FieldMagnetData) == 0x14, "FieldMagnetData size mismatch");
+
+struct FieldSpinData
+{
+    s32 angle;
+    u32 axis;
+    f32 diffusionVel;
+};
+static_assert(sizeof(FieldSpinData) == 0xC, "FieldSpinData size mismatch");
+
+struct FieldConvergenceData
+{
+    math::VEC3 pos;
+    f32 strength;
+};
+static_assert(sizeof(FieldConvergenceData) == 0x10, "FieldConvergenceData size mismatch");
+
+struct FieldPosAddData
+{
+    math::VEC3 posAdd;
+};
+static_assert(sizeof(FieldPosAddData) == 0xC, "FieldPosAddData size mismatch");
+
 struct FluctuationData
 {
     f32 amplitude;
