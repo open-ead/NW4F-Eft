@@ -106,19 +106,19 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         childPtcl->texAnimParam[0].rotate = 0.0f;
         childPtcl->texAnimParam[0].scale = (math::VEC2){ 0.0f, 0.0f };
 
-        if (childData->_1F0 == 0)
+        if (childData->alphaAnimTime2 == 0)
         {
             childPtcl->alphaAnim->startDiff = 0.0f;
             childPtcl->alpha = alpha;
         }
         else
         {
-            childPtcl->alphaAnim->startDiff = (alpha - childData->_18C) / (f32)childData->_1F0;
+            childPtcl->alphaAnim->startDiff = (alpha - childData->_18C) / (f32)childData->alphaAnimTime2;
             childPtcl->alpha = childData->_18C;
         }
-        childPtcl->alphaAnim->endDiff = (childData->_188 - alpha) / (f32)(childPtcl->lifespan - childData->_1EC);
+        childPtcl->alphaAnim->endDiff = (childData->_188 - alpha) / (f32)(childPtcl->lifespan - childData->alphaAnimTime3);
 
-        f32 scaleAnimDurationInv = 1.0f / (childPtcl->lifespan - childData->_1F4);
+        f32 scaleAnimDurationInv = 1.0f / (childPtcl->lifespan - childData->scaleAnimTime1);
         childPtcl->scaleAnim->startDiff.x = (childData->_1F8.x - 1.0f) * scaleAnimDurationInv * childPtcl->scale.x;
         childPtcl->scaleAnim->startDiff.y = (childData->_1F8.y - 1.0f) * scaleAnimDurationInv * childPtcl->scale.y;
 

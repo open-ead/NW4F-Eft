@@ -78,6 +78,45 @@ static inline void TexPtnAnim(u32 texIdx, PtclInstance* ptcl, const SimpleEmitte
     ptcl->texAnimParam[texIdx].offset.y = data->texAnimParam[texIdx].uvScaleInit.y * (f32)offsetY;
 }
 
+static inline void ChildTexPtnAnim(PtclInstance* ptcl, u32 childFlags, const ChildData* childData)
+{
+    s32 period = childData->texPtnAnimPeriod;
+    s16 size = childData->texPtnAnimUsedSize;
+    s32 idx, counter = (s32)ptcl->counter;
+
+    // Four animation types:
+    // 1. Fit to lifespan
+    // 2. Clamp
+    // 3. Loop
+    // 4. Random (Not handled here; handled in Emit function)
+
+    //const bool fitToLifespan = period == 0;
+    //const bool clamp         = childData->texPtnAnimClamp;
+    //const bool loop          = !fitToLifespan && !clamp;
+
+    if (period == 0)
+        idx = (counter * size) / ptcl->lifespan; // (time / lifespan) * size
+    else
+        idx = counter / period;                  //  time / period
+
+    if (childData->texPtnAnimClamp && idx >= size)
+        return;
+
+    if (period != 0 && !childData->texPtnAnimClamp
+        && childFlags & 0x4000)
+    {
+        idx += ptcl->randomU32;
+    }
+
+    s32 texPtnAnimIdxDiv = childData->texPtnAnimIdxDiv;
+    s32 texPtnAnimIdx = childData->texPtnAnimData[idx % size];
+    s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
+    s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
+
+    ptcl->texAnimParam[0].offset.x = childData->uvScaleInit.x * (f32)offsetX;
+    ptcl->texAnimParam[0].offset.y = childData->uvScaleInit.y * (f32)offsetY;
+}
+
 static inline void TexUvShiftAnim(u32 texIdx, PtclInstance* ptcl, const SimpleEmitterData* data, f32 emissionSpeed)
 {
     ptcl->texAnimParam[texIdx].scroll.x += data->texAnimParam[texIdx].texIncScroll.x * emissionSpeed;
@@ -202,7 +241,7 @@ u32 EmitterCalc::CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstan
         if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
             ptcl->posDiff += posDiff - ptcl->posDiff;
 
-        math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff);
+        *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
     }
 
     ptcl->counter += emitter->emissionSpeed;
@@ -239,7 +278,87 @@ u32 EmitterCalc::CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInsta
 
     math::MTX34::MultVec(&ptcl->worldPos, matrixSRT, &ptcl->pos);
     if (emitter->particleBehaviorFlg & 0x10)
-        math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff);
+        *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
+
+    ptcl->counter += emitter->emissionSpeed;
+    return 0;
+}
+
+u32 EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl)
+{
+    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
+    const ChildData* childData = reinterpret_cast<const ChildData*>(data + 1);
+
+    math::VEC3 posBefore = ptcl->pos;
+
+    math::MTX34* matrixRT = ptcl->pMatrixRT;
+    math::MTX34* matrixSRT = ptcl->pMatrixSRT;
+
+    s32 counter = (s32)ptcl->counter;
+    f32 emissionSpeedInv = 1.0f - emitter->emissionSpeed;
+
+    ptcl->pos += ptcl->velocity * ptcl->randomF32 * emitter->emissionSpeed;
+
+    //if (emitter->particleBehaviorFlg & 1)
+        ptcl->velocity *= childData->airResist + (1.0f - data->airResist) * emissionSpeedInv; // No idea why it uses data->airResist, mistake?
+
+    //if (emitter->particleBehaviorFlg & 2)
+    {
+        math::VEC3 gravity = childData->gravity * emitter->emissionSpeed;
+
+        if (data->_283 != 0)
+            ptcl->velocity += *math::VEC3::MultMTX(&gravity, &gravity, matrixRT);
+
+        else
+            ptcl->velocity += gravity;
+    }
+
+    //if (emitter->particleBehaviorFlg & 0x80)
+    {
+        if (counter < childData->alphaAnimTime2)
+            ptcl->alpha += ptcl->alphaAnim->startDiff * emitter->emissionSpeed;
+
+        else if (counter >= childData->alphaAnimTime3)
+            ptcl->alpha += ptcl->alphaAnim->endDiff * emitter->emissionSpeed;
+    }
+
+    //if (emitter->particleBehaviorFlg & 0x40)
+    {
+        if (counter >= childData->scaleAnimTime1)
+        {
+            ptcl->scale.x += ptcl->scaleAnim->startDiff.x * emitter->emissionSpeed;
+            ptcl->scale.y += ptcl->scaleAnim->startDiff.y * emitter->emissionSpeed;
+        }
+    }
+
+    //if (emitter->particleBehaviorFlg & 4)
+        ptcl->rotation += ptcl->angularVelocity * emitter->emissionSpeed;
+
+    //if (emitter->particleBehaviorFlg & 8)
+        math::VEC3::Scale(&ptcl->angularVelocity, &ptcl->angularVelocity, childData->rotInertia + (1.0f - childData->rotInertia) * emissionSpeedInv);
+
+    if (data->childFlags & 0x2000)
+        ChildTexPtnAnim(ptcl, data->childFlags, childData);
+
+    if (data->childFlags & 0x800)
+    {
+        const void* fieldData = reinterpret_cast<const void*>((u32)data + data->fieldDataOffs);
+
+        if (data->fieldFlags & 0x01) fieldData = _ptclField_Random     (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x02) fieldData = _ptclField_Magnet     (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x04) fieldData = _ptclField_Spin       (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x08) fieldData = _ptclField_Collision  (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x10) fieldData = _ptclField_Convergence(emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x20) fieldData = _ptclField_PosAdd     (emitter, ptcl, fieldData);
+    }
+
+    math::VEC3 posDiff = ptcl->pos - posBefore;
+    if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
+        ptcl->posDiff += posDiff - ptcl->posDiff;
+
+    math::MTX34::MultVec(&ptcl->worldPos, &ptcl->matrixSRT, &ptcl->pos);
+    //if (emitter->particleBehaviorFlg & 0x10)
+        *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
 
     ptcl->counter += emitter->emissionSpeed;
     return 0;

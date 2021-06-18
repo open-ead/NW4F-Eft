@@ -251,12 +251,12 @@ struct ChildData
     math::VEC3 _1B0;
     math::VEC3 _1BC;
     math::VEC3 _1C8;
-    f32 _1D4;
+    f32 rotInertia;
     math::VEC2 rotBasis;
-    math::VEC3 _1E0;
-    s32 _1EC;
-    s32 _1F0;
-    s32 _1F4;
+    math::VEC3 gravity;
+    s32 alphaAnimTime3;
+    s32 alphaAnimTime2;
+    s32 scaleAnimTime1;
     math::VEC2 _1F8;
     u16 texPtnAnimNum;
     u8 texPtnAnimIdxDiv;
@@ -267,7 +267,7 @@ struct ChildData
     bool texPtnAnimClamp;
     u32 fragmentColorMode;
     u32 fragmentAlphaMode;
-    f32 _23C;
+    f32 airResist;
     u8 fragmentShaderMode;
     u8 shaderUserSetting;
     bool fragmentSoftEdge;
