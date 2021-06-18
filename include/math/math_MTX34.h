@@ -87,6 +87,20 @@ struct MTX34
         return dst;
     }
 
+    static MTX34* Inverse(MTX34* dst, const MTX34* src)
+    {
+        // Nintendo used their own paired-singles implementation for this, which I will not bother with.
+        ASM_MTXInverse(const_cast<MTX34*>(src)->m, dst->m);
+        return dst;
+    }
+
+    static VEC3* PSMultVec(VEC3* dst, const MTX34* a, const VEC3* b)
+    {
+        // Nintendo used their own paired-singles implementation for this, which I will not bother with.
+        ASM_MTXMultVec(const_cast<MTX34*>(a)->m, (const Vec*)b, (Vec*)dst);
+        return dst;
+    }
+
     static inline VEC3* MultVec(VEC3* dst, const MTX34* a, const VEC3* b);
     static inline VEC3* MultVecSR(VEC3* dst, const MTX34* a, const VEC3* b);
 

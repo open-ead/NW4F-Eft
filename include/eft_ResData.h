@@ -306,6 +306,15 @@ struct FieldSpinData
 };
 static_assert(sizeof(FieldSpinData) == 0xC, "FieldSpinData size mismatch");
 
+struct FieldCollisionData
+{
+    u16 collisionType;
+    u16 coordSystem;
+    f32 y;
+    f32 friction;
+};
+static_assert(sizeof(FieldCollisionData) == 0xC, "FieldCollisionData size mismatch");
+
 struct FieldConvergenceData
 {
     math::VEC3 pos;

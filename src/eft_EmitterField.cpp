@@ -97,6 +97,73 @@ const void* EmitterCalc::_ptclField_Spin(EmitterInstance* emitter, PtclInstance*
     return spinData + 1;
 }
 
+const void* EmitterCalc::_ptclField_Collision(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData)
+{
+    const FieldCollisionData* collisionData = static_cast<const FieldCollisionData*>(fieldData);
+
+    f32 y = collisionData->y;
+
+    if (collisionData->coordSystem != 0)
+    {
+        const math::MTX34* matrixSRT;
+        if (emitter->ptclFollowType == PtclFollowType_SRT)
+            matrixSRT = &emitter->matrixSRT;
+        else
+            matrixSRT = &ptcl->matrixSRT;
+
+        math::VEC3 worldPos;
+        math::MTX34::PSMultVec(&worldPos, matrixSRT, &ptcl->pos);
+
+        switch (collisionData->collisionType)
+        {
+        case 0:
+            if (worldPos.y < y)
+            {
+                worldPos.y = y;
+                ptcl->counter = (f32)ptcl->lifespan - emitter->emissionSpeed;
+            }
+            break;
+        case 1:
+            if (worldPos.y < y)
+            {
+                worldPos.y = y + 0.0001f;
+
+                math::VEC3 worldVelocity;
+                math::MTX34::MultVecSR(&worldVelocity, matrixSRT, &ptcl->velocity);
+
+                worldVelocity.y *= -collisionData->friction;
+
+                math::MTX34 matrixSRTInv;
+                math::MTX34::Inverse(&matrixSRTInv, matrixSRT);
+
+                math::MTX34::PSMultVec(&ptcl->pos, &matrixSRTInv, &worldPos);
+                math::MTX34::MultVecSR(&ptcl->velocity, &matrixSRTInv, &worldVelocity);
+            }
+        }
+    }
+    else
+    {
+        switch (collisionData->collisionType)
+        {
+        case 0:
+            if (ptcl->pos.y < y)
+            {
+                ptcl->pos.y = y;
+                ptcl->counter = (f32)ptcl->lifespan - emitter->emissionSpeed;
+            }
+            break;
+        case 1:
+            if (ptcl->pos.y < y)
+            {
+                ptcl->pos.y = y;
+                ptcl->velocity.y *= -collisionData->friction;
+            }
+        }
+    }
+
+    return collisionData + 1;
+}
+
 const void* EmitterCalc::_ptclField_Convergence(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData)
 {
     const FieldConvergenceData* convergenceData = static_cast<const FieldConvergenceData*>(fieldData);

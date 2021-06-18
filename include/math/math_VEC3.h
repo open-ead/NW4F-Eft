@@ -40,6 +40,7 @@ struct VEC3
     static VEC3* Scale(VEC3* dst, const VEC3* src, f32 a)
     {
         // Why does this even exist
+        // Nintendo used their own paired-singles implementation for this, which I will not bother with.
         ASM_VECScale((const Vec*)src, (Vec*)dst, a);
         return dst;
     }
