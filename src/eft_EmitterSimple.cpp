@@ -6,6 +6,14 @@
 
 namespace nw { namespace eft {
 
+void EmitterCalc::UpdateEmitterInfoByEmit(EmitterInstance* emitter)
+{
+    const EmitterSet* emitterSet = emitter->emitterSet;
+
+    math::MTX34::Concat(&emitter->matrixRT, &emitterSet->matrixRT, &emitter->animMatrixRT);
+    math::MTX34::Concat(&emitter->matrixSRT, &emitterSet->matrixSRT, &emitter->animMatrixSRT);
+}
+
 void EmitterSimpleCalc::EmitSameDistance(const SimpleEmitterData* data, EmitterInstance* emitter)
 {
     if (!emitter->prevPosSet)

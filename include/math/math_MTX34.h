@@ -87,6 +87,13 @@ struct MTX34
         return dst;
     }
 
+    static MTX34* Concat(MTX34* dst, const MTX34* a, const MTX34* b)
+    {
+        // Nintendo used their own paired-singles implementation for this, which I will not bother with.
+        ASM_MTXConcat(const_cast<MTX34*>(a)->m, const_cast<MTX34*>(b)->m, dst->m);
+        return dst;
+    }
+
     static MTX34* Inverse(MTX34* dst, const MTX34* src)
     {
         // Nintendo used their own paired-singles implementation for this, which I will not bother with.
