@@ -63,9 +63,9 @@ struct EmitterInstance
     s32 emissionInterval;
     f32 fadeAlpha;
     f32 emissionSpeed;
-    math::VEC3 prevPos; // Used for equidistant emission
-    bool prevPosSet;
-    f32 emitLostDistance;
+    math::VEC3 prevPos;   // Used for equidistant emission
+    bool prevPosSet;      // ^^
+    f32 emitLostDistance; // ^^
     math::VEC3 scaleRandom;
     math::VEC3 rotateRandom;
     math::VEC3 translateRandom;

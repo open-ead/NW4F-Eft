@@ -6,6 +6,67 @@
 
 namespace nw { namespace eft {
 
+void EmitterSimpleCalc::EmitSameDistance(const SimpleEmitterData* data, EmitterInstance* emitter)
+{
+    if (!emitter->prevPosSet)
+        return mEmitFunctions[data->_34C](emitter);
+
+    math::VEC3 prevPos = emitter->prevPos;
+    math::VEC3 currPos = (math::VEC3){ emitter->matrixRT.m[0][3], emitter->matrixRT.m[1][3], emitter->matrixRT.m[2][3] };
+
+    math::VEC3 moved;
+    math::VEC3::Subtract(&moved, &prevPos, &currPos);
+    f32 movedDist = moved.Magnitude();
+
+    f32 lostDist = emitter->emitLostDistance;
+
+    if (movedDist < data->_3B8 || movedDist == 0.0f)
+        movedDist = data->_3B4;
+    else if (movedDist < data->_3B4)
+        movedDist = movedDist * data->_3B4 / movedDist;
+    else if (data->_3B0 < movedDist)
+        movedDist = movedDist * data->_3B0 / movedDist;
+
+    f32 remainDist = lostDist + movedDist;
+    s32 numEmit = (s32)(remainDist / data->_3AC); // No division-by-zero check
+
+    for (s32 i = 0; i < numEmit; i++)
+    {
+        remainDist -= data->_3AC;
+
+        f32 prevCurrRatio = 0.0f;
+        if (movedDist != 0.0f)
+            prevCurrRatio = remainDist / movedDist;
+
+        math::VEC3 pos_0;
+        math::VEC3 pos_1;
+        math::VEC3 pos;
+
+        math::VEC3::Scale(&pos_0, &currPos, 1.0f - prevCurrRatio);
+        math::VEC3::Scale(&pos_1, &prevPos, prevCurrRatio);
+        math::VEC3::Add(&pos, &pos_0, &pos_1);
+
+        emitter->matrixRT.m[0][3] = pos.x;
+        emitter->matrixRT.m[1][3] = pos.y;
+        emitter->matrixRT.m[2][3] = pos.z;
+        emitter->matrixSRT.m[0][3] = pos.x;
+        emitter->matrixSRT.m[1][3] = pos.y;
+        emitter->matrixSRT.m[2][3] = pos.z;
+
+        mEmitFunctions[data->_34C](emitter);
+
+        // No idea why this is done inside the loop and not after it
+        emitter->matrixRT.m[0][3] = currPos.x;
+        emitter->matrixRT.m[1][3] = currPos.y;
+        emitter->matrixRT.m[2][3] = currPos.z;
+        emitter->matrixSRT.m[0][3] = currPos.x;
+        emitter->matrixSRT.m[1][3] = currPos.y;
+        emitter->matrixSRT.m[2][3] = currPos.z;
+    }
+
+    emitter->emitLostDistance = remainDist;
+}
+
 void EmitterSimpleCalc::CalcEmitter(EmitterInstance* emitter)
 {
     const EmitterSet* emitterSet = emitter->emitterSet;

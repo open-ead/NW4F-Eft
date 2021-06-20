@@ -36,14 +36,28 @@ struct VEC3
         z *= inv_mag;
     }
 
-    static inline VEC3* MultMTX(VEC3* dst, const VEC3* a, const MTX34* b);
+    static VEC3* Add(VEC3* dst, const VEC3* a, const VEC3* b)
+    {
+        // Nintendo used their own paired-singles implementation for this, which I will not bother with.
+        ASM_VECAdd((const Vec*)a, (const Vec*)b, (Vec*)dst);
+        return dst;
+    }
+
     static VEC3* Scale(VEC3* dst, const VEC3* src, f32 a)
     {
-        // Why does this even exist
         // Nintendo used their own paired-singles implementation for this, which I will not bother with.
         ASM_VECScale((const Vec*)src, (Vec*)dst, a);
         return dst;
     }
+
+    static VEC3* Subtract(VEC3* dst, const VEC3* a, const VEC3* b)
+    {
+        // Nintendo used their own paired-singles implementation for this, which I will not bother with.
+        ASM_VECSubtract((const Vec*)a, (const Vec*)b, (Vec*)dst);
+        return dst;
+    }
+
+    static inline VEC3* MultMTX(VEC3* dst, const VEC3* a, const MTX34* b);
 
     f32 x;
     f32 y;
