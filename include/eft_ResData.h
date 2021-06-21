@@ -434,9 +434,15 @@ struct KeyFrameAnim
     u32 numKeys;
     u32 interpolation;
     u32 animValIdx;
-    u32 _C;
+    u32 loop;
     u32 nextOffs;
     u8 _14[4];
+};
+
+struct KeyFrameAnimKey
+{
+    f32 time;
+    f32 value;
 };
 
 } } // namespace nw::eft
