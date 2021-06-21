@@ -1,6 +1,7 @@
 #ifndef MATH_MTX34_H_
 #define MATH_MTX34_H_
 
+#include <math/math_Triangular.h>
 #include <math/math_VEC4.h>
 
 namespace nw { namespace math {
@@ -111,6 +112,9 @@ struct MTX34
     static inline VEC3* MultVec(VEC3* dst, const MTX34* a, const VEC3* b);
     static inline VEC3* MultVecSR(VEC3* dst, const MTX34* a, const VEC3* b);
 
+    static inline MTX34* MakeSRT(MTX34* dst, const VEC3* scale, const VEC3* rotate, const VEC3* translate);
+    static inline MTX34* MakeRT(MTX34* dst, const VEC3* rotate, const VEC3* translate);
+
     union
     {
         f32  m[3][4];
@@ -144,6 +148,41 @@ VEC3* VEC3::MultMTX(VEC3* dst, const VEC3* a, const MTX34* b)
     dst->y = tmp.x * b->m[0][1] + tmp.y * b->m[1][1] + tmp.z * b->m[2][1];
     dst->z = tmp.x * b->m[0][2] + tmp.y * b->m[1][2] + tmp.z * b->m[2][2];
     return dst;
+}
+
+MTX34* MTX34::MakeSRT(MTX34* dst, const VEC3* scale, const VEC3* rotate, const VEC3* translate)
+{
+    f32 sinRX = SinRad(rotate->x);
+    f32 sinRY = SinRad(rotate->y);
+    f32 sinRZ = SinRad(rotate->z);
+
+    f32 cosRX = CosRad(rotate->x);
+    f32 cosRY = CosRad(rotate->y);
+    f32 cosRZ = CosRad(rotate->z);
+
+    dst->m[0][0] = scale->x * (cosRY * cosRZ);
+    dst->m[1][0] = scale->x * (cosRY * sinRZ);
+    dst->m[2][0] = scale->x * -sinRY;
+
+    dst->m[0][1] = scale->y * (sinRX * sinRY * cosRZ - cosRX * sinRZ);
+    dst->m[1][1] = scale->y * (sinRX * sinRY * sinRZ + cosRX * cosRZ);
+    dst->m[2][1] = scale->y * (sinRX * cosRY);
+
+    dst->m[0][2] = scale->z * (cosRX * cosRZ * sinRY + sinRX * sinRZ);
+    dst->m[1][2] = scale->z * (cosRX * sinRZ * sinRY - sinRX * cosRZ);
+    dst->m[2][2] = scale->z * (cosRX * cosRY);
+
+    dst->m[0][3] = translate->x;
+    dst->m[1][3] = translate->y;
+    dst->m[2][3] = translate->z;
+
+    return dst;
+}
+
+MTX34* MTX34::MakeRT(MTX34* dst, const VEC3* rotate, const VEC3* translate)
+{
+    const VEC3 scale = (VEC3){ 1.0f, 1.0f, 1.0f };
+    return MakeSRT(dst, &scale, rotate, translate);
 }
 
 } } // namespace nw::math

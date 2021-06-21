@@ -1,5 +1,5 @@
-#ifndef MATH_TRIANGULAR_H
-#define MATH_TRIANGULAR_H
+#ifndef MATH_TRIANGULAR_H_
+#define MATH_TRIANGULAR_H_
 
 #include <math/math_Constant.h>
 
@@ -84,4 +84,4 @@ inline f32 CosRad(f32 rad)
 
 } } // namespace nw::math
 
-#endif // MATH_TRIANGULAR_H
+#endif // MATH_TRIANGULAR_H_

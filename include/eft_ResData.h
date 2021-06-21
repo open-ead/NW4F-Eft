@@ -1,6 +1,7 @@
 #ifndef EFT_RES_DATA_H_
 #define EFT_RES_DATA_H_
 
+#include <math/math_MTX34.h>
 #include <math/math_VEC2.h>
 #include <math/math_VEC3.h>
 #include <ut/ut_Color4f.h>
@@ -113,7 +114,9 @@ struct SimpleEmitterData : EmitterData
     u32 fragmentAlphaMode;
     s32 _29C;
     DisplaySideType displaySideType;
-    u8 _2A4[0x308 - 0x2A4];
+    f32 _2A4;
+    math::MTX34 animMatrixSRT;
+    math::MTX34 animMatrixRT;
     math::VEC3 emitterScale;
     math::VEC3 emitterRotate;
     math::VEC3 emitterTranslate;
@@ -419,6 +422,22 @@ struct PrimitiveTable // Actual name not known
     u32 primitiveOffs;
 };
 static_assert(sizeof(PrimitiveTable) == 0xC, "PrimitiveTable size mismatch");
+
+struct KeyFrameAnimArray
+{
+    char magic[4];
+    u32 numAnim;
+};
+
+struct KeyFrameAnim
+{
+    u32 numKeys;
+    u32 interpolation;
+    u32 animValIdx;
+    u32 _C;
+    u32 nextOffs;
+    u8 _14[4];
+};
 
 } } // namespace nw::eft
 

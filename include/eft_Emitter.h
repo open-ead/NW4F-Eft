@@ -12,7 +12,7 @@ class EmitterController;
 struct EmitterDynamicUniformBlock;
 class EmitterSet;
 struct EmitterStaticUniformBlock;
-class KeyFrameAnimArray;
+struct KeyFrameAnimArray;
 class ParticleShader;
 class Primitive;
 struct PtclAttributeBuffer;

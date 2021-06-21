@@ -1,3 +1,4 @@
+#include <eft_Animation.h>
 #include <eft_EmitterSet.h>
 #include <eft_EmitterSimple.h>
 #include <eft_Renderer.h>
@@ -6,11 +7,50 @@
 
 namespace nw { namespace eft {
 
+void EmitterCalc::ApplyAnim(EmitterInstance* emitter)
+{
+    const SimpleEmitterData* data = emitter->data;
+    KeyFrameAnimArray* animArray = emitter->animArray;
+
+    math::MTX34::Copy(&emitter->animMatrixRT,  &math::MTX34::Identity());
+    math::MTX34::Copy(&emitter->animMatrixSRT, &math::MTX34::Identity());
+
+    math::MTX34::Concat(&emitter->animMatrixRT,  &emitter->animMatrixRT,  &data->animMatrixRT);
+    math::MTX34::Concat(&emitter->animMatrixSRT, &emitter->animMatrixSRT, &data->animMatrixSRT);
+
+    if (animArray == NULL)
+    {
+        math::VEC3 scale, rotate, translate;
+        math::VEC3::Add(&scale, &data->emitterScale, &emitter->scaleRandom);
+        math::VEC3::Add(&rotate, &data->emitterRotate, &emitter->rotateRandom);
+        math::VEC3::Add(&translate, &data->emitterTranslate, &emitter->translateRandom);
+
+        math::MTX34::MakeSRT(&emitter->animMatrixSRT, &scale, &rotate, &translate);
+        math::MTX34::MakeRT(&emitter->animMatrixRT, &rotate, &translate);
+    }
+    else
+    {
+        KeyFrameAnim* anim = reinterpret_cast<KeyFrameAnim*>(animArray + 1);
+        for (u32 i = 0; i < animArray->numAnim; i++)
+        {
+            emitter->anim[anim->animValIdx] = CalcAnimKeyFrame(anim, emitter->counter);
+            anim = reinterpret_cast<KeyFrameAnim*>((u32)anim + anim->nextOffs);
+        }
+
+        math::VEC3 scale     = (math::VEC3){ emitter->anim[ 2], emitter->anim[ 3], emitter->anim[ 4] };
+        math::VEC3 rotate    = (math::VEC3){ emitter->anim[ 5], emitter->anim[ 6], emitter->anim[ 7] };
+        math::VEC3 translate = (math::VEC3){ emitter->anim[ 8], emitter->anim[ 9], emitter->anim[10] };
+
+        math::MTX34::MakeSRT(&emitter->animMatrixSRT, &scale, &rotate, &translate);
+        math::MTX34::MakeRT(&emitter->animMatrixRT, &rotate, &translate);
+    }
+}
+
 void EmitterCalc::UpdateEmitterInfoByEmit(EmitterInstance* emitter)
 {
     const EmitterSet* emitterSet = emitter->emitterSet;
 
-    math::MTX34::Concat(&emitter->matrixRT, &emitterSet->matrixRT, &emitter->animMatrixRT);
+    math::MTX34::Concat(&emitter->matrixRT,  &emitterSet->matrixRT,  &emitter->animMatrixRT);
     math::MTX34::Concat(&emitter->matrixSRT, &emitterSet->matrixSRT, &emitter->animMatrixSRT);
 }
 
