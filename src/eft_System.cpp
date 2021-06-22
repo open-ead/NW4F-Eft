@@ -324,6 +324,15 @@ void System::EmitChildParticle()
     }
 }
 
+void System::AddPtclAdditionList(PtclInstance* ptcl, CpuCore core)
+{
+    if (numChildParticle[core] > numParticleMax)
+        return;
+
+    childParticles[core][numChildParticle[core]] = ptcl;
+    numChildParticle[core]++;
+}
+
 PtclInstance* System::AllocPtcl(PtclType type)
 {
     PtclInstance* ptcl = NULL;

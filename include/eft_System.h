@@ -133,6 +133,7 @@ public:
     void RemovePtcl();
     void AddPtclRemoveList(PtclInstance* ptcl, CpuCore core);
     void EmitChildParticle();
+    void AddPtclAdditionList(PtclInstance* ptcl, CpuCore core);
     PtclInstance* AllocPtcl(PtclType type);
     EmitterSet* AllocEmitterSet(Handle* handle);
     EmitterInstance* AllocEmitter(u8 groupID);

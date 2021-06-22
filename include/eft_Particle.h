@@ -82,7 +82,10 @@ struct PtclInstance
     PtclStripe* stripe;
     PtclType type;
     u32 randomU32;
-    u8 _160[32];
+    f32 childEmitCounter;
+    f32 childPreCalcCounter;
+    f32 childEmitLostTime;
+    u8 _16C[0x180 - 0x16C];
 };
 static_assert(sizeof(PtclInstance) == 0x180, "PtclInstance size mismatch");
 
@@ -109,7 +112,9 @@ struct PtclStripe
     const ComplexEmitterData* data;
     s32 counter;
     math::MTX34 emitterMatrixSRT;
-    u8 _584C[36];
+    math::VEC3 _584C;
+    math::VEC3 _5858;
+    math::VEC3 _5864;
     PtclStripe* prev;
     PtclStripe* next;
     u32 drawFirstVertex;

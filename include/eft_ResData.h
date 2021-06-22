@@ -351,8 +351,8 @@ struct StripeData
     f32 alphaEnd;
     math::VEC2 _20;
     u32 _28;
-    f32 _2C;
-    f32 _30;
+    f32 sliceInterpolation;
+    f32 dirInterpolation;
 };
 static_assert(sizeof(StripeData) == 0x34, "StripeData size mismatch");
 

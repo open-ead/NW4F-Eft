@@ -20,6 +20,8 @@ public:
 
     static void EmitChildParticle(EmitterInstance* emitter, PtclInstance* ptcl);
 
+    static inline void CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl, const StripeData* stripeData, const ComplexEmitterData* data, CpuCore core);
+    static inline void EmitChildParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core, const ChildData* childData);
     static void CalcComplexParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
 };
 static_assert(sizeof(EmitterComplexCalc) == 4, "EmitterComplexCalc size mismatch");

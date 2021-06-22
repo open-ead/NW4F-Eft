@@ -6,6 +6,175 @@
 
 namespace nw { namespace eft {
 
+void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl, const StripeData* stripeData, const ComplexEmitterData* data, CpuCore core)
+{
+    s32 counter = (s32)ptcl->counter - 1;
+
+    PtclStripe* stripe = ptcl->stripe;
+    if (stripe == NULL)
+        return;
+
+    PtclStripeQueue* queueLast = &stripe->queue[stripe->queueRear];
+
+    if (data->stripeFlags & 1)
+    {
+        queueLast->pos = ptcl->pos;
+        math::MTX34::Copy(&queueLast->emitterMatrixSRT, &math::MTX34::Identity());
+    }
+    else
+    {
+        f32 sliceInterpolation = stripeData->sliceInterpolation;
+        if (counter > 2 && stripeData->queueCount > 3 && sliceInterpolation < 1.0f && stripe->queueRear != stripe->queueFront)
+        {
+            s32 prevIdx = stripe->queueRear - 1;
+            if (prevIdx < 0)
+                prevIdx = stripeData->queueCount - 1;
+
+            s32 prev2Idx = prevIdx - 1;
+            if (prev2Idx < 0)
+                prev2Idx = stripeData->queueCount - 1;
+
+            math::VEC3 diff0;
+            math::VEC3::Subtract(&diff0, &ptcl->worldPos, &stripe->_5858);
+            math::VEC3::Scale(&diff0, &diff0, sliceInterpolation);
+            math::VEC3::Add(&stripe->_5858, &stripe->_5858, &diff0);
+
+            math::VEC3 diff1;
+            math::VEC3::Subtract(&diff1, &stripe->_5858, &stripe->_5864);
+            math::VEC3::Scale(&diff1, &diff1, sliceInterpolation);
+            math::VEC3::Add(&stripe->_5864, &stripe->_5864, &diff1);
+
+            stripe->queue[prev2Idx].pos = stripe->_5858;
+
+            math::VEC3 diff2;
+            math::VEC3::Subtract(&diff2, &ptcl->worldPos, &stripe->_5864);
+            math::VEC3::Scale(&diff2, &diff2, 0.7f);
+            math::VEC3::Add(&stripe->queue[prevIdx].pos, &stripe->_5864, &diff2);
+
+            queueLast->pos = ptcl->worldPos;
+        }
+        else
+        {
+            stripe->_5858 = (stripe->_5864 = (queueLast->pos = ptcl->worldPos));
+        }
+
+        queueLast->emitterMatrixSRT = emitter->matrixSRT;
+    }
+
+    queueLast->scale = ptcl->scale.x * emitter->emitterSet->_220.x;
+
+    if (stripe->queueRear != stripe->queueFront)
+    {
+        s32 prevIdx = stripe->queueRear - 1;
+        if (prevIdx < 0)
+            prevIdx = stripeData->queueCount - 1;
+
+        PtclStripeQueue* queuePrev = &stripe->queue[prevIdx];
+
+        if (counter < 2)
+        {
+            math::VEC3::Subtract(&stripe->_584C, &queueLast->pos, &queuePrev->pos);
+            if (stripe->_584C.Magnitude() > 0.0f)
+                stripe->_584C.Normalize();
+        }
+        else
+        {
+            math::VEC3 posDiff;
+            math::VEC3::Subtract(&posDiff, &queueLast->pos, &queuePrev->pos);
+            if (posDiff.Magnitude() > 0.0f)
+                posDiff.Normalize();
+
+            math::VEC3 diff;
+            math::VEC3::Subtract(&diff, &posDiff, &stripe->_584C);
+            math::VEC3::Scale(&diff, &diff, stripeData->dirInterpolation);
+            math::VEC3::Add(&stripe->_584C, &stripe->_584C, &diff);
+            if (stripe->_584C.Magnitude() > 0.0f)
+                stripe->_584C.Normalize();
+        }
+
+        queueLast->dir = stripe->_584C;
+
+        if (stripeData->type == 2)
+        {
+            queueLast->outer.x = queueLast->emitterMatrixSRT.m[0][1];
+            queueLast->outer.y = queueLast->emitterMatrixSRT.m[1][1];
+            queueLast->outer.z = queueLast->emitterMatrixSRT.m[2][1];
+        }
+        else
+        {
+            math::VEC3 outer = (math::VEC3){ queueLast->emitterMatrixSRT.m[0][1],
+                                             queueLast->emitterMatrixSRT.m[1][1],
+                                             queueLast->emitterMatrixSRT.m[2][1] };
+            math::VEC3::CrossProduct(&outer, &outer, &stripe->_584C);
+            if (outer.Magnitude() > 0.0f)
+                outer.Normalize();
+
+            queueLast->outer = outer;
+        }
+    }
+
+    if (++stripe->queueRear >= stripeData->queueCount)
+        stripe->queueRear = 0;
+
+    if (stripe->queueRear == stripe->queueFront
+        && ++stripe->queueFront >= stripeData->queueCount)
+        stripe->queueFront = 0;
+
+    if (++stripe->queueCount >= stripeData->queueCount)
+        stripe->queueCount = stripeData->queueCount;
+
+    stripe->emitterMatrixSRT = emitter->matrixSRT;
+    stripe->counter++;
+}
+
+void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core, const ChildData* childData)
+{
+    s32 counter = (s32)ptcl->counter - 1;
+    if (counter < ((ptcl->lifespan - 1) * childData->_4 / 100))
+        return;
+
+    if (ptcl->childEmitCounter >= childData->_C || childData->_C == 0 && childData->ptclMaxLifespan == 1)
+    {
+        if (ptcl->childPreCalcCounter > 0.0f)
+        {
+            f32 time = emitter->counter - ptcl->childPreCalcCounter + ptcl->childEmitLostTime;
+            if (childData->_C != 0)
+                time /= childData->_C;
+
+            if (ptcl->childEmitLostTime >= childData->_C)
+                ptcl->childEmitLostTime -= childData->_C;
+
+            ptcl->childEmitLostTime += emitter->counter - ptcl->childPreCalcCounter - (s32)time;
+        }
+
+        mSys->AddPtclAdditionList(ptcl, core);
+
+        ptcl->childEmitCounter = 0.0f;
+        ptcl->childPreCalcCounter = emitter->counter;
+    }
+    else
+    {
+        ptcl->childEmitCounter += emitter->emissionSpeed;
+    }
+}
+
+void EmitterComplexCalc::CalcComplexParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
+{
+    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
+
+    if (data->vertexTransformMode == VertexTransformMode_Stripe)
+    {
+        const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)data + data->stripeDataOffs);
+        CalcStripe(emitter, ptcl, stripeData, data, core);
+    }
+
+    if (data->childFlags & 1)
+    {
+        const ChildData* childData = reinterpret_cast<const ChildData*>(data + 1);
+        EmitChildParticle(emitter, ptcl, core, childData);
+    }
+}
+
 u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer)
 {
     System* system = emitter->emitterSet->system;

@@ -57,6 +57,7 @@ struct VEC3
         return dst;
     }
 
+    static inline VEC3* CrossProduct(VEC3* dst, const VEC3* a, const VEC3* b);
     static inline VEC3* MultMTX(VEC3* dst, const VEC3* a, const MTX34* b);
 
     f32 x;
@@ -109,6 +110,18 @@ inline VEC3 operator*(const VEC3& lhs, f32 a)
 inline VEC3 operator*(f32 a, const VEC3& rhs)
 {
     return (VEC3){ a * rhs.x, a * rhs.y, a * rhs.z };
+}
+
+VEC3* VEC3::CrossProduct(VEC3* dst, const VEC3* a, const VEC3* b)
+{
+    VEC3 tmp = {
+        .x =  a->y * b->z - a->z * b->y,
+        .y =  a->z * b->x - a->x * b->z,
+        .z =  a->x * b->y - a->y * b->x,
+    };
+
+    *dst = tmp;
+    return dst;
 }
 
 } } // namespace nw::math
