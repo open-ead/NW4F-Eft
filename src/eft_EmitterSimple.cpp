@@ -57,7 +57,10 @@ void EmitterCalc::UpdateEmitterInfoByEmit(EmitterInstance* emitter)
 void EmitterSimpleCalc::EmitSameDistance(const SimpleEmitterData* data, EmitterInstance* emitter)
 {
     if (!emitter->prevPosSet)
-        return mEmitFunctions[data->_34C](emitter);
+    {
+        mEmitFunctions[data->_34C](emitter);
+        return;
+    }
 
     math::VEC3 prevPos = emitter->prevPos;
     math::VEC3 currPos = (math::VEC3){ emitter->matrixRT.m[0][3], emitter->matrixRT.m[1][3], emitter->matrixRT.m[2][3] };

@@ -119,13 +119,14 @@ public:
     virtual ~EmitterCalc() { } // deleted
 
     virtual void CalcEmitter(EmitterInstance* emitter) = 0;
-    virtual EmitterType GetEmitterType() const = 0;
+    virtual PtclType GetPtclType() const = 0;
     virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer) = 0;
     virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer) = 0;
 
     static void RemoveParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core);
     static inline void AddChildPtclToList(EmitterInstance* emitter, PtclInstance* childPtcl);
     static inline void AddPtclToList(EmitterInstance* emitter, PtclInstance* ptcl);
+    static void EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl);
 
     static const void* _ptclField_Random(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
     static const void* _ptclField_Magnet(EmitterInstance* emitter, PtclInstance* ptcl, const void* fieldData);
@@ -145,10 +146,26 @@ public:
     void ApplyAnim(EmitterInstance* emitter);
     void UpdateEmitterInfoByEmit(EmitterInstance* emitter);
 
+    static PtclInstance* CalcEmitPoint(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitCircle(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitCircleSameDivide(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitFillCircle(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitSphere(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitSphereSameDivide(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitSphereSameDivide64(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitFillSphere(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitCylinder(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitFillCylinder(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitBox(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitFillBox(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitLine(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitLineSameDivide(EmitterInstance* emitter);
+    static PtclInstance* CalcEmitRectangle(EmitterInstance* emitter);
+
     static f32* sFluctuationTbl;
     static System* mSys;
 
-    typedef void (*EmitFunction)(EmitterInstance* emitter);
+    typedef PtclInstance* (*EmitFunction)(EmitterInstance* emitter);
     static EmitFunction mEmitFunctions[];
 };
 static_assert(sizeof(EmitterCalc) == 4, "EmitterCalc size mismatch");

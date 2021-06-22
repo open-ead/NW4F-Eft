@@ -14,7 +14,7 @@ public:
     }
 
     virtual void CalcEmitter(EmitterInstance* emitter);
-    virtual EmitterType GetEmitterType() const { return EmitterType_Simple; }
+    virtual PtclType GetPtclType() const { return PtclType_Simple; }
     virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer);
     virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer) { return 0; }
 
