@@ -115,6 +115,9 @@ struct MTX34
     static inline MTX34* MakeSRT(MTX34* dst, const VEC3* scale, const VEC3* rotate, const VEC3* translate);
     static inline MTX34* MakeRT(MTX34* dst, const VEC3* rotate, const VEC3* translate);
 
+    static inline MTX34* MakeVectorRotation(MTX34* dst, const VEC3* a, const VEC3* b);
+    static inline MTX34* MakeQ(MTX34* dst, const VEC4* q);
+
     union
     {
         f32  m[3][4];
@@ -183,6 +186,65 @@ MTX34* MTX34::MakeRT(MTX34* dst, const VEC3* rotate, const VEC3* translate)
 {
     const VEC3 scale = (VEC3){ 1.0f, 1.0f, 1.0f };
     return MakeSRT(dst, &scale, rotate, translate);
+}
+
+MTX34* MTX34::MakeVectorRotation(MTX34* dst, const VEC3* a, const VEC3* b)
+{
+    // Based on sead::Matrix34CalcCommon<f32>::makeVectorRotation()
+
+    math::VEC3 cross;
+    math::VEC3::CrossProduct(&cross, a, b);
+    f32 dot = math::VEC3::DotProduct(a, b) + 1.0f;
+
+    math::VEC4 q;
+
+    if (dot <= F_ULP)
+        q = (math::VEC4){ 1.0f, 0.0f, 0.0f, 0.0f };
+
+    else
+    {
+        f32 v1 = sqrtf(2.0f * dot);
+        f32 v2 = 1.0f / v1;
+        q.xyz() = cross * v2;
+        q.w = v1 * 0.5f;
+    }
+
+    return MakeQ(dst, &q);
+}
+
+MTX34* MTX34::MakeQ(MTX34* dst, const VEC4* q)
+{
+    f32 v = 2.0f / (q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
+
+    f32 v1  = q->x * v;
+    f32 v2  = q->y * v;
+    f32 v3  = q->z * v;
+    f32 v4  = q->w * v1;
+    f32 v5  = q->w * v2;
+    f32 v6  = q->w * v3;
+    f32 v7  = q->x * v1;
+    f32 v8  = q->x * v2;
+    f32 v9  = q->x * v3;
+    f32 v10 = q->y * v2;
+    f32 v11 = q->y * v3;
+    f32 v12 = q->z * v3;
+
+    dst->m[0][0] = 1.0f - (v10 + v12);
+    dst->m[0][1] = v8 - v6;
+    dst->m[0][2] = v9 + v5;
+    dst->m[0][3] = 0.0f;
+
+    dst->m[1][0] = v8 + v6;
+    dst->m[1][1] = 1.0f - (v7 + v12);
+    dst->m[1][2] = v11 - v4;
+    dst->m[1][3] = 0.0f;
+
+    dst->m[2][0] = v9 - v5;
+    dst->m[2][1] = v11 + v4;
+    dst->m[2][2] = 1.0f - (v7 + v10);
+    dst->m[2][3] = 0.0f;
+
+    return dst;
 }
 
 } } // namespace nw::math

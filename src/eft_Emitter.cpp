@@ -1,4 +1,5 @@
 #include <eft_Emitter.h>
+#include <eft_EmitterSet.h>
 #include <eft_Shader.h>
 #include <eft_System.h>
 
@@ -264,6 +265,68 @@ void EmitterInstance::UpdateResInfo()
 void EmitterCalc::RemoveParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
 {
     mSys->AddPtclRemoveList(ptcl, core);
+}
+
+void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
+{
+    const SimpleEmitterData* data = emitter->data;
+    const EmitterSet* emitterSet = emitter->emitterSet;
+
+    f32 velocityMagRandom = 1.0f - emitter->random.GetF32() * data->_3D8 * emitterSet->_24C;
+    f32 velocityMag = emitter->anim[16] * emitterSet->_248;
+
+    if (data->_40C != 0.0f)
+        ptcl->pos = emitter->random.GetNormalizedVec3() * data->_40C + ptcl->pos;
+
+    if (emitterSet->_289 != 0)
+        ptcl->velocity = (ptcl->velocity + emitterSet->_25C * velocityMag) * velocityMagRandom;
+
+    else
+    {
+        f32 dispersionAngle = data->_3E8;
+        if (dispersionAngle == 0.0f)
+            ptcl->velocity = (ptcl->velocity + data->_3DC * velocityMag) * velocityMagRandom;
+
+        else
+        {
+            dispersionAngle = 1.0f - dispersionAngle / 90.0f;
+
+            f32 sin_val, cos_val, angle = emitter->random.GetF32() * 2.0f * math::F_PI;
+            math::SinCosRad(&sin_val, &cos_val, angle);
+
+            f32 y = emitter->random.GetF32() * (1.0f - dispersionAngle) + dispersionAngle;
+
+            f32 a = 1.0f - y * y;
+            if (a <= 0.0f)
+                a = 0.0f;
+            else
+                a = sqrtf(a);
+
+            math::VEC3 normalizedVel = (math::VEC3){ a * cos_val, y, a * sin_val };
+
+            math::VEC3 base = (math::VEC3){ 0.0f, 1.0f, 0.0f };
+            math::MTX34 mtx;
+            math::MTX34::MakeVectorRotation(&mtx, &base, &data->_3DC);
+
+            math::MTX34::PSMultVec(&normalizedVel, &mtx, &normalizedVel);
+            ptcl->velocity = (ptcl->velocity + normalizedVel * velocityMag) * velocityMagRandom;
+        }
+    }
+
+    math::VEC3 randomVec3 = emitter->random.GetVec3();
+    ptcl->velocity.x += randomVec3.x * data->_3EC.x;
+    ptcl->velocity.y += randomVec3.y * data->_3EC.y;
+    ptcl->velocity.z += randomVec3.z * data->_3EC.z;
+
+    math::VEC3 addVelocity;
+    math::VEC3::MultMTX(&addVelocity, &emitterSet->_250, &emitterSet->matrixRT);
+    ptcl->velocity += addVelocity;
+
+    ptcl->posDiff = ptcl->velocity;
+    ptcl->counter = 0.0f;
+    ptcl->randomU32 = emitter->random.GetU32();
+
+    // ...
 }
 
 } } // namespace nw::eft
