@@ -60,7 +60,7 @@ PtclInstance* EmitterCalc::CalcEmitPoint(EmitterInstance* emitter)
         if (data->_408 != 0.0f)
         {
             math::VEC3 posXZ = (math::VEC3){ ptcl->pos.x, 0.0f, ptcl->pos.z };
-            if (posXZ.MagnitudeSquare() <= FLT_MIN)
+            if (posXZ.MagnitudeSquare() <= FLT_MIN) // FLT_MIN = 1.1754943508222875E-38f
             {
                 posXZ.x = emitter->random.GetF32Range(-1.0f, 1.0f);
                 posXZ.z = emitter->random.GetF32Range(-1.0f, 1.0f);

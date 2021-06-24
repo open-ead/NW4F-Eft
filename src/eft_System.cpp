@@ -311,7 +311,7 @@ void System::AddPtclRemoveList(PtclInstance* ptcl, CpuCore core)
 
 void System::EmitChildParticle()
 {
-    for (u32 i = 0; i < 64u; i++)
+    for (u32 i = 0; i < CpuCore_Max; i++)
     {
         for (s32 j = 0; j < numChildParticle[i]; j++)
         {

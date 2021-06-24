@@ -134,6 +134,7 @@ public:
     void AddPtclRemoveList(PtclInstance* ptcl, CpuCore core);
     void EmitChildParticle();
     void AddPtclAdditionList(PtclInstance* ptcl, CpuCore core);
+    PtclStripe* AllocAndConnectStripe(EmitterInstance* emitter, PtclInstance* ptcl);
     PtclInstance* AllocPtcl(PtclType type);
     EmitterSet* AllocEmitterSet(Handle* handle);
     EmitterInstance* AllocEmitter(u8 groupID);

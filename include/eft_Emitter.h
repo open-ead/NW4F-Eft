@@ -192,6 +192,28 @@ void EmitterCalc::AddChildPtclToList(EmitterInstance* emitter, PtclInstance* chi
     emitter->numChildParticles++;
 }
 
+void EmitterCalc::AddPtclToList(EmitterInstance* emitter, PtclInstance* ptcl)
+{
+    if (emitter->particleHead == NULL)
+    {
+        emitter->particleHead = ptcl;
+        ptcl->next = NULL;
+        ptcl->prev = NULL;
+    }
+    else
+    {
+        emitter->particleHead->prev = ptcl;
+        ptcl->next = emitter->particleHead;
+        emitter->particleHead = ptcl;
+        ptcl->prev = NULL;
+    }
+
+    if (emitter->particleTail == NULL)
+        emitter->particleTail = ptcl;
+
+    emitter->numParticles++;
+}
+
 } } // namespace nw::eft
 
 #endif // EFT_EMITTER_H_

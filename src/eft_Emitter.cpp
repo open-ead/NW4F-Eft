@@ -267,6 +267,24 @@ void EmitterCalc::RemoveParticle(EmitterInstance* emitter, PtclInstance* ptcl, C
     mSys->AddPtclRemoveList(ptcl, core);
 }
 
+static inline f32 _initialize3v4kAnim(AlphaAnim* anim, const anim3v4Key* key, s32 lifespan)
+{
+    anim->time2 = (key->time2 * lifespan) / 100;
+    anim->time3 = (key->time3 * lifespan) / 100;
+
+    if (anim->time2 == 0)
+        anim->startDiff = 0.0f;
+    else
+        anim->startDiff = key->startDiff / (f32)anim->time2;
+
+    if (key->time3 == 100)
+        anim->endDiff = 0.0f;
+    else
+        anim->endDiff = key->endDiff / (f32)(lifespan - anim->time3);
+
+    return key->startValue - anim->startDiff;
+}
+
 void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
 {
     const SimpleEmitterData* data = emitter->data;
@@ -326,7 +344,221 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
     ptcl->counter = 0.0f;
     ptcl->randomU32 = emitter->random.GetU32();
 
-    // ...
+    if (data->ptclMaxLifespan == 0x7FFFFFFF)
+        ptcl->lifespan = 0x7FFFFFFF;
+
+    else
+        ptcl->lifespan = (s32)((emitter->anim[1] - emitter->random.GetS32(data->ptclLifespanRandom)) * emitter->controller->_8);
+
+    s32 lifespan = ptcl->lifespan - 1;
+    math::VEC2 scaleRandom = (1.0f - data->_5DC * emitter->random.GetF32()) * emitterSet->_218;
+
+    if (lifespan == 0)
+    {
+        ptcl->alphaAnim->time2 = -1;
+        ptcl->alphaAnim->time3 = 0x7FFFFFFF;
+        ptcl->alphaAnim->startDiff = 0.0f;
+        ptcl->alphaAnim->endDiff = 0.0f;
+        ptcl->alpha = data->alphaAnim.startValue;
+
+        ptcl->scaleAnim->time2 = -1;
+        ptcl->scaleAnim->time3 = 0x7FFFFFFF;
+        ptcl->scaleAnim->startDiff = math::VEC2::Zero();
+        ptcl->scaleAnim->endDiff = math::VEC2::Zero();
+
+        if (emitter->animArray != NULL)
+        {
+            bool found = false;
+
+            KeyFrameAnim* anim = reinterpret_cast<KeyFrameAnim*>(emitter->animArray + 1);
+            if (anim != NULL) // ???
+            {
+                for (u32 i = 0; i < emitter->animArray->numAnim; i++)
+                {
+                    if (anim->animValIdx == 17)
+                    {
+                        found = true;
+                        break;
+                    }
+
+                    anim = reinterpret_cast<KeyFrameAnim*>((u32)anim + anim->nextOffs);
+                }
+            }
+
+            if (found)
+            {
+                ptcl->scale.x = data->_5E8.x * scaleRandom.x * emitter->anim[17];
+                ptcl->scale.y = data->_5E8.y * scaleRandom.y * emitter->anim[18];
+            }
+            else
+            {
+                ptcl->scale.x = data->_5E8.x * scaleRandom.x * data->_5E0.x;
+                ptcl->scale.y = data->_5E8.y * scaleRandom.y * data->_5E0.y;
+            }
+        }
+    }
+    else
+    {
+        ptcl->alpha = _initialize3v4kAnim(ptcl->alphaAnim, &data->alphaAnim, lifespan);
+
+        ptcl->scaleAnim->time2 = 0; // ???
+        ptcl->scaleAnim->time3 = 0; // ^^^
+
+        ptcl->scaleAnim->time2 = (data->scaleAnimTime2 * lifespan) / 100;
+        ptcl->scaleAnim->time3 = (data->scaleAnimTime3 * lifespan) / 100;
+
+        math::VEC2 scaleAnimStartDiff = data->_5F0 * (1.0f / (f32)ptcl->scaleAnim->time2);
+        math::VEC2 scale = data->_5E8 - scaleAnimStartDiff;
+        math::VEC2 scaleAnimEndDiff = data->_5F8 * (1.0f / (f32)(lifespan - ptcl->scaleAnim->time3));
+
+        if (emitter->animArray != NULL)
+        {
+            bool found = false;
+
+            KeyFrameAnim* anim = reinterpret_cast<KeyFrameAnim*>(emitter->animArray + 1);
+            if (anim != NULL) // ???
+            {
+                for (u32 i = 0; i < emitter->animArray->numAnim; i++)
+                {
+                    if (anim->animValIdx == 17)
+                    {
+                        found = true;
+                        break;
+                    }
+
+                    anim = reinterpret_cast<KeyFrameAnim*>((u32)anim + anim->nextOffs);
+                }
+            }
+
+            if (found)
+            {
+                ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * emitter->anim[17] * scaleRandom.x;
+                ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * emitter->anim[18] * scaleRandom.y;
+                ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * emitter->anim[17] * scaleRandom.x;
+                ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * emitter->anim[18] * scaleRandom.y;
+
+                ptcl->scale.x = scale.x * emitter->anim[17] * scaleRandom.x;
+                ptcl->scale.y = scale.y * emitter->anim[18] * scaleRandom.y;
+            }
+            else
+            {
+                ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * data->_5E0.x * scaleRandom.x;
+                ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * data->_5E0.y * scaleRandom.y;
+                ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * data->_5E0.x * scaleRandom.x;
+                ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * data->_5E0.y * scaleRandom.y;
+
+                ptcl->scale.x = scale.x * data->_5E0.x * scaleRandom.x;
+                ptcl->scale.y = scale.y * data->_5E0.y * scaleRandom.y;
+            }
+        }
+    }
+
+    ptcl->rotation.x = data->ptclRotate.x + emitter->random.GetF32() * data->ptclRotateRandom.x + emitterSet->_26C.x;
+    ptcl->rotation.y = data->ptclRotate.y + emitter->random.GetF32() * data->ptclRotateRandom.y + emitterSet->_26C.y;
+    ptcl->rotation.z = data->ptclRotate.z + emitter->random.GetF32() * data->ptclRotateRandom.z + emitterSet->_26C.z;
+
+    ptcl->angularVelocity = (math::VEC3){ 0.0f, 0.0f, 0.0f }; // ???
+
+    ptcl->angularVelocity.x = ptcl->angularVelocity.x + emitter->random.GetF32() * data->angularVelocityRandom.x;
+    ptcl->angularVelocity.y = ptcl->angularVelocity.y + emitter->random.GetF32() * data->angularVelocityRandom.y;
+    ptcl->angularVelocity.z = ptcl->angularVelocity.z + emitter->random.GetF32() * data->angularVelocityRandom.z;
+
+    if (data->ptclColorSrc[0] == ColorSourceType_Random)
+    {
+        u32 colorIdx = ptcl->randomU32 % 3;
+        ptcl->color[0].rgb() = data->ptclColorTbl[0][colorIdx].rgb();
+    }
+    else
+    {
+        u32 colorIdx = 0;
+        ptcl->color[0].rgb() = data->ptclColorTbl[0][colorIdx].rgb();
+    }
+
+    if (data->ptclColorSrc[1] == ColorSourceType_Random)
+    {
+        u32 colorIdx = ptcl->randomU32 % 3;
+        ptcl->color[1].rgb() = data->ptclColorTbl[1][colorIdx].rgb();
+    }
+    else
+    {
+        u32 colorIdx = 0;
+        ptcl->color[1].rgb() = data->ptclColorTbl[1][colorIdx].rgb();
+    }
+
+    ptcl->texAnimParam[0].scroll.x = data->texAnimParam[0].texInitScroll.x - data->texAnimParam[0].texInitScrollRandom.x * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[0].scroll.y = data->texAnimParam[0].texInitScroll.y - data->texAnimParam[0].texInitScrollRandom.y * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[0].scale.x  = data->texAnimParam[0].texInitScale.x  - data->texAnimParam[0].texInitScaleRandom.x  * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[0].scale.y  = data->texAnimParam[0].texInitScale.y  - data->texAnimParam[0].texInitScaleRandom.y  * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[0].rotate   = data->texAnimParam[0].texInitRotate   - data->texAnimParam[0].texInitRotateRandom   * emitter->random.GetF32Range(-1.0f, 1.0f);
+
+    ptcl->texAnimParam[1].scroll.x = data->texAnimParam[1].texInitScroll.x - data->texAnimParam[1].texInitScrollRandom.x * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[1].scroll.y = data->texAnimParam[1].texInitScroll.y - data->texAnimParam[1].texInitScrollRandom.y * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[1].scale.x  = data->texAnimParam[1].texInitScale.x  - data->texAnimParam[1].texInitScaleRandom.x  * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[1].scale.y  = data->texAnimParam[1].texInitScale.y  - data->texAnimParam[1].texInitScaleRandom.y  * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->texAnimParam[1].rotate   = data->texAnimParam[1].texInitRotate   - data->texAnimParam[1].texInitRotateRandom   * emitter->random.GetF32Range(-1.0f, 1.0f);
+
+    if (emitter->ptclFollowType == PtclFollowType_SRT)
+    {
+        ptcl->pMatrixRT = &emitter->matrixRT;
+        ptcl->pMatrixSRT = &emitter->matrixSRT;
+    }
+    else
+    {
+        math::MTX34::Copy(&ptcl->matrixRT, &emitter->matrixRT);
+        math::MTX34::Copy(&ptcl->matrixSRT, &emitter->matrixSRT);
+        ptcl->pMatrixRT = &ptcl->matrixRT;
+        ptcl->pMatrixSRT = &ptcl->matrixSRT;
+    }
+
+    if (data->texAnimParam[0].texPtnAnimNum <= 1)
+        ptcl->texAnimParam[0].offset = (math::VEC2){ 0.0f, 0.0f };
+
+    else // TexPtnAnim Type Random
+    {
+        s32 texPtnAnimIdx = emitter->random.GetU32(data->texAnimParam[0].texPtnAnimNum);
+        s32 texPtnAnimIdxDiv = data->texAnimParam[0].texPtnAnimIdxDiv;
+        s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
+        s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
+
+        ptcl->texAnimParam[0].offset.x = data->texAnimParam[0].uvScaleInit.x * (f32)offsetX;
+        ptcl->texAnimParam[0].offset.y = data->texAnimParam[0].uvScaleInit.y * (f32)offsetY;
+    }
+
+    if (data->texAnimParam[1].texPtnAnimNum <= 1)
+        ptcl->texAnimParam[1].offset = (math::VEC2){ 0.0f, 0.0f };
+
+    else // TexPtnAnim Type Random
+    {
+        s32 texPtnAnimIdx = emitter->random.GetU32(data->texAnimParam[1].texPtnAnimNum);
+        s32 texPtnAnimIdxDiv = data->texAnimParam[1].texPtnAnimIdxDiv;
+        s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
+        s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
+
+        ptcl->texAnimParam[1].offset.x = data->texAnimParam[1].uvScaleInit.x * (f32)offsetX;
+        ptcl->texAnimParam[1].offset.y = data->texAnimParam[1].uvScaleInit.y * (f32)offsetY;
+    }
+
+    if (data->vertexTransformMode == VertexTransformMode_Stripe)
+        ptcl->stripe = mSys->AllocAndConnectStripe(emitter, ptcl);
+
+    ptcl->fluctuationAlpha = 1.0f;
+    ptcl->fluctuationScale = 1.0f;
+    ptcl->_140 = 0;
+    ptcl->emitter = emitter;
+    ptcl->childEmitCounter = 1000000.0f;
+    ptcl->childPreCalcCounter = 0.0f;
+    ptcl->childEmitLostTime = 0.0f;
+    ptcl->randomF32 = 1.0f - data->_2A4 * emitter->random.GetF32Range(-1.0f, 1.0f);
+
+    CustomActionParticleEmitCallback callback = mSys->GetCurrentCustomActionParticleEmitCallback(emitter);
+    if (callback != NULL)
+    {
+        ParticleEmitArg arg = { .ptcl = ptcl };
+        if (!callback(arg))
+            return RemoveParticle(emitter, ptcl, CpuCore_1);
+    }
+
+    AddPtclToList(emitter, ptcl);
 }
 
 } } // namespace nw::eft

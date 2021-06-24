@@ -8,6 +8,12 @@ namespace nw { namespace math {
 
 struct VEC2
 {
+    static const VEC2& Zero()
+    {
+        static const VEC2 zero = (VEC2){ 0.0f, 0.0f };
+        return zero;
+    }
+
     f32 MagnitudeSquare() const
     {
         return x*x + y*y;

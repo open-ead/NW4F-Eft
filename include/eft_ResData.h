@@ -177,11 +177,11 @@ struct SimpleEmitterData : EmitterData
     FragmentComposite primitiveAlphaBlend;
     s32 scaleAnimTime2;
     s32 scaleAnimTime3;
-    math::VEC2 _5DC;
-    math::VEC2 _5E4;
-    math::VEC2 _5EC;
-    math::VEC2 _5F4;
-    f32 _5FC;
+    f32 _5DC;
+    math::VEC2 _5E0;
+    math::VEC2 _5E8;
+    math::VEC2 _5F0;
+    math::VEC2 _5F8;
     math::VEC3 ptclRotate;
     math::VEC3 ptclRotateRandom;
     math::VEC3 angularVelocity;
