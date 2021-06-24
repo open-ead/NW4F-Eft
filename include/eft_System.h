@@ -204,7 +204,7 @@ public:
     PtclStripe* stripeGroups[64]; // Maximum of 64 groups
     u32 _530;
     s32 currentEmitterSetIdx;
-    u32 _538;
+    s32 currentStripeIdx;
     s32 numEmitterMax;
     s32 numParticleMax;
     s32 numStripeMax;

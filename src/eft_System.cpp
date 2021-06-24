@@ -46,7 +46,7 @@ void System::Initialize(Heap* argHeap, const Config& config)
     numCalcEmitter = 0;
     currentEmitterSetIdx = 0;
     numCalcStripe = 0;
-    _538 = 0;
+    currentStripeIdx = 0;
     currentEmitterIdx = 0;
     currentEmitterSetCreateID = 0;
     numParticleMaxMask = numParticleMax - 1;
@@ -333,9 +333,51 @@ void System::AddPtclAdditionList(PtclInstance* ptcl, CpuCore core)
     numChildParticle[core]++;
 }
 
+PtclStripe* System::AllocAndConnectStripe(EmitterInstance* emitter, PtclInstance* ptcl)
+{
+    s32 i = 0;
+    do
+    {
+        currentStripeIdx++;
+        currentStripeIdx &= numStripeMaxMask;
+
+        if (stripes[currentStripeIdx].data == NULL)
+        {
+            PtclStripe* stripe = &stripes[currentStripeIdx];
+            u8 groupID = emitter->groupID
+
+            if (stripeGroups[groupID] == NULL)
+            {
+                stripeGroups[groupID] = stripe;
+                stripe->next = NULL;
+                stripe->prev = NULL;
+            }
+            else
+            {
+                stripeGroups[groupID]->prev = stripe;
+                stripe->next = stripeGroups[groupID];
+                stripeGroups[groupID] = stripe;
+                stripe->prev = NULL;
+            }
+
+            stripe->particle = ptcl;
+            stripe->queueFront = 0;
+            stripe->queueRear  = 0;
+            stripe->queueCount = 0;
+            stripe->groupID = emitter->groupID;
+            stripe->data = static_cast<const ComplexEmitterData*>(emitter->data);
+            stripe->counter = 0;
+            stripe->queue[0].outer = math::VEC3::Zero();
+
+            return stripe;
+        }
+    } while (++i < numStripeMax);
+
+    return NULL;
+}
+
 PtclInstance* System::AllocPtcl(PtclType type)
 {
-    PtclInstance* ptcl = NULL;
     s32 i = 0;
     do
     {
@@ -345,13 +387,13 @@ PtclInstance* System::AllocPtcl(PtclType type)
         if (particles[currentParticleIdx].data == NULL)
         {
             numEmittedParticle++;
-            ptcl = &particles[currentParticleIdx];
+            PtclInstance* ptcl = &particles[currentParticleIdx];
             ptcl->type = type;
-            break;
+            return ptcl;
         }
     } while (++i < numParticleMax);
 
-    return ptcl;
+    return NULL;
 }
 
 EmitterSet* System::AllocEmitterSet(Handle* handle)
@@ -376,7 +418,6 @@ EmitterSet* System::AllocEmitterSet(Handle* handle)
 
 EmitterInstance* System::AllocEmitter(u8 groupID)
 {
-    EmitterInstance* emitter = NULL;
     s32 i = 0;
     do
     {
@@ -385,27 +426,30 @@ EmitterInstance* System::AllocEmitter(u8 groupID)
 
         if (emitters[currentEmitterIdx].calc == NULL)
         {
-            emitter = &emitters[currentEmitterIdx];
-            break;
+            EmitterInstance* emitter = &emitters[currentEmitterIdx];
+            if (emitter == NULL) // ???
+                return NULL;
+
+            if (emitterGroups[groupID] == NULL)
+            {
+                emitterGroups[groupID] = emitter;
+                emitter->next = NULL;
+                emitter->prev = NULL;
+            }
+            else
+            {
+                emitterGroups[groupID]->prev = emitter;
+                emitter->next = emitterGroups[groupID];
+                emitterGroups[groupID] = emitter;
+                emitter->prev = NULL;
+            }
+
+            numUnusedEmitters--;
+            return emitter;
         }
     } while (++i < numEmitterMax);
 
-    if (emitterGroups[groupID] == NULL)
-    {
-        emitterGroups[groupID] = emitter;
-        emitter->next = NULL;
-        emitter->prev = NULL;
-    }
-    else
-    {
-        emitterGroups[groupID]->prev = emitter;
-        emitter->next = emitterGroups[groupID];
-        emitterGroups[groupID] = emitter;
-        emitter->prev = NULL;
-    }
-
-    numUnusedEmitters--;
-    return emitter;
+    return NULL;
 }
 
 void System::AddEmitterSetToDrawList(EmitterSet* emitterSet, u8 groupID)
