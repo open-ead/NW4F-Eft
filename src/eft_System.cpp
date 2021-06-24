@@ -344,7 +344,7 @@ PtclStripe* System::AllocAndConnectStripe(EmitterInstance* emitter, PtclInstance
         if (stripes[currentStripeIdx].data == NULL)
         {
             PtclStripe* stripe = &stripes[currentStripeIdx];
-            u8 groupID = emitter->groupID
+            u8 groupID = emitter->groupID;
 
             if (stripeGroups[groupID] == NULL)
             {

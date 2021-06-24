@@ -54,6 +54,11 @@ inline f32 CosIdx(u32 angle)
     return sample.cos_val + sample.cos_delta * del;
 }
 
+inline f32 Idx2Rad(f32 angle)
+{
+    return angle * (F_PI / I_HALF_ROUND_IDX);
+}
+
 inline u32 Rad2Idx(f32 rad)
 {
     return static_cast<s64>(rad * (I_HALF_ROUND_IDX / F_PI));

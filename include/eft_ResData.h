@@ -125,9 +125,9 @@ struct SimpleEmitterData : EmitterData
     BlendType blendType;
     ZBufATestType zBufATestType;
     u32 _34C;
-    math::VEC3 _350;
-    u32 _35C;
-    u32 _360;
+    math::VEC3 volumeScale;
+    s32 arcStartAngle;
+    u32 arcLength;
     f32 _364;
     f32 _368;
     math::VEC3 _36C;
