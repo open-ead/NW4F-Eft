@@ -16,6 +16,7 @@ class ParticleShader;
 class Primitive;
 struct PtclAttributeBuffer;
 struct PtclInstance;
+struct PtclStripe;
 struct StripeVertexBuffer;
 class System;
 struct ViewUniformBlock;
@@ -49,6 +50,8 @@ public:
     void* AllocFromDoubleBuffer(u32 size);
     void FlushCache();
 
+    u32 MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex);
+    u32 MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, s32 numDivisions);
     bool MakeStripeAttributeBlock(EmitterInstance* emitter);
     bool ConnectionStripeUvScaleCalc(f32&, f32&, const EmitterInstance* emitter, s32, f32, s32);
     u32 MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex = 0);

@@ -6,7 +6,71 @@
 #include <eft_System.h>
 #include <eft_UniformBlock.h>
 
+#include <algorithm>
+
 namespace nw { namespace eft {
+
+bool Renderer::MakeStripeAttributeBlock(EmitterInstance* emitter)
+{
+    PtclInstance* ptclFirst = emitter->particleHead;
+    if (ptclFirst == NULL || ptclFirst->stripe == NULL || ptclFirst->stripe->data == NULL)
+        return false;
+
+    const ComplexEmitterData* cdata = ptclFirst->stripe->data;
+    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+    u32 numDivisions = stripeData->numDivisions;
+
+    u32 numVertex = 0;
+    u32 numDrawStripe = 0;
+
+    for (PtclInstance* ptcl = ptclFirst; ptcl != NULL; ptcl = ptcl->next)
+    {
+        if (ptcl->lifespan == 0)
+            continue;
+
+        PtclStripe* stripe = ptcl->stripe;
+        if (stripe == NULL || stripe->data == NULL)
+            continue;
+
+        u32 numSliceHistory  = std::min(stripeData->sliceHistInterval + (stripeData->sliceHistInterval - 1) * numDivisions,
+                                        stripe->queueCount            + (stripe->queueCount            - 1) * numDivisions);
+        if (numSliceHistory <= 1)
+            continue;
+
+        numVertex += (numSliceHistory - 1) * 2;
+    }
+
+    if (numVertex == 0)
+        return false;
+
+    emitter->stripeVertexBuffer = static_cast<StripeVertexBuffer*>(AllocFromDoubleBuffer(sizeof(StripeVertexBuffer) * numVertex));
+    if (emitter->stripeVertexBuffer == NULL)
+        return false;
+
+    if (numDivisions == 0)
+    {
+        for (PtclInstance* ptcl = ptclFirst; ptcl != NULL; ptcl = ptcl->next)
+        {
+            if (ptcl->lifespan == 0)
+                continue;
+
+            numDrawStripe += MakeStripeAttributeBlockCore(ptcl->stripe, emitter->stripeVertexBuffer, numDrawStripe);
+        }
+    }
+    else
+    {
+        for (PtclInstance* ptcl = ptclFirst; ptcl != NULL; ptcl = ptcl->next)
+        {
+            if (ptcl->lifespan == 0)
+                continue;
+
+            numDrawStripe += MakeStripeAttributeBlockCoreDivide(ptcl->stripe, emitter->stripeVertexBuffer, numDrawStripe, numDivisions);
+        }
+    }
+
+    emitter->numDrawStripe = numDrawStripe;
+    return true;
+}
 
 StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance* emitter, bool flushCache)
 {
@@ -14,11 +78,11 @@ StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance
     if (numParticles == 0)
         return NULL;
 
-    PtclInstance* ptcl = emitter->particleHead;
-    if (ptcl == NULL)
+    PtclInstance* ptclFirst = emitter->particleHead;
+    if (ptclFirst == NULL)
         return NULL;
 
-    const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(ptcl->data);
+    const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(ptclFirst->data);
     const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
 
     u32 numDivisions = stripeData->numDivisions;
