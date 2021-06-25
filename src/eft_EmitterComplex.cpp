@@ -14,25 +14,25 @@ void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl
     if (stripe == NULL)
         return;
 
-    PtclStripeQueue* queueLast = &stripe->queue[stripe->queueRear];
+    PtclStripeSliceHistory* currentSlice = &stripe->queue[stripe->queueRear];
 
     if (data->stripeFlags & 1)
     {
-        queueLast->pos = ptcl->pos;
-        math::MTX34::Copy(&queueLast->emitterMatrixSRT, &math::MTX34::Identity());
+        currentSlice->pos = ptcl->pos;
+        math::MTX34::Copy(&currentSlice->emitterMatrixSRT, &math::MTX34::Identity());
     }
     else
     {
         f32 sliceInterpolation = stripeData->sliceInterpolation;
-        if (counter > 2 && stripeData->queueCount > 3 && sliceInterpolation < 1.0f && stripe->queueRear != stripe->queueFront)
+        if (counter > 2 && stripeData->numSliceHistory > 3 && sliceInterpolation < 1.0f && stripe->queueRear != stripe->queueFront)
         {
             s32 prevIdx = stripe->queueRear - 1;
             if (prevIdx < 0)
-                prevIdx = stripeData->queueCount - 1;
+                prevIdx = stripeData->numSliceHistory - 1;
 
             s32 prev2Idx = prevIdx - 1;
             if (prev2Idx < 0)
-                prev2Idx = stripeData->queueCount - 1;
+                prev2Idx = stripeData->numSliceHistory - 1;
 
             math::VEC3 diff0;
             math::VEC3::Subtract(&diff0, &ptcl->worldPos, &stripe->_5858);
@@ -51,77 +51,77 @@ void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl
             math::VEC3::Scale(&diff2, &diff2, 0.7f);
             math::VEC3::Add(&stripe->queue[prevIdx].pos, &stripe->_5864, &diff2);
 
-            queueLast->pos = ptcl->worldPos;
+            currentSlice->pos = ptcl->worldPos;
         }
         else
         {
-            stripe->_5858 = (stripe->_5864 = (queueLast->pos = ptcl->worldPos));
+            stripe->_5858 = (stripe->_5864 = (currentSlice->pos = ptcl->worldPos));
         }
 
-        queueLast->emitterMatrixSRT = emitter->matrixSRT;
+        currentSlice->emitterMatrixSRT = emitter->matrixSRT;
     }
 
-    queueLast->scale = ptcl->scale.x * emitter->emitterSet->_220.x;
+    currentSlice->scale = ptcl->scale.x * emitter->emitterSet->_220.x;
 
     if (stripe->queueRear != stripe->queueFront)
     {
         s32 prevIdx = stripe->queueRear - 1;
         if (prevIdx < 0)
-            prevIdx = stripeData->queueCount - 1;
+            prevIdx = stripeData->numSliceHistory - 1;
 
-        PtclStripeQueue* queuePrev = &stripe->queue[prevIdx];
+        PtclStripeSliceHistory* prevSlice = &stripe->queue[prevIdx];
 
         if (counter < 2)
         {
-            math::VEC3::Subtract(&stripe->_584C, &queueLast->pos, &queuePrev->pos);
-            if (stripe->_584C.Magnitude() > 0.0f)
-                stripe->_584C.Normalize();
+            math::VEC3::Subtract(&stripe->currentSliceDir, &currentSlice->pos, &prevSlice->pos);
+            if (stripe->currentSliceDir.Magnitude() > 0.0f)
+                stripe->currentSliceDir.Normalize();
         }
         else
         {
             math::VEC3 posDiff;
-            math::VEC3::Subtract(&posDiff, &queueLast->pos, &queuePrev->pos);
+            math::VEC3::Subtract(&posDiff, &currentSlice->pos, &prevSlice->pos);
             if (posDiff.Magnitude() > 0.0f)
                 posDiff.Normalize();
 
             math::VEC3 diff;
-            math::VEC3::Subtract(&diff, &posDiff, &stripe->_584C);
+            math::VEC3::Subtract(&diff, &posDiff, &stripe->currentSliceDir);
             math::VEC3::Scale(&diff, &diff, stripeData->dirInterpolation);
-            math::VEC3::Add(&stripe->_584C, &stripe->_584C, &diff);
-            if (stripe->_584C.Magnitude() > 0.0f)
-                stripe->_584C.Normalize();
+            math::VEC3::Add(&stripe->currentSliceDir, &stripe->currentSliceDir, &diff);
+            if (stripe->currentSliceDir.Magnitude() > 0.0f)
+                stripe->currentSliceDir.Normalize();
         }
 
-        queueLast->dir = stripe->_584C;
+        currentSlice->dir = stripe->currentSliceDir;
 
         if (stripeData->type == 2)
         {
-            queueLast->outer.x = queueLast->emitterMatrixSRT.m[0][1];
-            queueLast->outer.y = queueLast->emitterMatrixSRT.m[1][1];
-            queueLast->outer.z = queueLast->emitterMatrixSRT.m[2][1];
+            currentSlice->outer.x = currentSlice->emitterMatrixSRT.m[0][1];
+            currentSlice->outer.y = currentSlice->emitterMatrixSRT.m[1][1];
+            currentSlice->outer.z = currentSlice->emitterMatrixSRT.m[2][1];
         }
         else
         {
-            math::VEC3 outer = (math::VEC3){ queueLast->emitterMatrixSRT.m[0][1],
-                                             queueLast->emitterMatrixSRT.m[1][1],
-                                             queueLast->emitterMatrixSRT.m[2][1] };
-            math::VEC3::CrossProduct(&outer, &outer, &stripe->_584C);
+            math::VEC3 outer = (math::VEC3){ currentSlice->emitterMatrixSRT.m[0][1],
+                                             currentSlice->emitterMatrixSRT.m[1][1],
+                                             currentSlice->emitterMatrixSRT.m[2][1] };
+            math::VEC3::CrossProduct(&outer, &outer, &stripe->currentSliceDir);
             if (outer.Magnitude() > 0.0f)
                 outer.Normalize();
 
-            queueLast->outer = outer;
+            currentSlice->outer = outer;
         }
     }
 
-    if (++stripe->queueRear >= stripeData->queueCount)
+    if (++stripe->queueRear >= stripeData->numSliceHistory)
         stripe->queueRear = 0;
 
     if (stripe->queueRear == stripe->queueFront
-        && ++stripe->queueFront >= stripeData->queueCount)
+        && ++stripe->queueFront >= stripeData->numSliceHistory)
         stripe->queueFront = 0;
 
-    if (++stripe->queueCount >= stripeData->queueCount)
-        stripe->queueCount = stripeData->queueCount;
+    if (++stripe->queueCount >= stripeData->numSliceHistory)
+        stripe->queueCount = stripeData->numSliceHistory;
 
     stripe->emitterMatrixSRT = emitter->matrixSRT;
     stripe->counter++;
@@ -255,7 +255,7 @@ u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, boo
 
                     else
                     {
-                        if (++stripe->queueFront >= stripeData->queueCount)
+                        if (++stripe->queueFront >= stripeData->numSliceHistory)
                             stripe->queueFront = 0;
 
                         stripe->queueCount--;

@@ -89,7 +89,7 @@ struct PtclInstance
 };
 static_assert(sizeof(PtclInstance) == 0x180, "PtclInstance size mismatch");
 
-struct PtclStripeQueue // Actual name not known
+struct PtclStripeSliceHistory // Actual name not known
 {
     math::VEC3 pos;
     f32 scale;
@@ -97,7 +97,7 @@ struct PtclStripeQueue // Actual name not known
     math::VEC3 outer;
     math::VEC3 dir;
 };
-static_assert(sizeof(PtclStripeQueue) == 0x58, "PtclStripeQueue size mismatch");
+static_assert(sizeof(PtclStripeSliceHistory) == 0x58, "PtclStripeSliceHistory size mismatch");
 
 struct ComplexEmitterData;
 
@@ -106,13 +106,13 @@ struct PtclStripe
     PtclInstance* particle;
     u32 queueFront;
     u32 queueRear;
-    PtclStripeQueue queue[256];
+    PtclStripeSliceHistory queue[256];
     u32 queueCount;
     u32 groupID;
     const ComplexEmitterData* data;
     s32 counter;
     math::MTX34 emitterMatrixSRT;
-    math::VEC3 _584C;
+    math::VEC3 currentSliceDir;
     math::VEC3 _5858;
     math::VEC3 _5864;
     PtclStripe* prev;

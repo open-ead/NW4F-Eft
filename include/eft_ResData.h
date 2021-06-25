@@ -344,13 +344,13 @@ struct StripeData
     u32 type;
     u32 crossType;
     u32 connectionType;
-    u32 _C;
-    u32 queueCount;
-    u32 numConnections;
+    u32 textureType;
+    u32 numSliceHistory;
+    u32 numDivisions;
     f32 alphaStart;
     f32 alphaEnd;
     math::VEC2 _20;
-    u32 _28;
+    u32 sliceHistInterval;
     f32 sliceInterpolation;
     f32 dirInterpolation;
 };

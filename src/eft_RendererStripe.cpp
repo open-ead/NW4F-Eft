@@ -21,15 +21,15 @@ StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance
     const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(ptcl->data);
     const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
 
-    u32 numConnections = stripeData->numConnections;
+    u32 numDivisions = stripeData->numDivisions;
     u32 connectionType = stripeData->connectionType;
 
     PtclInstance* ptclLast = emitter->particleTail;
     PtclInstance* ptclBeforeLast = ptclLast->prev;
 
-    u32 numVertex = numParticles * 2 + ((numParticles - 1) * 2) * numConnections;
+    u32 numVertex = numParticles * 2 + ((numParticles - 1) * 2) * numDivisions;
     if (connectionType == 1 || connectionType == 2)
-        numVertex += 2 + numConnections * 2;
+        numVertex += 2 + numDivisions * 2;
 
     if (numVertex == 0)
         return NULL;
@@ -38,7 +38,7 @@ StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance
     if (stripeVertexBuffer == NULL)
         return NULL;
 
-    if (numConnections == 0)
+    if (numDivisions == 0)
         emitter->numDrawStripe = MakeConnectionStripeAttributeBlockCore(emitter, numParticles, ptclLast, ptclBeforeLast, connectionType, stripeVertexBuffer, 0);
 
     else
