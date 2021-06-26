@@ -92,8 +92,10 @@ u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffe
     return numDrawStripe;
 }
 
-void Renderer::GetPositionOnCubic(math::VEC3* outPos, const math::VEC3& pos0, const math::VEC3& diff0, const math::VEC3& pos1, const math::VEC3& diff1, f32 delta)
+void Renderer::GetPositionOnCubic(math::VEC3* result, const math::VEC3& startPos, const math::VEC3& startVel, const math::VEC3& endPos, const math::VEC3& endVel, f32 time)
 {
+    // http://old.zaynar.co.uk/cppdoc/latest/projects/maths/NUSpline.cpp.html
+
     static const math::MTX44 hermite(
          2.0f, -3.0f, 0.0f, 1.0f,
         -2.0f,  3.0f, 0.0f, 0.0f,
@@ -102,16 +104,16 @@ void Renderer::GetPositionOnCubic(math::VEC3* outPos, const math::VEC3& pos0, co
     );
 
     math::MTX44 mtx(
-        pos0.x, pos1.x, diff0.x, diff1.x,
-        pos0.y, pos1.y, diff0.y, diff1.y,
-        pos0.z, pos1.z, diff0.z, diff1.z,
-          0.0f,   0.0f,    0.0f,    0.0f
+        startPos.x, endPos.x, startVel.x, endVel.x,
+        startPos.y, endPos.y, startVel.y, endVel.y,
+        startPos.z, endPos.z, startVel.z, endVel.z,
+        0.0f, 0.0f, 0.0f, 1.0f
     );
 
     math::MTX44::Concat(&mtx, &mtx, &hermite);
 
-    math::VEC3 vDelta = (math::VEC3){ delta * delta * delta, delta * delta, delta };
-    math::MTX34::MultVec(outPos, (const math::MTX34*)&mtx, &vDelta);
+    math::VEC3 timeVector = (math::VEC3){ time * time * time, time * time, time };
+    math::MTX34::MultVec(result, (const math::MTX34*)&mtx, &timeVector);
 }
 
 u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, s32 numDivisions)
