@@ -10,6 +10,84 @@
 
 namespace nw { namespace eft {
 
+u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex)
+{
+    if (stripe == NULL || stripe->data == NULL)
+        return 0;
+
+    const ComplexEmitterData* cdata = stripe->data;
+    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+
+    stripe->numDraw = 0;
+
+    s32 sliceHistInterval = stripeData->sliceHistInterval;
+    s32 histQueueCount = stripe->queueCount;
+
+    s32 numSliceHistory = std::min(sliceHistInterval, histQueueCount);
+    if (numSliceHistory < 3)
+        return 0;
+
+    u32 numDrawStripe = 0;
+
+    f32 invRatio = 1.0f / (f32)(numSliceHistory - 2);
+    f32 invTexRatio;
+
+    if (stripeData->textureType == 1 && stripe->counter < sliceHistInterval)
+        invTexRatio = 1.0f / (f32)(sliceHistInterval - 2);
+    else
+        invTexRatio = invRatio;
+
+    f32 alphaRange = stripeData->alphaEnd - stripeData->alphaStart;
+    stripe->drawFirstVertex = firstVertex;
+
+    for (s32 i = 0; i < numSliceHistory - 1; i++)
+    {
+        u32 idx = firstVertex + numDrawStripe;
+        StripeVertexBuffer* buffer0 = &stripeVertexBuffer[idx + 0];
+        StripeVertexBuffer* buffer1 = &stripeVertexBuffer[idx + 1];
+
+        f32 ratio    = (f32)i * invRatio;
+        f32 texRatio = (f32)i * invTexRatio;
+
+        s32 sliceHistIdx = stripe->queueRear - (s32)(ratio * (f32)(histQueueCount - 2) + 0.5f) - 1;
+        if (sliceHistIdx < 0)
+            sliceHistIdx += stripeData->numSliceHistory;
+
+        f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
+
+        buffer0->pos.xyz() = stripe->queue[sliceHistIdx].pos;
+        buffer0->pos.w     = alpha * stripe->particle->emitter->anim[14];
+        buffer1->pos.xyz() = buffer0->pos.xyz();
+        buffer1->pos.w     = buffer0->pos.w;
+
+        buffer0->dir.xyz() = stripe->queue[sliceHistIdx].dir;
+        buffer1->dir.xyz() = buffer0->dir.xyz();
+
+        buffer0->outer.xyz() = stripe->queue[sliceHistIdx].outer;
+        buffer1->outer.xyz() = buffer0->outer.xyz();
+
+        buffer0->outer.w =  stripe->queue[sliceHistIdx].scale;
+        buffer1->outer.w = -stripe->queue[sliceHistIdx].scale;
+
+        buffer0->texCoord.x = stripe->particle->texAnimParam[0].offset.x;
+        buffer0->texCoord.y = stripe->particle->texAnimParam[0].offset.y + texRatio * stripe->data->texAnimParam[0].uvScaleInit.y;
+        buffer1->texCoord.x = stripe->particle->texAnimParam[0].offset.x +            stripe->data->texAnimParam[0].uvScaleInit.x;
+        buffer1->texCoord.y = buffer0->texCoord.y;
+
+        buffer0->texCoord.z = stripe->particle->texAnimParam[1].offset.x;
+        buffer0->texCoord.w = stripe->particle->texAnimParam[1].offset.y + texRatio * stripe->data->texAnimParam[1].uvScaleInit.y;
+        buffer1->texCoord.z = stripe->particle->texAnimParam[1].offset.x +            stripe->data->texAnimParam[1].uvScaleInit.x;
+        buffer1->texCoord.w = buffer0->texCoord.w;
+
+        numDrawStripe += 2;
+    }
+
+    stripe->numDraw = numDrawStripe;
+    stripeNumDrawVertex += numDrawStripe;
+
+    return numDrawStripe;
+}
+
 bool Renderer::MakeStripeAttributeBlock(EmitterInstance* emitter)
 {
     PtclInstance* ptclFirst = emitter->particleHead;
@@ -32,8 +110,8 @@ bool Renderer::MakeStripeAttributeBlock(EmitterInstance* emitter)
         if (stripe == NULL || stripe->data == NULL)
             continue;
 
-        u32 numSliceHistory  = std::min(stripeData->sliceHistInterval + (stripeData->sliceHistInterval - 1) * numDivisions,
-                                        stripe->queueCount            + (stripe->queueCount            - 1) * numDivisions);
+        u32 numSliceHistory = std::min( stripeData->sliceHistInterval + (stripeData->sliceHistInterval - 1) * numDivisions,
+                                        stripe->queueCount            + (stripe->queueCount            - 1) * numDivisions );
         if (numSliceHistory <= 1)
             continue;
 
