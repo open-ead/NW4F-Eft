@@ -92,6 +92,28 @@ u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffe
     return numDrawStripe;
 }
 
+void Renderer::GetPositionOnCubic(math::VEC3* outPos, const math::VEC3& pos0, const math::VEC3& diff0, const math::VEC3& pos1, const math::VEC3& diff1, f32 delta)
+{
+    static const math::MTX44 hermite(
+         2.0f, -3.0f, 0.0f, 1.0f,
+        -2.0f,  3.0f, 0.0f, 0.0f,
+         1.0f, -2.0f, 1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f, 0.0f
+    );
+
+    math::MTX44 mtx(
+        pos0.x, pos1.x, diff0.x, diff1.x,
+        pos0.y, pos1.y, diff0.y, diff1.y,
+        pos0.z, pos1.z, diff0.z, diff1.z,
+          0.0f,   0.0f,    0.0f,    0.0f
+    );
+
+    math::MTX44::Concat(&mtx, &mtx, &hermite);
+
+    math::VEC3 vDelta = (math::VEC3){ delta * delta * delta, delta * delta, delta };
+    math::MTX34::MultVec(outPos, (const math::MTX34*)&mtx, &vDelta);
+}
+
 u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, s32 numDivisions)
 {
     if (stripe == NULL || stripe->data == NULL)
@@ -132,7 +154,7 @@ u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVerte
 
         f32 ratio    = (f32)i * invRatio;
         f32 texRatio = (f32)i * invTexRatio;
-        f32 divRatio = ratio  * invDivRatio
+        f32 divRatio = ratio  * invDivRatio;
 
         f32 v0 = divRatio * (f32)(histQueueCount - 2);
         s32 v1 = (s32)v0;
