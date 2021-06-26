@@ -43,6 +43,7 @@ public:
             emitters[i] = NULL;
     }
 
+    void SetMtx(const math::MTX34& matrixSRT);
     void Kill();
 
     System* system;
