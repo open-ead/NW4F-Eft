@@ -51,6 +51,7 @@ public:
     void FlushCache();
 
     u32 MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex);
+    void GetPositionOnCubic(math::VEC3*, const math::VEC3&, const math::VEC3&, const math::VEC3&, const math::VEC3&, f32);
     u32 MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, s32 numDivisions);
     bool MakeStripeAttributeBlock(EmitterInstance* emitter);
     bool ConnectionStripeUvScaleCalc(f32&, f32&, const EmitterInstance* emitter, s32, f32, s32);

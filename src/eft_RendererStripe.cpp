@@ -15,21 +15,22 @@ u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffe
     if (stripe == NULL || stripe->data == NULL)
         return 0;
 
+    stripe->numDraw = 0;
+
     const ComplexEmitterData* cdata = stripe->data;
     const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
 
-    stripe->numDraw = 0;
-
-    s32 sliceHistInterval = stripeData->sliceHistInterval;
     s32 histQueueCount = stripe->queueCount;
+    s32 sliceHistInterval = stripeData->sliceHistInterval;
 
-    s32 numSliceHistory = std::min(sliceHistInterval, histQueueCount);
+    s32 numSliceHistory = std::min( sliceHistInterval,
+                                    histQueueCount );
     if (numSliceHistory < 3)
         return 0;
 
     u32 numDrawStripe = 0;
 
-    f32 invRatio = 1.0f / (f32)(numSliceHistory - 2);
+    f32 invRatio    = 1.0f / (f32)(numSliceHistory - 2);
     f32 invTexRatio;
 
     if (stripeData->textureType == 1 && stripe->counter < sliceHistInterval)
@@ -49,7 +50,10 @@ u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffe
         f32 ratio    = (f32)i * invRatio;
         f32 texRatio = (f32)i * invTexRatio;
 
-        s32 sliceHistIdx = stripe->queueRear - (s32)(ratio * (f32)(histQueueCount - 2) + 0.5f) - 1;
+        f32 v0 = ratio * (f32)(histQueueCount - 2) + 0.5f;
+        s32 v1 = (s32)v0;
+
+        s32 sliceHistIdx = stripe->queueRear - v1 - 1;
         if (sliceHistIdx < 0)
             sliceHistIdx += stripeData->numSliceHistory;
 
@@ -68,6 +72,134 @@ u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffe
 
         buffer0->outer.w =  stripe->queue[sliceHistIdx].scale;
         buffer1->outer.w = -stripe->queue[sliceHistIdx].scale;
+
+        buffer0->texCoord.x = stripe->particle->texAnimParam[0].offset.x;
+        buffer0->texCoord.y = stripe->particle->texAnimParam[0].offset.y + texRatio * stripe->data->texAnimParam[0].uvScaleInit.y;
+        buffer1->texCoord.x = stripe->particle->texAnimParam[0].offset.x +            stripe->data->texAnimParam[0].uvScaleInit.x;
+        buffer1->texCoord.y = buffer0->texCoord.y;
+
+        buffer0->texCoord.z = stripe->particle->texAnimParam[1].offset.x;
+        buffer0->texCoord.w = stripe->particle->texAnimParam[1].offset.y + texRatio * stripe->data->texAnimParam[1].uvScaleInit.y;
+        buffer1->texCoord.z = stripe->particle->texAnimParam[1].offset.x +            stripe->data->texAnimParam[1].uvScaleInit.x;
+        buffer1->texCoord.w = buffer0->texCoord.w;
+
+        numDrawStripe += 2;
+    }
+
+    stripe->numDraw = numDrawStripe;
+    stripeNumDrawVertex += numDrawStripe;
+
+    return numDrawStripe;
+}
+
+u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, s32 numDivisions)
+{
+    if (stripe == NULL || stripe->data == NULL)
+        return 0;
+
+    stripe->numDraw = 0;
+
+    const ComplexEmitterData* cdata = stripe->data;
+    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+
+    s32 histQueueCount = stripe->queueCount; if (histQueueCount < 3) return 0;
+    s32 sliceHistInterval = stripeData->sliceHistInterval;
+
+    s32 numSliceHistory = std::min( sliceHistInterval +  (sliceHistInterval - 1) * numDivisions,
+                                    histQueueCount    += (histQueueCount    - 1) * numDivisions );
+    if (numSliceHistory < 3)
+        return 0;
+
+    u32 numDrawStripe = 0;
+
+    f32 invRatio    = 1.0f / (f32)(numSliceHistory - 2);
+    f32 invDivRatio = 1.0f / (f32)(numDivisions    + 1);
+    f32 invTexRatio;
+
+    if (stripeData->textureType == 1 && stripe->counter < sliceHistInterval)
+        invTexRatio = 1.0f / (f32)((sliceHistInterval - 2) + (sliceHistInterval - 1) * numDivisions);
+    else
+        invTexRatio = invRatio;
+
+    f32 alphaRange = stripeData->alphaEnd - stripeData->alphaStart;
+    stripe->drawFirstVertex = firstVertex;
+
+    for (s32 i = 0; i < numSliceHistory - 1; i++)
+    {
+        u32 idx = firstVertex + numDrawStripe;
+        StripeVertexBuffer* buffer0 = &stripeVertexBuffer[idx + 0];
+        StripeVertexBuffer* buffer1 = &stripeVertexBuffer[idx + 1];
+
+        f32 ratio    = (f32)i * invRatio;
+        f32 texRatio = (f32)i * invTexRatio;
+        f32 divRatio = ratio  * invDivRatio
+
+        f32 v0 = divRatio * (f32)(histQueueCount - 2);
+        s32 v1 = (s32)v0;
+
+        s32 sliceHistIdx = stripe->queueRear - v1 - 1;
+        s32 nextSliceHistIdx = sliceHistIdx - 1;
+
+        if (sliceHistIdx < 0)
+            sliceHistIdx += stripeData->numSliceHistory;
+
+        if (nextSliceHistIdx < 0)
+            nextSliceHistIdx += stripeData->numSliceHistory;
+
+        s32 prevSliceHistIdx = sliceHistIdx + 1;
+        if (prevSliceHistIdx >= stripeData->numSliceHistory)
+            prevSliceHistIdx -= stripeData->numSliceHistory;
+
+        s32 nextSliceHist2Idx = nextSliceHistIdx - 1;
+        if (nextSliceHist2Idx < 0)
+            nextSliceHist2Idx += stripeData->numSliceHistory;
+
+        f32 delta = v0 - (f32)v1;
+
+        u32 idx0 = prevSliceHistIdx;
+        u32 idx1 = sliceHistIdx;
+        u32 idx2 = nextSliceHistIdx;
+        u32 idx3 = nextSliceHist2Idx;
+
+        if (v1 == 0)
+        {
+            idx0 = sliceHistIdx;
+            idx1 = nextSliceHistIdx;
+        }
+
+        if (v1 >= stripe->queueCount - 2)
+        {
+            idx2 = sliceHistIdx;
+            idx3 = nextSliceHistIdx;
+        }
+
+        math::VEC3 diff0 = stripe->queue[idx0].pos - stripe->queue[idx1].pos;
+        math::VEC3 diff1 = stripe->queue[idx2].pos - stripe->queue[idx1].pos;
+        math::VEC3 diff2 = stripe->queue[idx1].pos - stripe->queue[idx2].pos;
+        math::VEC3 diff3 = stripe->queue[idx3].pos - stripe->queue[idx2].pos;
+
+        math::VEC3 diff4 = (diff1 - diff0) * 0.5f;
+        math::VEC3 diff5 = (diff3 - diff2) * 0.5f;
+
+        math::VEC3 pos;
+        GetPositionOnCubic(&pos, stripe->queue[sliceHistIdx].pos, diff4, stripe->queue[nextSliceHistIdx].pos, diff5, delta);
+
+        f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
+
+        buffer0->pos.xyz() = pos;
+        buffer0->pos.w     = alpha * stripe->particle->emitter->anim[14];
+        buffer1->pos.xyz() = pos;
+        buffer1->pos.w     = buffer0->pos.w;
+
+        f32 invDelta = 1.0f - delta;
+
+        buffer0->outer.xyz() =  stripe->queue[sliceHistIdx].outer * invDelta + stripe->queue[nextSliceHistIdx].outer * delta;
+        buffer0->outer.w     =  stripe->queue[sliceHistIdx].scale;
+        buffer1->outer.xyz() =  buffer0->outer.xyz();
+        buffer1->outer.w     = -stripe->queue[sliceHistIdx].scale;
+
+        buffer0->dir.xyz() = stripe->queue[sliceHistIdx].dir * invDelta + stripe->queue[nextSliceHistIdx].dir * delta;
+        buffer1->dir.xyz() = buffer0->dir.xyz();
 
         buffer0->texCoord.x = stripe->particle->texAnimParam[0].offset.x;
         buffer0->texCoord.y = stripe->particle->texAnimParam[0].offset.y + texRatio * stripe->data->texAnimParam[0].uvScaleInit.y;
