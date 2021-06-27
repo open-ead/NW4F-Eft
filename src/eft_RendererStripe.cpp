@@ -377,7 +377,7 @@ bool Renderer::SetupStripeDrawSetting(const EmitterInstance* emitter, bool flush
         renderContext.SetupTexture((const TextureRes*)NULL, TextureSlot_1, (FragmentTextureLocation){ 0u });
 
     if (shader->fragmentShaderKey.softEdge && this->textures[0] != NULL)
-        renderContext.SetupTexture(this->textures[1], TextureSlot_2, shader->fragmentSamplerLocations2[0]);
+        renderContext.SetupTexture(this->textures[0], TextureSlot_2, shader->fragmentSamplerLocations2[0]);
 
     if (shader->fragmentShaderKey.shaderMode == 1 && this->textures[1] != NULL)
         renderContext.SetupTexture(this->textures[1], TextureSlot_2, shader->fragmentSamplerLocations2[1]);
