@@ -366,10 +366,10 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
         ptcl->scaleAnim->startDiff = math::VEC2::Zero();
         ptcl->scaleAnim->endDiff = math::VEC2::Zero();
 
+        bool found = false;
+
         if (emitter->animArray != NULL)
         {
-            bool found = false;
-
             KeyFrameAnim* anim = reinterpret_cast<KeyFrameAnim*>(emitter->animArray + 1);
             if (anim != NULL) // ???
             {
@@ -384,17 +384,17 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
                     anim = reinterpret_cast<KeyFrameAnim*>((u32)anim + anim->nextOffs);
                 }
             }
+        }
 
-            if (found)
-            {
-                ptcl->scale.x = data->_5E8.x * scaleRandom.x * emitter->anim[17];
-                ptcl->scale.y = data->_5E8.y * scaleRandom.y * emitter->anim[18];
-            }
-            else
-            {
-                ptcl->scale.x = data->_5E8.x * scaleRandom.x * data->_5E0.x;
-                ptcl->scale.y = data->_5E8.y * scaleRandom.y * data->_5E0.y;
-            }
+        if (found)
+        {
+            ptcl->scale.x = data->_5E8.x * scaleRandom.x * emitter->anim[17];
+            ptcl->scale.y = data->_5E8.y * scaleRandom.y * emitter->anim[18];
+        }
+        else
+        {
+            ptcl->scale.x = data->_5E8.x * scaleRandom.x * data->_5E0.x;
+            ptcl->scale.y = data->_5E8.y * scaleRandom.y * data->_5E0.y;
         }
     }
     else
@@ -411,10 +411,10 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
         math::VEC2 scale = data->_5E8 - scaleAnimStartDiff;
         math::VEC2 scaleAnimEndDiff = data->_5F8 * (1.0f / (f32)(lifespan - ptcl->scaleAnim->time3));
 
+        bool found = false;
+
         if (emitter->animArray != NULL)
         {
-            bool found = false;
-
             KeyFrameAnim* anim = reinterpret_cast<KeyFrameAnim*>(emitter->animArray + 1);
             if (anim != NULL) // ???
             {
@@ -429,27 +429,27 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
                     anim = reinterpret_cast<KeyFrameAnim*>((u32)anim + anim->nextOffs);
                 }
             }
+        }
 
-            if (found)
-            {
-                ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * emitter->anim[17] * scaleRandom.x;
-                ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * emitter->anim[18] * scaleRandom.y;
-                ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * emitter->anim[17] * scaleRandom.x;
-                ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * emitter->anim[18] * scaleRandom.y;
+        if (found)
+        {
+            ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * emitter->anim[17] * scaleRandom.x;
+            ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * emitter->anim[18] * scaleRandom.y;
+            ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * emitter->anim[17] * scaleRandom.x;
+            ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * emitter->anim[18] * scaleRandom.y;
 
-                ptcl->scale.x = scale.x * emitter->anim[17] * scaleRandom.x;
-                ptcl->scale.y = scale.y * emitter->anim[18] * scaleRandom.y;
-            }
-            else
-            {
-                ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * data->_5E0.x * scaleRandom.x;
-                ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * data->_5E0.y * scaleRandom.y;
-                ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * data->_5E0.x * scaleRandom.x;
-                ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * data->_5E0.y * scaleRandom.y;
+            ptcl->scale.x = scale.x * emitter->anim[17] * scaleRandom.x;
+            ptcl->scale.y = scale.y * emitter->anim[18] * scaleRandom.y;
+        }
+        else
+        {
+            ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * data->_5E0.x * scaleRandom.x;
+            ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * data->_5E0.y * scaleRandom.y;
+            ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * data->_5E0.x * scaleRandom.x;
+            ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * data->_5E0.y * scaleRandom.y;
 
-                ptcl->scale.x = scale.x * data->_5E0.x * scaleRandom.x;
-                ptcl->scale.y = scale.y * data->_5E0.y * scaleRandom.y;
-            }
+            ptcl->scale.x = scale.x * data->_5E0.x * scaleRandom.x;
+            ptcl->scale.y = scale.y * data->_5E0.y * scaleRandom.y;
         }
     }
 
