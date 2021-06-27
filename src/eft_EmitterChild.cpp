@@ -104,7 +104,7 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
 
         childPtcl->texAnimParam[0].scroll = (math::VEC2){ 0.0f, 0.0f };
         childPtcl->texAnimParam[0].rotate = 0.0f;
-        childPtcl->texAnimParam[0].scale = (math::VEC2){ 0.0f, 0.0f };
+        childPtcl->texAnimParam[0].scale = (math::VEC2){ 1.0f, 1.0f };
 
         if (childData->alphaAnimTime2 == 0)
         {
