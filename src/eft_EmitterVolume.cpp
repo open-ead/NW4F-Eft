@@ -246,6 +246,46 @@ PtclInstance* EmitterCalc::CalcEmitSphereSameDivide(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
+PtclInstance* EmitterCalc::CalcEmitSphereSameDivide64(EmitterInstance* emitter)
+{
+    EMIT_FUNCTION_START()
+
+    f32 scaleX = data->volumeScale.x * emitterSet->_228.x * emitter->anim[22];
+    f32 scaleY = data->volumeScale.y * emitterSet->_228.y * emitter->anim[23];
+    f32 scaleZ = data->volumeScale.z * emitterSet->_228.z * emitter->anim[24];
+
+    const math::VEC3* table = gSameDivideSphere64Tbl[data->_286 + 2]; // What is the point of the first 2 tables?
+
+    EMIT_LOOP_START()
+
+        math::VEC3 normalizedVel = *table++;
+
+        if (data->_28A != 0)
+        {
+            if (!(math::CosRad(data->_368) < normalizedVel.y))
+                continue;
+
+            if (data->_36C.x != 0.0f || data->_36C.y != 1.0f || data->_36C.z != 0.0f)
+            {
+                math::VEC3 base = (math::VEC3){ 0.0f, 1.0f, 0.0f };
+                math::MTX34 mtx;
+                math::MTX34::MakeVectorRotation(&mtx, &base, &data->_36C);
+
+                math::MTX34::PSMultVec(&normalizedVel, &mtx, &normalizedVel);
+            }
+        }
+
+        ptcl->pos.x = normalizedVel.x * scaleX;
+        ptcl->pos.y = normalizedVel.y * scaleY;
+        ptcl->pos.z = normalizedVel.z * scaleZ;
+
+        ptcl->velocity.x = normalizedVel.x * velocityMag;
+        ptcl->velocity.y = normalizedVel.y * velocityMag;
+        ptcl->velocity.z = normalizedVel.z * velocityMag;
+
+    EMIT_LOOP_FUNCTION_END()
+}
+
 PtclInstance* EmitterCalc::CalcEmitFillSphere(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
