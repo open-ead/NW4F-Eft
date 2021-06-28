@@ -471,6 +471,80 @@ PtclInstance* EmitterCalc::CalcEmitBox(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
+PtclInstance* EmitterCalc::CalcEmitFillBox(EmitterInstance* emitter)
+{
+    EMIT_FUNCTION_START()
+
+    f32 scaleX = data->volumeScale.x * emitterSet->_228.x * emitter->anim[22];
+    f32 scaleY = data->volumeScale.y * emitterSet->_228.y * emitter->anim[23];
+    f32 scaleZ = data->volumeScale.z * emitterSet->_228.z * emitter->anim[24];
+
+    EMIT_LOOP_START()
+
+        f32 v0 = 1.0f - data->_364;
+        if (v0 == 1.0f)
+            v0 = 0.999f;
+
+        if (v0 == 0.0f)
+        {
+            ptcl->pos.x = scaleX * emitter->random.GetF32Range(-1.0f, 1.0f);
+            ptcl->pos.y = scaleY * emitter->random.GetF32Range(-1.0f, 1.0f);
+            ptcl->pos.z = scaleZ * emitter->random.GetF32Range(-1.0f, 1.0f);
+        }
+        else
+        {
+            f32 v1 = emitter->random.GetF32();
+            f32 v2 = 1.0f - v0;
+            f32 v3 = v2 * v0;
+            v1 *= 1.0f - v0*v0*v0;
+
+            if (v1 < v2)
+            {
+                ptcl->pos.x = emitter->random.GetF32();
+                ptcl->pos.y = emitter->random.GetF32() * v2 + v0;
+                ptcl->pos.z = emitter->random.GetF32();
+            }
+            else if (v1 < v2 + v3)
+            {
+                ptcl->pos.x = emitter->random.GetF32() * v2 + v0;
+                ptcl->pos.y = emitter->random.GetF32() * v0;
+                ptcl->pos.z = emitter->random.GetF32();
+            }
+            else
+            {
+                ptcl->pos.x = emitter->random.GetF32() * v0;
+                ptcl->pos.y = emitter->random.GetF32() * v0;
+                ptcl->pos.z = emitter->random.GetF32() * v2 + v0;
+            }
+
+            if (emitter->random.GetF32() < 0.5f)
+                ptcl->pos.x = -ptcl->pos.x;
+
+            if (emitter->random.GetF32() < 0.5f)
+                ptcl->pos.y = -ptcl->pos.y;
+
+            if (emitter->random.GetF32() < 0.5f)
+                ptcl->pos.z = -ptcl->pos.z;
+
+            ptcl->pos.x *= scaleX;
+            ptcl->pos.y *= scaleY;
+            ptcl->pos.z *= scaleZ;
+        }
+
+        math::VEC3 normalizedVel;
+        if (ptcl->pos.x != 0.0f || ptcl->pos.y != 0.0f || ptcl->pos.z != 0.0f)
+        {
+            normalizedVel = ptcl->pos;
+            normalizedVel.Normalize();
+        }
+
+        ptcl->velocity.x = normalizedVel.x * velocityMag;
+        ptcl->velocity.y = normalizedVel.y * velocityMag;
+        ptcl->velocity.z = normalizedVel.z * velocityMag;
+
+    EMIT_LOOP_FUNCTION_END()
+}
+
 PtclInstance* EmitterCalc::CalcEmitLine(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
