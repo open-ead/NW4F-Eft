@@ -42,3 +42,7 @@
 *.opt
 *.ti
 tgt/*
+
+# Misc. files
+data/eft_EmitterVolume.hpp
+data/elf.py

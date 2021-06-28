@@ -24,61 +24,7 @@ EmitterCalc::EmitFunction EmitterCalc::mEmitFunctions[] = {
     EmitterCalc::CalcEmitRectangle,
 };
 
-#define EMIT_FUNCTION_START()                                                 \
-    const SimpleEmitterData* data = emitter->data;                            \
-    const EmitterSet* emitterSet = emitter->emitterSet;                       \
-                                                                              \
-    f32 emissionRate = emitter->anim[0] * emitter->controller->_0;            \
-    emitter->emitLostRate += emissionRate;                                    \
-    s32 counter = (s32)emitter->counter;                                      \
-    if (counter == 0 && emitter->emitLostRate < 1.0f && emissionRate != 0.0f) \
-        emitter->emitLostRate = 1.0f;                                         \
-                                                                              \
-    s32 numEmit = (s32)floorf(emitter->emitLostRate);                         \
-    if (data->_289 != 0) numEmit = 1;                                         \
-    emitter->emitLostRate -= (f32)numEmit;                                    \
-    if (numEmit == 0)                                                         \
-        return NULL;                                                          \
-                                                                              \
-    f32 velocityMag = emitter->anim[15] * emitter->emitterSet->_244;
-
-#define EMIT_LOOP_START()                                                   \
-    PtclInstance* ptclFirst = NULL;                                         \
-    for (s32 i = 0; i < numEmit; i++)                                       \
-    {                                                                       \
-        PtclInstance* ptcl = mSys->AllocPtcl(emitter->calc->GetPtclType()); \
-        if (ptclFirst == NULL)                                              \
-            ptclFirst = ptcl;                                               \
-        if (ptcl == NULL)                                                   \
-            break;                                                          \
-                                                                            \
-        ptcl->data = data;                                                  \
-        ptcl->stripe = NULL;
-
-#define EMIT_LOOP_FUNCTION_END()                                                            \
-        if (data->_408 != 0.0f)                                                             \
-        {                                                                                   \
-            math::VEC3 posXZ = (math::VEC3){ ptcl->pos.x, 0.0f, ptcl->pos.z };              \
-            if (posXZ.MagnitudeSquare() <= FLT_MIN) /* FLT_MIN = 1.1754943508222875E-38f */ \
-            {                                                                               \
-                posXZ.x = emitter->random.GetF32Range(-1.0f, 1.0f);                         \
-                posXZ.z = emitter->random.GetF32Range(-1.0f, 1.0f);                         \
-            }                                                                               \
-                                                                                            \
-            if (posXZ.MagnitudeSquare() == 0.0f)                                            \
-                posXZ = (math::VEC3){ 0.0f, 0.0f, 0.0f };                                   \
-            else                                                                            \
-                posXZ.Normalize();                                                          \
-                                                                                            \
-            math::VEC3::Scale(&posXZ, &posXZ, data->_408);                                  \
-            math::VEC3::Add(&ptcl->velocity, &ptcl->velocity, &posXZ);                      \
-        }                                                                                   \
-                                                                                            \
-        EmitCommon(emitter, ptcl);                                                          \
-    }                                                                                       \
-                                                                                            \
-    emitter->isEmitted = true;                                                              \
-    return ptclFirst;
+#include "eft_EmitterVolume.hpp"
 
 PtclInstance* EmitterCalc::CalcEmitPoint(EmitterInstance* emitter)
 {
