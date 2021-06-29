@@ -344,6 +344,201 @@ bool Renderer::ConnectionStripeUvScaleCalc(f32& invTexRatio, f32& texRatioSub, c
 
 }
 
+u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex)
+{
+    if (numParticles < 2)
+        return 0;
+
+    const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(emitter->particleHead->data);
+    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+
+    bool edgeConnected = false;
+    s32 numSliceHistory = numParticles;
+
+    if (connectionType == 1 || connectionType == 2)
+    {
+        edgeConnected = true;
+        numSliceHistory++;
+    }
+
+    u32 numDrawStripe = 0;
+
+    f32 invRatio    = 1.0f / (f32)(numSliceHistory - 1);
+    f32 invTexRatio, texRatioSub;
+    ConnectionStripeUvScaleCalc(invTexRatio, texRatioSub, emitter, numParticles, invRatio, connectionType);
+
+    f32 alphaRange = stripeData->alphaEnd - stripeData->alphaStart;
+
+    PtclInstance* ptclFirst = emitter->particleHead;
+    PtclInstance* ptcl = ptclFirst;
+    PtclInstance* ptcl_next = ptclFirst->next;
+
+    math::VEC3 currentSliceDir;
+    math::VEC3 currPos, nextPos;
+
+    for (s32 i = 0; i < numSliceHistory; i++)
+    {
+        u32 idx = firstVertex + numDrawStripe;
+        StripeVertexBuffer* buffer0 = &stripeVertexBuffer[idx + 0];
+        StripeVertexBuffer* buffer1 = &stripeVertexBuffer[idx + 1];
+
+        f32 ratio    = (f32)i * invRatio;
+        f32 texRatio = 1.0f - ((f32)i * invTexRatio) - texRatioSub;
+
+        f32 v0 = ratio * (f32)(numSliceHistory - 1);
+        s32 v1 = (s32)(v0 + 0.5f);
+
+        f32 delta = v0 - (f32)v1;
+        if (delta < 0.0f)
+            delta = 0.0f;
+
+        if (connectionType == 1 && i == 0)
+        {
+            currPos = ptclLast->worldPos;
+            nextPos = ptcl->worldPos;
+        }
+        else if (connectionType == 1 && ptcl == ptclLast)
+        {
+            currPos = ptclLast->worldPos;
+            nextPos = ptclFirst->worldPos;
+        }
+        else if (connectionType == 2 && i == 0)
+        {
+            currPos.x = emitter->matrixSRT.m[0][3];
+            currPos.y = emitter->matrixSRT.m[1][3];
+            currPos.z = emitter->matrixSRT.m[2][3];
+            nextPos = ptcl->worldPos;
+        }
+        else if (ptcl_next != NULL)
+        {
+            nextPos = ptcl_next->worldPos;
+            currPos = ptcl->worldPos;
+        }
+        else
+        {
+            math::VEC3 posDiff;
+            math::VEC3::Subtract(&posDiff, &nextPos, &currPos);
+            math::VEC3::Add(&nextPos, &nextPos, &posDiff);
+            currPos = ptcl->worldPos;
+        }
+
+        math::VEC3 pos;
+        math::VEC3::Subtract(&pos, &nextPos, &currPos);
+        math::VEC3::Scale(&pos, &pos, delta);
+        math::VEC3::Add(&pos, &currPos, &pos);
+
+        math::VEC3 dir = nextPos - currPos;
+
+        f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * ptcl->alpha;
+
+        if (stripeData->dirInterpolation != 1.0f)
+        {
+            if (i == 0)
+                currentSliceDir = dir;
+
+            else
+            {
+                math::VEC3 diff;
+                math::VEC3::Subtract(&diff, &dir, &currentSliceDir);
+                math::VEC3::Scale(&diff, &diff, stripeData->dirInterpolation);
+                math::VEC3::Add(&currentSliceDir, &currentSliceDir, &diff);
+                if (currentSliceDir.Magnitude() > 0.0f)
+                    currentSliceDir.Normalize();
+
+                dir = currentSliceDir;
+            }
+        }
+
+        buffer0->pos.xyz() = pos;
+        buffer0->pos.w     = alpha * ptcl->emitter->anim[14] * ptcl->emitter->emitterSet->color.a;
+        buffer1->pos.xyz() = pos;
+        buffer1->pos.w     = buffer0->pos.w;
+
+        buffer0->dir.xyz() = dir;
+        buffer0->dir.w     = 0.0f;
+        buffer1->dir.xyz() = dir;
+        buffer1->dir.w     = 0.0f;
+
+        if (stripeData->type == 0)
+        {
+            buffer0->outer.xyz() = eyeVec;
+            buffer1->outer.xyz() = eyeVec;
+
+            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x;
+            buffer1->outer.w     = -buffer0->outer.w;
+        }
+        else if (stripeData->type == 2)
+        {
+            math::VEC3 outer;
+            if (emitter->ptclFollowType == PtclFollowType_SRT)
+            {
+                outer.x = emitter->matrixSRT.m[0][1];
+                outer.y = emitter->matrixSRT.m[1][1];
+                outer.z = emitter->matrixSRT.m[2][1];
+            }
+            else
+            {
+                outer.x = ptcl->matrixSRT.m[0][1];
+                outer.y = ptcl->matrixSRT.m[1][1];
+                outer.z = ptcl->matrixSRT.m[2][1];
+            }
+
+            buffer0->outer.xyz() = outer * ptcl->scale.x;
+            buffer1->outer.xyz() = outer * ptcl->scale.x;
+
+            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x;
+            buffer1->outer.w     = -buffer0->outer.w;
+        }
+        else if (stripeData->type == 1)
+        {
+            math::VEC3 outer;
+            if (emitter->ptclFollowType == PtclFollowType_SRT)
+            {
+                outer.x = emitter->matrixSRT.m[0][1];
+                outer.y = emitter->matrixSRT.m[1][1];
+                outer.z = emitter->matrixSRT.m[2][1];
+            }
+            else
+            {
+                outer.x = ptcl->matrixSRT.m[0][1];
+                outer.y = ptcl->matrixSRT.m[1][1];
+                outer.z = ptcl->matrixSRT.m[2][1];
+            }
+
+            math::VEC3::CrossProduct(&outer, &outer, &dir);
+            if (outer.Magnitude() > 0.0f)
+                outer.Normalize();
+
+            buffer0->outer.xyz() = outer;
+            buffer1->outer.xyz() = outer;
+
+            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x;
+            buffer1->outer.w     = -buffer0->outer.w;
+        }
+
+        buffer0->texCoord.x = emitter->data->texAnimParam[0].uvScaleInit.x;
+        buffer0->texCoord.y = 1.0f - texRatio * emitter->data->texAnimParam[0].uvScaleInit.y;
+        buffer1->texCoord.x = 0.0f;
+        buffer1->texCoord.y = 1.0f - texRatio * emitter->data->texAnimParam[0].uvScaleInit.y;
+
+        buffer0->texCoord.z = emitter->data->texAnimParam[1].uvScaleInit.x;
+        buffer0->texCoord.w = 1.0f - texRatio * emitter->data->texAnimParam[1].uvScaleInit.y;
+        buffer1->texCoord.z = 0.0f;
+        buffer1->texCoord.w = 1.0f - texRatio * emitter->data->texAnimParam[1].uvScaleInit.y;
+
+        numDrawStripe += 2;
+
+        if (!(edgeConnected && i == 0) && ptcl_next != NULL)
+        {
+            ptcl = ptcl_next;
+            ptcl_next = ptcl->next;
+        }
+    }
+
+    stripeNumDrawVertex += numDrawStripe;
+    return numDrawStripe;
+}
+
 StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance* emitter, bool flushCache)
 {
     u32 numParticles = emitter->numParticles;
