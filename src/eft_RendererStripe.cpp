@@ -202,11 +202,11 @@ u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVerte
         math::VEC3 diff2 = stripe->queue[idx1].pos - stripe->queue[idx2].pos;
         math::VEC3 diff3 = stripe->queue[idx3].pos - stripe->queue[idx2].pos;
 
-        math::VEC3 diff4 = (diff1 - diff0) * 0.5f;
-        math::VEC3 diff5 = (diff3 - diff2) * 0.5f;
+        math::VEC3 startVel = (diff1 - diff0) * 0.5f;
+        math::VEC3 endVel = (diff3 - diff2) * 0.5f;
 
         math::VEC3 pos;
-        GetPositionOnCubic(&pos, stripe->queue[sliceHistIdx].pos, diff4, stripe->queue[nextSliceHistIdx].pos, diff5, delta);
+        GetPositionOnCubic(&pos, stripe->queue[sliceHistIdx].pos, startVel, stripe->queue[nextSliceHistIdx].pos, endVel, delta);
 
         f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
 
@@ -304,6 +304,44 @@ bool Renderer::MakeStripeAttributeBlock(EmitterInstance* emitter)
 
     emitter->numDrawStripe = numDrawStripe;
     return true;
+}
+
+bool Renderer::ConnectionStripeUvScaleCalc(f32& invTexRatio, f32& texRatioSub, const EmitterInstance* emitter, s32 numParticles, f32 invRatio, s32 connectionType)
+{
+    const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(emitter->particleHead->data);
+    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+
+    texRatioSub = 0.0f;
+
+    if (!(stripeData->textureType == 1 && emitter->counter < emitter->data->ptclMaxLifespan))
+    {
+        invTexRatio = invRatio;
+        return false;
+    }
+
+    s32 emissionDuration, numEmit;
+    if (emitter->data->endFrame != 0x7FFFFFFF && (emitter->data->endFrame - emitter->data->startFrame) < emitter->data->ptclMaxLifespan)
+    {
+        emissionDuration = emitter->data->endFrame - emitter->data->startFrame + emitter->data->emitInterval;
+        numEmit = (emissionDuration / (emitter->data->emitInterval + 1)) * (s32)emitter->data->emissionRate;
+    }
+    else
+    {
+        emissionDuration = emitter->data->ptclMaxLifespan;
+        numEmit = (emissionDuration / (emitter->data->emitInterval + 1) + 1) * (s32)emitter->data->emissionRate;
+    }
+
+    if (connectionType != 0)
+    {
+        numEmit++;
+        numParticles++;
+    }
+
+    invTexRatio = 1.0f / (f32)(numEmit - 1);
+    texRatioSub = 1.0f - invTexRatio * (numParticles - 1);
+
+    return true;
+
 }
 
 StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance* emitter, bool flushCache)
