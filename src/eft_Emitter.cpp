@@ -459,9 +459,9 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
 
     ptcl->angularVelocity = (math::VEC3){ 0.0f, 0.0f, 0.0f }; // ???
 
-    ptcl->angularVelocity.x = ptcl->angularVelocity.x + emitter->random.GetF32() * data->angularVelocityRandom.x;
-    ptcl->angularVelocity.y = ptcl->angularVelocity.y + emitter->random.GetF32() * data->angularVelocityRandom.y;
-    ptcl->angularVelocity.z = ptcl->angularVelocity.z + emitter->random.GetF32() * data->angularVelocityRandom.z;
+    ptcl->angularVelocity.x = data->angularVelocity.x + emitter->random.GetF32() * data->angularVelocityRandom.x;
+    ptcl->angularVelocity.y = data->angularVelocity.y + emitter->random.GetF32() * data->angularVelocityRandom.y;
+    ptcl->angularVelocity.z = data->angularVelocity.z + emitter->random.GetF32() * data->angularVelocityRandom.z;
 
     if (data->ptclColorSrc[0] == ColorSourceType_Random)
     {
