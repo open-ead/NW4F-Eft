@@ -36,11 +36,11 @@ void System::Initialize(Heap* argHeap, const Config& config)
 
     numCalcParticle = 0;
     numUnusedEmitters = numEmitterMax;
-    _530 = 0;
+    _unused0 = 0;
     numEmitterSetMaxMask = numEmitterSetMax - 1;
     currentCallbackID = CustomActionCallBackID_Invalid;
     numEmitterMaxMask = numEmitterMax - 1;
-    _8A8 = -1;
+    _unkCallbackVal = -1;
     numStripeMaxMask = numStripeMax - 1;
     numCalcEmitterSet = 0;
     numCalcEmitter = 0;
@@ -53,13 +53,13 @@ void System::Initialize(Heap* argHeap, const Config& config)
     doubleBufferSwapped = 0;
     currentParticleIdx = 0;
 
-    memset(emitterGroups,       0, 64 * sizeof(EmitterInstance*));
-    memset(emitterSetGroupHead, 0, 64 * sizeof(EmitterSet*));
-    memset(emitterSetGroupTail, 0, 64 * sizeof(EmitterSet*));
-    memset(stripeGroups,        0, 64 * sizeof(PtclStripe*));
-    memset(_570[CpuCore_0],     0, 64 * sizeof(u32));
-    memset(_570[CpuCore_1],     0, 64 * sizeof(u32));
-    memset(_570[CpuCore_2],     0, 64 * sizeof(u32));
+    memset(emitterGroups,           0, 64 * sizeof(EmitterInstance*));
+    memset(emitterSetGroupHead,     0, 64 * sizeof(EmitterSet*));
+    memset(emitterSetGroupTail,     0, 64 * sizeof(EmitterSet*));
+    memset(stripeGroups,            0, 64 * sizeof(PtclStripe*));
+    memset(_unusedFlags[CpuCore_0], 0, 64 * sizeof(u32));
+    memset(_unusedFlags[CpuCore_1], 0, 64 * sizeof(u32));
+    memset(_unusedFlags[CpuCore_2], 0, 64 * sizeof(u32));
 
     PtclRandom::Initialize(heap);
 
@@ -153,7 +153,7 @@ void System::Initialize(Heap* argHeap, const Config& config)
     {
         sortedEmitterSets[i] = static_cast<PtclViewZ*>(heap->Alloc(sizeof(PtclViewZ) * numEmitterSetMax));
         numSortedEmitterSets[i] = 0;
-        _A14[i] = 0;
+        _unused1[i] = 0;
     }
 
     initialized = true;

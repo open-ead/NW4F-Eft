@@ -195,14 +195,14 @@ public:
     PtclInstance* particles;
     s32 currentParticleIdx;
     AlphaAnim* alphaAnim;
-    ScaleAnim* scaleAnim; // ?
+    ScaleAnim* scaleAnim;
     PtclInstance** childParticles[CpuCore_Max];
     s32 numChildParticle[CpuCore_Max];
     PtclInstance** particlesToRemove[CpuCore_Max];
     s32 numParticleToRemove[CpuCore_Max];
     PtclStripe* stripes;
     PtclStripe* stripeGroups[64]; // Maximum of 64 groups
-    u32 _530;
+    u32 _unused0;
     s32 currentEmitterSetIdx;
     s32 currentStripeIdx;
     s32 numEmitterMax;
@@ -217,7 +217,7 @@ public:
     u32 numEmittedParticle;
     u32 numCalcStripe;
     u64 activeGroupsFlg;
-    u32 _570[CpuCore_Max][64]; // Maximum of 64 groups
+    u32 _unusedFlags[CpuCore_Max][64]; // Maximum of 64 groups
     Renderer* renderers[CpuCore_Max];
     u32 currentEmitterSetCreateID;
     EmitterCalc* emitterCalc[EmitterType_Max];
@@ -226,8 +226,8 @@ public:
     void* rendererWork[CpuCore_Max];
     void* emitterSimpleCalcWork;
     void* emitterComplexCalcWork;
-    u8 _8A4[4];
-    s32 _8A8;
+    u8 _unusedPad[4];
+    s32 _unkCallbackVal; // When not equal to -1, currentCallbackID must be valid
     CustomActionCallBackID currentCallbackID;
     CustomActionEmitterPreCalcCallback customActionEmitterPreCalcCallback[CustomActionCallBackID_Max];
     CustomActionParticleEmitCallback customActionParticleEmitCallback[CustomActionCallBackID_Max];
@@ -241,7 +241,7 @@ public:
     CustomShaderRenderStateSetCallback customShaderRenderStateSetCallback[CustomShaderCallBackID_Max];
     PtclViewZ* sortedEmitterSets[CpuCore_Max];
     u32 numSortedEmitterSets[CpuCore_Max];
-    u32 _A14[CpuCore_Max];
+    u32 _unused1[CpuCore_Max];
     u32 doubleBufferSwapped;
 };
 static_assert(sizeof(System) == 0xA28, "System size mismatch");

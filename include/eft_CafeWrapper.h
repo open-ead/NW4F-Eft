@@ -59,13 +59,22 @@ static_assert(sizeof(TextureSampler) == 0xC, "TextureSampler size mismatch");
 class UniformBlock
 {
 public:
+    enum ShaderStage
+    {
+        ShaderStage_Vertex = 0,
+        ShaderStage_Fragment = 1,
+        ShaderStage_Geometry = 2,
+        ShaderStage_Max = 3
+    };
+
+public:
     UniformBlock()
     {
         initialized = false;
         blockNotExist = false;
         bufferSize = 0;
         location = 0;
-        shaderStage = 3;
+        shaderStage = ShaderStage_Max;
     }
 
     bool InitializeVertexUniformBlock(Shader* shader, const char* name, u32);
@@ -76,7 +85,7 @@ public:
     bool blockNotExist;
     u32 bufferSize;
     u32 location;
-    u32 shaderStage; // 0 = Vertex, 1 = Fragment, 2 = Geometry?, 3 = Invalid
+    ShaderStage shaderStage;
 };
 static_assert(sizeof(UniformBlock) == 0x10, "UniformBlock size mismatch");
 
@@ -94,7 +103,7 @@ public:
 
     static void BindExtBuffer(u32 index, u32 size, u32, u32 stride, void* buffer);
 
-    u32 _0;
+    u32 _unused;
     u32 size;
     u32 bufferSize;
     void* buffer;

@@ -16,7 +16,7 @@ void System::BeginFrame()
     numEmittedParticle = 0;
     activeGroupsFlg = 0;
 
-    memset(_570, 0, CpuCore_Max * 64 * sizeof(u32));
+    memset(_unusedFlags, 0, CpuCore_Max * 64 * sizeof(u32));
 }
 
 void System::SwapDoubleBuffer()
@@ -68,7 +68,7 @@ void System::CalcParticle(EmitterInstance* emitter, CpuCore core)
     }
 
     numCalcParticle += emitter->calc->CalcParticle(emitter, core, noCalcBehavior, false);
-    _570[core][emitter->groupID] |= 1 << emitter->data->_29C;
+    _unusedFlags[core][emitter->groupID] |= 1 << emitter->data->_bitForUnusedFlag;
 }
 
 void System::CalcChildParticle(EmitterInstance* emitter, CpuCore core)
@@ -152,7 +152,7 @@ void System::CalcParticle(bool flushCache)
         for (EmitterInstance* emitter = emitterGroups[i]; emitter != NULL; emitter = emitter->next)
         {
             CalcParticle(emitter, CpuCore_1);
-            _570[CpuCore_1][emitter->groupID] |= 1 << emitter->data->_29C;
+            _unusedFlags[CpuCore_1][emitter->groupID] |= 1 << emitter->data->_bitForUnusedFlag;
 
             if (emitter->data->type == EmitterType_Complex
                 && (static_cast<const ComplexEmitterData*>(emitter->data)->childFlags & 1))

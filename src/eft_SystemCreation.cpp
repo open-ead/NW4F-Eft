@@ -132,27 +132,27 @@ bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s3
     emitterSet->matrixSRT = matrixSRT;
     emitterSet->matrixRT  = matrixSRT;
 
-    emitterSet->_1A0 = 0;
-    emitterSet->_244 = 1.0f;
-    emitterSet->_248 = 1.0f;
-    emitterSet->_24C = 1.0f;
+    emitterSet->_unusedFlags = 0;
+    emitterSet->allDirVel = 1.0f;
+    emitterSet->dirVel = 1.0f;
+    emitterSet->dirVelRandom = 1.0f;
     emitterSet->startFrame = 0;
-    emitterSet->_278 = 0;
+    emitterSet->numEmissionPoints = 0;
     emitterSet->doFade = 0;
-    emitterSet->_289 = 0;
+    emitterSet->dirSet = 0;
     emitterSet->noCalc = 0;
     emitterSet->noDraw = 0;
     emitterSet->infiniteLifespan = 0;
-    emitterSet->_28D = 0x80;
+    emitterSet->_unused = 0x80;
 
-    emitterSet->_204    = (math::VEC3){ 1.0f, 1.0f, 1.0f };
-    emitterSet->_210    = (math::VEC2){ 1.0f, 1.0f };
-    emitterSet->_218    = (math::VEC2){ 1.0f, 1.0f };
-    emitterSet->_220    = (math::VEC2){ 1.0f, 1.0f };
-    emitterSet->_228    = (math::VEC3){ 1.0f, 1.0f, 1.0f };
-    emitterSet->color.v = (math::VEC4){ 1.0f, 1.0f, 1.0f, 1.0f }; // 234
-    emitterSet->_250    = (math::VEC3){ 0.0f, 0.0f, 0.0f };
-    emitterSet->_26C    = (math::VEC3){ 0.0f, 0.0f, 0.0f };
+    emitterSet->scaleForMatrix     = (math::VEC3){ 1.0f, 1.0f, 1.0f };
+    emitterSet->ptclScale          = (math::VEC2){ 1.0f, 1.0f };
+    emitterSet->ptclEmitScale      = (math::VEC2){ 1.0f, 1.0f };
+    emitterSet->ptclEffectiveScale = (math::VEC2){ 1.0f, 1.0f };
+    emitterSet->emitterVolumeScale = (math::VEC3){ 1.0f, 1.0f, 1.0f };
+    emitterSet->color.v            = (math::VEC4){ 1.0f, 1.0f, 1.0f, 1.0f };
+    emitterSet->addVelocity        = (math::VEC3){ 0.0f, 0.0f, 0.0f };
+    emitterSet->ptclRotate         = (math::VEC3){ 0.0f, 0.0f, 0.0f };
 
     for (u32 i = 0; i < 16u; i++)
         emitterSet->emitters[i] = NULL;
@@ -187,14 +187,14 @@ bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s3
 
         emitter->controller = &emitterSet->controllers[i];
         emitter->controller->emitter = emitter;
-        emitter->controller->_0 = 1.0f;
-        emitter->controller->_4 = 1.0f;
-        emitter->controller->_8 = 1.0f;
-        emitter->controller->_C = 0x3F;
+        emitter->controller->emissionRatio = 1.0f;
+        emitter->controller->emissionInterval = 1.0f;
+        emitter->controller->life = 1.0f;
+        emitter->controller->renderVisibilityFlags = 0x3F;
 
         emitter->groupID = groupID;
 
-        emitterSet->_1A0 |= 1 << data->_29C;
+        emitterSet->_unusedFlags |= 1 << data->_bitForUnusedFlag;
 
         InitializeEmitter(emitter, data, resourceID, emitterSetID, seed, false);
 

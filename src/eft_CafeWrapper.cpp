@@ -296,7 +296,7 @@ bool UniformBlock::InitializeVertexUniformBlock(Shader* shader, const char* name
 
     location = uniformBlock->location;
     bufferSize = uniformBlock->size;
-    shaderStage = 0;
+    shaderStage = ShaderStage_Vertex;
     initialized = true;
 
     return true;
@@ -313,7 +313,7 @@ bool UniformBlock::InitializePixelUniformBlock(Shader* shader, const char* name,
 
     location = uniformBlock->location;
     bufferSize = uniformBlock->size;
-    shaderStage = 1;
+    shaderStage = ShaderStage_Fragment;
     initialized = true;
 
     return true;
@@ -326,13 +326,13 @@ void UniformBlock::BindUniformBlock(const void* buffer)
 
     switch (shaderStage)
     {
-    case 0:
+    case ShaderStage_Vertex:
         GX2SetVertexUniformBlock(location, bufferSize, buffer);
         break;
-    case 1:
+    case ShaderStage_Fragment:
         GX2SetPixelUniformBlock(location, bufferSize, buffer);
         break;
-    case 2:
+    case ShaderStage_Geometry:
         GX2SetGeometryUniformBlock(location, bufferSize, buffer);
         break;
     }

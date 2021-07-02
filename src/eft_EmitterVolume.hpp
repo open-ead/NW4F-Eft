@@ -2,19 +2,19 @@
     const SimpleEmitterData* data = emitter->data;                            \
     const EmitterSet* emitterSet = emitter->emitterSet;                       \
                                                                               \
-    f32 emissionRate = emitter->anim[0] * emitter->controller->_0;            \
+    f32 emissionRate = emitter->anim[0] * emitter->controller->emissionRatio; \
     emitter->emitLostRate += emissionRate;                                    \
     s32 counter = (s32)emitter->counter;                                      \
     if (counter == 0 && emitter->emitLostRate < 1.0f && emissionRate != 0.0f) \
         emitter->emitLostRate = 1.0f;                                         \
                                                                               \
     s32 numEmit = (s32)floorf(emitter->emitLostRate);                         \
-    if (data->_289 != 0) numEmit = 1;                                         \
+    if (data->emitSameDistance != 0) numEmit = 1;                             \
     emitter->emitLostRate -= (f32)numEmit;                                    \
     if (numEmit == 0)                                                         \
         return NULL;                                                          \
                                                                               \
-    f32 velocityMag = emitter->anim[15] * emitter->emitterSet->_244;
+    f32 velocityMag = emitter->anim[15] * emitter->emitterSet->allDirVel;
 
 #define EMIT_LOOP_START()                                                   \
     PtclInstance* ptclFirst = NULL;                                         \
@@ -30,7 +30,7 @@
         ptcl->stripe = NULL;
 
 #define EMIT_LOOP_FUNCTION_END()                                                            \
-        if (data->_408 != 0.0f)                                                             \
+        if (data->yDiffusionVel != 0.0f)                                                    \
         {                                                                                   \
             math::VEC3 posXZ = (math::VEC3){ ptcl->pos.x, 0.0f, ptcl->pos.z };              \
             if (posXZ.MagnitudeSquare() <= FLT_MIN) /* FLT_MIN = 1.1754943508222875E-38f */ \
@@ -44,7 +44,7 @@
             else                                                                            \
                 posXZ.Normalize();                                                          \
                                                                                             \
-            math::VEC3::Scale(&posXZ, &posXZ, data->_408);                                  \
+            math::VEC3::Scale(&posXZ, &posXZ, data->yDiffusionVel);                         \
             math::VEC3::Add(&ptcl->velocity, &ptcl->velocity, &posXZ);                      \
         }                                                                                   \
                                                                                             \

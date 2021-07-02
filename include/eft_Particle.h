@@ -74,7 +74,7 @@ struct PtclInstance
     math::MTX34 matrixSRT;
     math::MTX34* pMatrixRT;
     math::MTX34* pMatrixSRT;
-    u32 _140;
+    u32 _unused;
     const SimpleEmitterData* data;
     PtclInstance* prev;
     PtclInstance* next;
@@ -85,7 +85,7 @@ struct PtclInstance
     f32 childEmitCounter;
     f32 childPreCalcCounter;
     f32 childEmitLostTime;
-    u8 _16C[0x180 - 0x16C];
+    u8 _unusedPad[0x180 - 0x16C];
 };
 static_assert(sizeof(PtclInstance) == 0x180, "PtclInstance size mismatch");
 
@@ -113,8 +113,8 @@ struct PtclStripe
     s32 counter;
     math::MTX34 emitterMatrixSRT;
     math::VEC3 currentSliceDir;
-    math::VEC3 _5858;
-    math::VEC3 _5864;
+    math::VEC3 pos0;
+    math::VEC3 pos1;
     PtclStripe* prev;
     PtclStripe* next;
     u32 drawFirstVertex;

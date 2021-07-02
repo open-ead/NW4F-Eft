@@ -89,7 +89,7 @@ struct EmitterInstance
     f32 emitLostRate;
     bool isEmitted;
     bool isCalculated;
-    u8 _1EA;
+    u8 _unused;
     u32 particleBehaviorFlg;
     u32 shaderAvailableAttribFlg;
     u32 childShaderAvailableAttribFlg;

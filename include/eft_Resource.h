@@ -33,7 +33,7 @@ public:
         u32 _userData;
 
         const char* name;
-        u8 _24;
+        u8 _unused;
         ParticleShader** shaders;
         u32 numShader;
         Primitive** primitives;

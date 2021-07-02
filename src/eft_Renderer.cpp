@@ -50,7 +50,7 @@ Renderer::Renderer(Heap* argHeap, System* argSystem, const Config& config)
 
     currentParticleType = PtclType_Max;
     shaderType = ShaderType_Normal;
-    _178 = 0x3F;
+    renderVisibilityFlags = 0x3F;
 
     math::VEC3* pos = static_cast<nw::math::VEC3*>(vbPos.AllocateVertexBuffer(argHeap, sizeof(nw::math::VEC3) * 4, 3));
     pos[0].x = -0.5f;
@@ -390,7 +390,7 @@ void Renderer::EntryParticle(EmitterInstance* emitter, bool flushCache, void* ar
         .argData = argData,
     };
 
-    if (!(emitter->controller->_C & _178))
+    if (!(emitter->controller->renderVisibilityFlags & renderVisibilityFlags))
         return;
 
     bool stripe = false;

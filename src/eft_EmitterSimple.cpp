@@ -58,7 +58,7 @@ void EmitterSimpleCalc::EmitSameDistance(const SimpleEmitterData* data, EmitterI
 {
     if (!emitter->prevPosSet)
     {
-        mEmitFunctions[data->_34C](emitter);
+        mEmitFunctions[data->emitFunction](emitter);
         return;
     }
 
@@ -71,19 +71,19 @@ void EmitterSimpleCalc::EmitSameDistance(const SimpleEmitterData* data, EmitterI
 
     f32 lostDist = emitter->emitLostDistance;
 
-    if (movedDist < data->_3B8 || movedDist == 0.0f)
-        movedDist = data->_3B4;
-    else if (movedDist < data->_3B4)
-        movedDist = movedDist * data->_3B4 / movedDist;
-    else if (data->_3B0 < movedDist)
-        movedDist = movedDist * data->_3B0 / movedDist;
+    if (movedDist < data->emitSameDistanceThreshold || movedDist == 0.0f)
+        movedDist = data->emitSameDistanceMin;
+    else if (movedDist < data->emitSameDistanceMin)
+        movedDist = movedDist * data->emitSameDistanceMin / movedDist;
+    else if (data->emitSameDistanceMax < movedDist)
+        movedDist = movedDist * data->emitSameDistanceMax / movedDist;
 
     f32 remainDist = lostDist + movedDist;
-    s32 numEmit = (s32)(remainDist / data->_3AC); // No division-by-zero check
+    s32 numEmit = (s32)(remainDist / data->emitSameDistanceUnit); // No division-by-zero check
 
     for (s32 i = 0; i < numEmit; i++)
     {
-        remainDist -= data->_3AC;
+        remainDist -= data->emitSameDistanceUnit;
 
         f32 prevCurrRatio = 0.0f;
         if (movedDist != 0.0f)
@@ -104,7 +104,7 @@ void EmitterSimpleCalc::EmitSameDistance(const SimpleEmitterData* data, EmitterI
         emitter->matrixSRT.m[1][3] = pos.y;
         emitter->matrixSRT.m[2][3] = pos.z;
 
-        mEmitFunctions[data->_34C](emitter);
+        mEmitFunctions[data->emitFunction](emitter);
 
         // No idea why this is done inside the loop and not after it
         emitter->matrixRT.m[0][3] = currPos.x;
@@ -126,7 +126,7 @@ void EmitterSimpleCalc::CalcEmitter(EmitterInstance* emitter)
 
     if (emitterSet->doFade != 0)
     {
-        emit = !data->_285;
+        emit = !data->noEmitAtFade;
 
         emitter->fadeAlpha -= data->fadeAlphaStep;
         if (emitter->fadeAlpha <= 0.0f)
@@ -149,9 +149,9 @@ void EmitterSimpleCalc::CalcEmitter(EmitterInstance* emitter)
     {
         if (time >= data->startFrame)
         {
-            if (data->_289 == 0)
+            if (data->emitSameDistance == 0)
             {
-                f32 interval = emitter->emissionInterval * emitter->controller->_4;
+                f32 interval = emitter->emissionInterval * emitter->controller->emissionInterval;
 
                 f32 numEmit, numEmit2 = 0.0f;
                 if (emitter->isEmitted == 0)
@@ -211,19 +211,19 @@ void EmitterSimpleCalc::CalcEmitter(EmitterInstance* emitter)
 
                 for (s32 i = 0; i < (s32)numEmit; i++)
                 {
-                    if (emitterSet->_278 > 0)
+                    if (emitterSet->numEmissionPoints > 0)
                     {
-                        for (s32 j = 0; j < emitterSet->_278; j++)
+                        for (s32 j = 0; j < emitterSet->numEmissionPoints; j++)
                         {
                             PtclInstance* particleHeadBefore = emitter->particleHead;
-                            mEmitFunctions[data->_34C](emitter);
+                            mEmitFunctions[data->emitFunction](emitter);
                             for (PtclInstance* ptcl = emitter->particleHead; ptcl != particleHeadBefore; ptcl = ptcl->next)
-                                ptcl->pos += emitterSet->_27C[j];
+                                ptcl->pos += emitterSet->emissionPoints[j];
                         }
                     }
                     else
                     {
-                        mEmitFunctions[data->_34C](emitter);
+                        mEmitFunctions[data->emitFunction](emitter);
                     }
                 }
 

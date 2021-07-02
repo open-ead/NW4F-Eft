@@ -145,21 +145,21 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
 
     ptcl->pos += ptcl->velocity * ptcl->randomF32 * emitter->emissionSpeed;
 
-    if (emitter->particleBehaviorFlg & 1)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AirResist)
         ptcl->velocity *= data->airResist + (1.0f - data->airResist) * emissionSpeedInv;
 
-    if (emitter->particleBehaviorFlg & 2)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Gravity)
     {
         math::VEC3 gravity = data->gravity * emitter->emissionSpeed;
 
-        if (data->_283 != 0)
+        if (data->transformGravity != 0)
             ptcl->velocity += *math::VEC3::MultMTX(&gravity, &gravity, matrixRT);
 
         else
             ptcl->velocity += gravity;
     }
 
-    if (emitter->particleBehaviorFlg & 0x80)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AlphaAnim)
     {
         // EmitterCalc::ptclAnim_Alpha0_4k3v(EmitterInstance*, PtclInstance*, f32)
         {
@@ -171,7 +171,7 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
         }
     }
 
-    if (emitter->particleBehaviorFlg & 0x40)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_ScaleAnim)
     {
         // EmitterCalc::ptclAnim_Scale_4k3v(EmitterInstance*, PtclInstance*, f32)
         {
@@ -188,38 +188,38 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
         }
     }
 
-    if (emitter->particleBehaviorFlg & 4)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Rotate)
         ptcl->rotation += ptcl->angularVelocity * emitter->emissionSpeed;
 
-    if (emitter->particleBehaviorFlg & 8)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_RotInertia)
         math::VEC3::Scale(&ptcl->angularVelocity, &ptcl->angularVelocity, data->rotInertia + (1.0f - data->rotInertia) * emissionSpeedInv);
 
-    if (emitter->particleBehaviorFlg & 0x100)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Color0Anim)
     {
         // EmitterCalc::ptclAnim_Color0_4k3v(EmitterInstance*, PtclInstance*, f32)
         ColorAnim_4k3v(0, ptcl, data);
     }
 
-    if (emitter->particleBehaviorFlg & 0x200)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Color1Anim)
     {
         // EmitterCalc::ptclAnim_Color1_4k3v(EmitterInstance*, PtclInstance*, f32)
         ColorAnim_4k3v(1, ptcl, data);
     }
 
     {
-        if (emitter->particleBehaviorFlg & 0x1000)
+        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex0PtnAnim)
             TexPtnAnim(0, ptcl, data);
 
-        if (emitter->particleBehaviorFlg & 0x400)
+        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex0UVShiftAnim)
             TexUvShiftAnim(0, ptcl, data, emitter->emissionSpeed);
     }
 
-    if (emitter->particleBehaviorFlg & 0x4000)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_HasTex1)
     {
-        if (emitter->particleBehaviorFlg & 0x2000)
+        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex1PtnAnim)
             TexPtnAnim(1, ptcl, data);
 
-        if (emitter->particleBehaviorFlg & 0x800)
+        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex1UVShiftAnim)
             TexUvShiftAnim(1, ptcl, data, emitter->emissionSpeed);
     }
 }
@@ -235,7 +235,7 @@ u32 EmitterCalc::CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstan
 
     math::MTX34::MultVec(&ptcl->worldPos, matrixSRT, &ptcl->pos);
 
-    if (emitter->particleBehaviorFlg & 0x10)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf)
     {
         math::VEC3 posDiff = ptcl->pos - posBefore;
         if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
@@ -277,7 +277,7 @@ u32 EmitterCalc::CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInsta
         ptcl->posDiff += posDiff - ptcl->posDiff;
 
     math::MTX34::MultVec(&ptcl->worldPos, matrixSRT, &ptcl->pos);
-    if (emitter->particleBehaviorFlg & 0x10)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf)
         *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
 
     ptcl->counter += emitter->emissionSpeed;
@@ -299,21 +299,21 @@ u32 EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstanc
 
     ptcl->pos += ptcl->velocity * ptcl->randomF32 * emitter->emissionSpeed;
 
-    //if (emitter->particleBehaviorFlg & 1)
+    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AirResist)
         ptcl->velocity *= childData->airResist + (1.0f - data->airResist) * emissionSpeedInv; // No idea why it uses data->airResist, mistake?
 
-    //if (emitter->particleBehaviorFlg & 2)
+    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Gravity)
     {
         math::VEC3 gravity = childData->gravity * emitter->emissionSpeed;
 
-        if (data->_283 != 0)
+        if (data->transformGravity != 0)
             ptcl->velocity += *math::VEC3::MultMTX(&gravity, &gravity, matrixRT);
 
         else
             ptcl->velocity += gravity;
     }
 
-    //if (emitter->particleBehaviorFlg & 0x80)
+    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AlphaAnim)
     {
         if (counter < childData->alphaAnimTime2)
             ptcl->alpha += ptcl->alphaAnim->startDiff * emitter->emissionSpeed;
@@ -322,7 +322,7 @@ u32 EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstanc
             ptcl->alpha += ptcl->alphaAnim->endDiff * emitter->emissionSpeed;
     }
 
-    //if (emitter->particleBehaviorFlg & 0x40)
+    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_ScaleAnim)
     {
         if (counter >= childData->scaleAnimTime1)
         {
@@ -331,10 +331,10 @@ u32 EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstanc
         }
     }
 
-    //if (emitter->particleBehaviorFlg & 4)
+    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Rotate)
         ptcl->rotation += ptcl->angularVelocity * emitter->emissionSpeed;
 
-    //if (emitter->particleBehaviorFlg & 8)
+    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_RotInertia)
         math::VEC3::Scale(&ptcl->angularVelocity, &ptcl->angularVelocity, childData->rotInertia + (1.0f - childData->rotInertia) * emissionSpeedInv);
 
     if (data->childFlags & 0x2000)
@@ -357,7 +357,7 @@ u32 EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstanc
         ptcl->posDiff += posDiff - ptcl->posDiff;
 
     math::MTX34::MultVec(&ptcl->worldPos, &ptcl->matrixSRT, &ptcl->pos);
-    //if (emitter->particleBehaviorFlg & 0x10)
+    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf)
         *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
 
     ptcl->counter += emitter->emissionSpeed;
@@ -371,15 +371,15 @@ void EmitterCalc::MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttribute
     ptclAttributeBuffer->wldPos.xyz() = ptcl->worldPos;
     ptclAttributeBuffer->wldPos.w = cameraOffset;
 
-    ptclAttributeBuffer->scl.x = ptcl->scale.x * emitterSet->_220.x * ptcl->fluctuationScale;
-    ptclAttributeBuffer->scl.y = ptcl->scale.y * emitterSet->_220.y * ptcl->fluctuationScale;
+    ptclAttributeBuffer->scl.x = ptcl->scale.x * emitterSet->ptclEffectiveScale.x * ptcl->fluctuationScale;
+    ptclAttributeBuffer->scl.y = ptcl->scale.y * emitterSet->ptclEffectiveScale.y * ptcl->fluctuationScale;
     ptclAttributeBuffer->scl.z = ptcl->texAnimParam[0].rotate;
     ptclAttributeBuffer->scl.w = ptcl->texAnimParam[1].rotate;
 
     ptclAttributeBuffer->color0.xyz() = ptcl->color0.rgb();
     ptclAttributeBuffer->color0.w = ptcl->alpha * ptcl->fluctuationAlpha;
 
-    if (shaderAvailableAttribFlg & 0x40)
+    if (shaderAvailableAttribFlg & ShaderAttrib_Color1)
     {
         ptclAttributeBuffer->color1.xyz() = ptcl->color1.rgb();
         ptclAttributeBuffer->color1.w = ptcl->alpha * ptcl->fluctuationAlpha;
@@ -389,23 +389,23 @@ void EmitterCalc::MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttribute
     ptclAttributeBuffer->texAnim.y    = ptcl->texAnimParam[0].offset.y - ptcl->texAnimParam[0].scroll.y;
     ptclAttributeBuffer->texAnim.zw() = ptcl->texAnimParam[0].scale;
 
-    if (shaderAvailableAttribFlg & 0x10)
+    if (shaderAvailableAttribFlg & ShaderAttrib_WldPosDf)
         ptclAttributeBuffer->wldPosDf.xyz() = ptcl->worldPosDiff;
 
-    if (shaderAvailableAttribFlg & 0x80)
+    if (shaderAvailableAttribFlg & ShaderAttrib_Rot)
     {
         ptclAttributeBuffer->rot.xyz() = ptcl->rotation;
         ptclAttributeBuffer->rot.w = 0.0f;
     }
 
-    if (shaderAvailableAttribFlg & 4)
+    if (shaderAvailableAttribFlg & ShaderAttrib_SubTexAnim)
     {
         ptclAttributeBuffer->subTexAnim.x    = ptcl->texAnimParam[1].offset.x + ptcl->texAnimParam[1].scroll.x;
         ptclAttributeBuffer->subTexAnim.y    = ptcl->texAnimParam[1].offset.y - ptcl->texAnimParam[1].scroll.y;
         ptclAttributeBuffer->subTexAnim.zw() = ptcl->texAnimParam[1].scale;
     }
 
-    if (shaderAvailableAttribFlg & 0x100)
+    if (shaderAvailableAttribFlg & ShaderAttrib_EmMat)
         ptclAttributeBuffer->emtMat = *ptcl->pMatrixRT;
 }
 

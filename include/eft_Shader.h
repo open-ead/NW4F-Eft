@@ -164,8 +164,8 @@ struct FragmentShaderKey
         texture1AlphaSrc  = data->flags >> 15 & 1;
         primitiveAlphaSrc = data->flags >> 16 & 1;
 
-        _12 = 0;
-        _2C = 0;
+        _unused0 = 0;
+        _unused1 = 0;
     }
 
     void Initialize(const SimpleEmitterData* data)
@@ -220,8 +220,8 @@ struct FragmentShaderKey
         texture1AlphaSrc  = 0;
         primitiveAlphaSrc = childFlags >> 20 & 1;
 
-        _12 = 0;
-        _2C = 0;
+        _unused0 = 0;
+        _unused1 = 0;
     }
 
     void Initialize(const ChildData* data, u32 childFlags)
@@ -283,18 +283,18 @@ struct FragmentShaderKey
     u8 texture1AlphaSrc;
     u8 primitiveAlphaSrc;
     u8 refractionApplyAlpha;
-    u16 _12; // Unused
+    u16 _unused0;
     u32 shaderUserFlag;
     u32 shaderUserSwitchFlag;
     char shaderUserMacro[16];
-    u16 _2C; // Unused
+    u16 _unused1;
     //u8 pad[2];
 };
 static_assert(sizeof(FragmentShaderKey) == 0x30, "FragmentShaderKey size mismatch");
 
 struct GeometryShaderKey // Not certain
 {
-    u8 _0[4];
+    u8 _unused[4];
 };
 static_assert(sizeof(GeometryShaderKey) == 4, "GeometryShaderKey size mismatch");
 
@@ -357,7 +357,7 @@ public:
     u32 attrNormalBuffer;
     u32 attrColorBuffer;
     u32 attrTexCoordBuffer;
-    u32 _4E0; // Unused
+    u32 _unusedAttrBuffer;
     u32 attrIndexBuffer;
     u32 attrOuterBuffer;
     u32 attrDirBuffer;
@@ -386,7 +386,7 @@ public:
     UniformBlock fragmentViewUniformBlock;
     UniformBlock vertexEmitterStaticUniformBlock;
     UniformBlock vertexEmitterDynamicUniformBlock;
-    UniformBlock _56C; // Unused?
+    UniformBlock _unusedUniformBlock; // ?
     UniformBlock fragmentEmitterStaticUniformBlock;
     UniformBlock stripeUniformBlock;
     UniformBlock vertexUserUniformBlocks[2];

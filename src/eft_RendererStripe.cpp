@@ -464,7 +464,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
             buffer0->outer.xyz() = eyeVec;
             buffer1->outer.xyz() = eyeVec;
 
-            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x;
+            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
             buffer1->outer.w     = -buffer0->outer.w;
         }
         else if (stripeData->type == 2)
@@ -486,7 +486,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
             buffer0->outer.xyz() = outer * ptcl->scale.x;
             buffer1->outer.xyz() = outer * ptcl->scale.x;
 
-            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x;
+            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
             buffer1->outer.w     = -buffer0->outer.w;
         }
         else if (stripeData->type == 1)
@@ -512,7 +512,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
             buffer0->outer.xyz() = outer;
             buffer1->outer.xyz() = outer;
 
-            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x;
+            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
             buffer1->outer.w     = -buffer0->outer.w;
         }
 
@@ -740,7 +740,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
                 buffer0->outer.xyz() = eyeVec;
                 buffer1->outer.xyz() = eyeVec;
 
-                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x * divRatio + _ptcl->scale.x * emitter->emitterSet->_220.x * invDivRatio;
+                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
                 buffer1->outer.w     = -buffer0->outer.w;
             }
             else if (stripeData->type == 2)
@@ -762,7 +762,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
                 buffer0->outer.xyz() = outer * ptcl->scale.x;
                 buffer1->outer.xyz() = outer * ptcl->scale.x;
 
-                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x * divRatio + _ptcl->scale.x * emitter->emitterSet->_220.x * invDivRatio;
+                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
                 buffer1->outer.w     = -buffer0->outer.w;
             }
             else if (stripeData->type == 1)
@@ -788,7 +788,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
                 buffer0->outer.xyz() = outer;
                 buffer1->outer.xyz() = outer;
 
-                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->_220.x * divRatio + _ptcl->scale.x * emitter->emitterSet->_220.x * invDivRatio;
+                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
                 buffer1->outer.w     = -buffer0->outer.w;
             }
 

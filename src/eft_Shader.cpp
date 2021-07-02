@@ -9,7 +9,7 @@ ParticleShader::ParticleShader()
     attrNormalBuffer = 0xFFFFFFFF;
     attrColorBuffer = 0xFFFFFFFF;
     attrTexCoordBuffer = 0xFFFFFFFF;
-    _4E0 = 0xFFFFFFFF;
+    _unusedAttrBuffer = 0xFFFFFFFF;
     attrIndexBuffer = 0xFFFFFFFF;
     attrOuterBuffer = 0xFFFFFFFF;
     attrDirBuffer = 0xFFFFFFFF;

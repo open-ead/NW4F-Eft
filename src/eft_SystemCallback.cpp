@@ -6,7 +6,7 @@ namespace nw { namespace eft {
 
 CustomActionEmitterPreCalcCallback System::GetCurrentCustomActionEmitterPreCalcCallback(const EmitterInstance* emitter)
 {
-    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+    if (_unkCallbackVal != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
         return customActionEmitterPreCalcCallback[currentCallbackID];
 
     CustomActionCallBackID callbackID = emitter->data->callbackID;
@@ -18,7 +18,7 @@ CustomActionEmitterPreCalcCallback System::GetCurrentCustomActionEmitterPreCalcC
 
 CustomActionEmitterPostCalcCallback System::GetCurrentCustomActionEmitterPostCalcCallback(const EmitterInstance* emitter)
 {
-    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+    if (_unkCallbackVal != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
         return customActionEmitterPostCalcCallback[currentCallbackID];
 
     CustomActionCallBackID callbackID = emitter->data->callbackID;
@@ -30,7 +30,7 @@ CustomActionEmitterPostCalcCallback System::GetCurrentCustomActionEmitterPostCal
 
 CustomActionParticleEmitCallback System::GetCurrentCustomActionParticleEmitCallback(const EmitterInstance* emitter)
 {
-    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+    if (_unkCallbackVal != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
         return customActionParticleEmitCallback[currentCallbackID];
 
     CustomActionCallBackID callbackID = emitter->data->callbackID;
@@ -42,7 +42,7 @@ CustomActionParticleEmitCallback System::GetCurrentCustomActionParticleEmitCallb
 
 CustomActionParticleRemoveCallback System::GetCurrentCustomActionParticleRemoveCallback(const EmitterInstance* emitter)
 {
-    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+    if (_unkCallbackVal != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
         return customActionParticleRemoveCallback[currentCallbackID];
 
     CustomActionCallBackID callbackID = emitter->data->callbackID;
@@ -54,7 +54,7 @@ CustomActionParticleRemoveCallback System::GetCurrentCustomActionParticleRemoveC
 
 CustomActionParticleCalcCallback System::GetCurrentCustomActionParticleCalcCallback(const EmitterInstance* emitter)
 {
-    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+    if (_unkCallbackVal != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
         return customActionParticleCalcCallback[currentCallbackID];
 
     CustomActionCallBackID callbackID = emitter->data->callbackID;
@@ -66,7 +66,7 @@ CustomActionParticleCalcCallback System::GetCurrentCustomActionParticleCalcCallb
 
 CustomActionParticleMakeAttributeCallback System::GetCurrentCustomActionParticleMakeAttributeCallback(const EmitterInstance* emitter)
 {
-    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+    if (_unkCallbackVal != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
         return customActionParticleMakeAttributeCallback[currentCallbackID];
 
     CustomActionCallBackID callbackID = emitter->data->callbackID;
@@ -78,7 +78,7 @@ CustomActionParticleMakeAttributeCallback System::GetCurrentCustomActionParticle
 
 CustomActionEmitterDrawOverrideCallback System::GetCurrentCustomActionEmitterDrawOverrideCallback(const EmitterInstance* emitter)
 {
-    if (_8A8 != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
+    if (_unkCallbackVal != -1 || currentCallbackID != CustomActionCallBackID_Invalid)
         return customActionEmitterDrawOverrideCallback[currentCallbackID];
 
     CustomActionCallBackID callbackID = emitter->data->callbackID;

@@ -94,7 +94,7 @@ public:
     u32 stripeNumDrawVertex;
     PtclType currentParticleType;
     ShaderType shaderType;
-    u32 _178;
+    u32 renderVisibilityFlags;
 };
 static_assert(sizeof(Renderer) == 0x17C, "Renderer size mismatch");
 

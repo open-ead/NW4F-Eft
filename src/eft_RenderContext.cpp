@@ -22,7 +22,7 @@ void RenderContext::SetupBlendType(BlendType blendType)
 {
     switch (blendType)
     {
-    case BlendType_Type0:
+    case BlendType_Normal:
         GX2SetBlendControl(GX2_RENDER_TARGET_0,
                            GX2_BLEND_SRC_ALPHA,
                            GX2_BLEND_ONE_MINUS_SRC_ALPHA,
@@ -32,7 +32,7 @@ void RenderContext::SetupBlendType(BlendType blendType)
                            GX2_BLEND_ONE_MINUS_SRC_ALPHA,
                            GX2_BLEND_COMBINE_ADD);
         break;
-    case BlendType_Type1:
+    case BlendType_Add:
         GX2SetBlendControl(GX2_RENDER_TARGET_0,
                            GX2_BLEND_SRC_ALPHA,
                            GX2_BLEND_ONE,
@@ -42,7 +42,7 @@ void RenderContext::SetupBlendType(BlendType blendType)
                            GX2_BLEND_ONE,
                            GX2_BLEND_COMBINE_ADD);
         break;
-    case BlendType_Type2:
+    case BlendType_Sub:
         GX2SetBlendControl(GX2_RENDER_TARGET_0,
                            GX2_BLEND_SRC_ALPHA,
                            GX2_BLEND_ONE,
@@ -52,7 +52,7 @@ void RenderContext::SetupBlendType(BlendType blendType)
                            GX2_BLEND_ONE,
                            GX2_BLEND_COMBINE_DST_MINUS_SRC);
         break;
-    case BlendType_Type3:
+    case BlendType_Screen:
         GX2SetBlendControl(GX2_RENDER_TARGET_0,
                            GX2_BLEND_ONE_MINUS_DST_COLOR,
                            GX2_BLEND_ONE,
@@ -62,7 +62,7 @@ void RenderContext::SetupBlendType(BlendType blendType)
                            GX2_BLEND_ONE,
                            GX2_BLEND_COMBINE_ADD);
         break;
-    case BlendType_Type4:
+    case BlendType_Mult:
         GX2SetBlendControl(GX2_RENDER_TARGET_0,
                            GX2_BLEND_ZERO,
                            GX2_BLEND_SRC_COLOR ,
@@ -81,17 +81,17 @@ void RenderContext::SetupZBufATest(ZBufATestType zBufATestType)
 {
     switch (zBufATestType)
     {
-    case ZBufATestType_Type0:
+    case ZBufATestType_Normal:
         GX2SetDepthOnlyControl(GX2_TRUE, GX2_FALSE, GX2_COMPARE_LEQUAL);
         GX2SetAlphaTest(GX2_TRUE, GX2_COMPARE_GREATER, 0.0f);
         GX2SetColorControl(GX2_LOGIC_OP_COPY, GX2_ENABLE, GX2_DISABLE, GX2_ENABLE);
         break;
-    case ZBufATestType_Type1:
+    case ZBufATestType_Ignore_Z:
         GX2SetDepthOnlyControl(GX2_FALSE, GX2_FALSE, GX2_COMPARE_LEQUAL);
         GX2SetAlphaTest(GX2_TRUE, GX2_COMPARE_GREATER, 0.0f);
         GX2SetColorControl(GX2_LOGIC_OP_COPY, GX2_ENABLE, GX2_DISABLE, GX2_ENABLE);
         break;
-    case ZBufATestType_Type2:
+    case ZBufATestType_Alpha:
         GX2SetDepthOnlyControl(GX2_TRUE, GX2_TRUE, GX2_COMPARE_LEQUAL);
         GX2SetAlphaTest(GX2_TRUE, GX2_COMPARE_GREATER, 0.5f);
         GX2SetColorControl(GX2_LOGIC_OP_COPY, GX2_DISABLE, GX2_DISABLE, GX2_ENABLE);
@@ -105,13 +105,13 @@ void RenderContext::SetupDisplaySideType(DisplaySideType displaySideType) const
 {
     switch (displaySideType)
     {
-    case DisplaySideType_Cull_None:
+    case DisplaySideType_Both:
         GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_FALSE, GX2_FALSE);
         break;
-    case DisplaySideType_Cull_Back:
+    case DisplaySideType_Front:
         GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_FALSE, GX2_TRUE);
         break;
-    case DisplaySideType_Cull_Front:
+    case DisplaySideType_Back:
         GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, GX2_TRUE, GX2_FALSE);
         break;
     }

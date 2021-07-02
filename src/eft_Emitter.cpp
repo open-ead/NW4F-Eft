@@ -42,7 +42,7 @@ void EmitterInstance::Init(const SimpleEmitterData* data)
     translateRandom.y = random.GetF32Range(-1.0, 1.0f) * data->emitterTranslateRandom.y;
     translateRandom.z = random.GetF32Range(-1.0, 1.0f) * data->emitterTranslateRandom.z;
 
-    _1EA = 0;
+    _unused = 0;
 
     animArray = static_cast<KeyFrameAnimArray*>(data->keyAnimArray);
 
@@ -75,31 +75,31 @@ void EmitterInstance::UpdateEmitterStaticUniformBlock(EmitterStaticUniformBlock*
             continue;
 
         if (shader->attrSclBuffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x001;
+            shaderAvailableAttribFlg |= ShaderAttrib_Scl;
 
         if (shader->attrSubTexAnimBuffer != 0xFFFFFFFF) // Not attrTexAnimBuffer. Typo?
-            shaderAvailableAttribFlg |= 0x002;
+            shaderAvailableAttribFlg |= ShaderAttrib_TexAnim;
 
         if (shader->attrSubTexAnimBuffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x004;
+            shaderAvailableAttribFlg |= ShaderAttrib_SubTexAnim;
 
         if (shader->attrWldPosBuffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x008;
+            shaderAvailableAttribFlg |= ShaderAttrib_WldPos;
 
         if (shader->attrWldPosDfBuffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x010;
+            shaderAvailableAttribFlg |= ShaderAttrib_WldPosDf;
 
         if (shader->attrColor0Buffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x020;
+            shaderAvailableAttribFlg |= ShaderAttrib_Color0;
 
         if (shader->attrColor1Buffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x040;
+            shaderAvailableAttribFlg |= ShaderAttrib_Color1;
 
         if (shader->attrRotBuffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x080;
+            shaderAvailableAttribFlg |= ShaderAttrib_Rot;
 
         if (shader->attrEmMat0Buffer != 0xFFFFFFFF)
-            shaderAvailableAttribFlg |= 0x100;
+            shaderAvailableAttribFlg |= ShaderAttrib_EmMat;
     }
 
     for (u32 i = 0; i < ShaderType_Max; i++)
@@ -109,74 +109,74 @@ void EmitterInstance::UpdateEmitterStaticUniformBlock(EmitterStaticUniformBlock*
             continue;
 
         if (shader->attrSclBuffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x001;
+            childShaderAvailableAttribFlg |= ShaderAttrib_Scl;
 
         if (shader->attrSubTexAnimBuffer != 0xFFFFFFFF) // Not attrTexAnimBuffer. Typo?
-            childShaderAvailableAttribFlg |= 0x002;
+            childShaderAvailableAttribFlg |= ShaderAttrib_TexAnim;
 
         if (shader->attrSubTexAnimBuffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x004;
+            childShaderAvailableAttribFlg |= ShaderAttrib_SubTexAnim;
 
         if (shader->attrWldPosBuffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x008;
+            childShaderAvailableAttribFlg |= ShaderAttrib_WldPos;
 
         if (shader->attrWldPosDfBuffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x010;
+            childShaderAvailableAttribFlg |= ShaderAttrib_WldPosDf;
 
         if (shader->attrColor0Buffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x020;
+            childShaderAvailableAttribFlg |= ShaderAttrib_Color0;
 
         if (shader->attrColor1Buffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x040;
+            childShaderAvailableAttribFlg |= ShaderAttrib_Color1;
 
         if (shader->attrRotBuffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x080;
+            childShaderAvailableAttribFlg |= ShaderAttrib_Rot;
 
         if (shader->attrEmMat0Buffer != 0xFFFFFFFF)
-            childShaderAvailableAttribFlg |= 0x100;
+            childShaderAvailableAttribFlg |= ShaderAttrib_EmMat;
     }
 
     if (data->airResist != 1.0f)
-        particleBehaviorFlg |= 0x0001;
+        particleBehaviorFlg |= ParticleBehaviorFlag_AirResist;
 
     if (data->gravity.Magnitude() != 0.0f)
-        particleBehaviorFlg |= 0x0002;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Gravity;
 
     if (data->rotationMode != VertexRotationMode_None)
-        particleBehaviorFlg |= 0x0004;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Rotate;
 
     if (data->rotInertia != 1.0f)
-        particleBehaviorFlg |= 0x0008;
+        particleBehaviorFlg |= ParticleBehaviorFlag_RotInertia;
 
-    if (shaderAvailableAttribFlg & 0x10)
-        particleBehaviorFlg |= 0x0010;
+    if (shaderAvailableAttribFlg & ShaderAttrib_WldPosDf)
+        particleBehaviorFlg |= ParticleBehaviorFlag_WldPosDf;
 
     if (data->scaleAnimTime2 != -127 || data->scaleAnimTime3 != 100)
-        particleBehaviorFlg |= 0x0040;
+        particleBehaviorFlg |= ParticleBehaviorFlag_ScaleAnim;
 
     if (data->alphaAnim.time2 != 0 || data->alphaAnim.time3 != 100)
-        particleBehaviorFlg |= 0x0080;
+        particleBehaviorFlg |= ParticleBehaviorFlag_AlphaAnim;
 
     if (data->ptclColorSrc[0] == ColorSourceType_3v4k)
-        particleBehaviorFlg |= 0x0100;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Color0Anim;
 
     if (data->ptclColorSrc[1] == ColorSourceType_3v4k)
-        particleBehaviorFlg |= 0x0200;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Color1Anim;
 
     if (data->texAnimParam[0].uvShiftAnimMode != 0)
-        particleBehaviorFlg |= 0x0400;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Tex0UVShiftAnim;
 
     if (data->texAnimParam[1].uvShiftAnimMode != 0)
-        particleBehaviorFlg |= 0x0800;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Tex1UVShiftAnim;
 
     if (data->texAnimParam[0].hasTexPtnAnim)
-        particleBehaviorFlg |= 0x1000;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Tex0PtnAnim;
 
     if (data->texAnimParam[1].hasTexPtnAnim)
-        particleBehaviorFlg |= 0x2000;
+        particleBehaviorFlg |= ParticleBehaviorFlag_Tex1PtnAnim;
 
     if (data->textures[1].initialized != 0)
-        particleBehaviorFlg |= 0x4000;
+        particleBehaviorFlg |= ParticleBehaviorFlag_HasTex1;
 
     uniformBlock->uvScaleInit.xy() = data->texAnimParam[0].uvScaleInit;
     uniformBlock->uvScaleInit.zw() = data->texAnimParam[1].uvScaleInit;
@@ -217,8 +217,8 @@ void EmitterInstance::UpdateResInfo()
 
     anim[ 0] = data->emissionRate;
     anim[ 1] = data->ptclMaxLifespan;
-    anim[15] = data->ptclVelocityMag;
-    anim[16] = data->emitterVelocityMag;
+    anim[15] = data->allDirVel;
+    anim[16] = data->dirVel;
     anim[14] = data->emitterAlpha;
     anim[11] = data->emitterColor0.r;
     anim[12] = data->emitterColor0.g;
@@ -290,20 +290,20 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
     const SimpleEmitterData* data = emitter->data;
     const EmitterSet* emitterSet = emitter->emitterSet;
 
-    f32 velocityMagRandom = 1.0f - emitter->random.GetF32() * data->_3D8 * emitterSet->_24C;
-    f32 velocityMag = emitter->anim[16] * emitterSet->_248;
+    f32 velocityMagRandom = 1.0f - emitter->random.GetF32() * data->dirVelRandom * emitterSet->dirVelRandom;
+    f32 velocityMag = emitter->anim[16] * emitterSet->dirVel;
 
-    if (data->_40C != 0.0f)
-        ptcl->pos = emitter->random.GetNormalizedVec3() * data->_40C + ptcl->pos;
+    if (data->ptclPosRandom != 0.0f)
+        ptcl->pos = emitter->random.GetNormalizedVec3() * data->ptclPosRandom + ptcl->pos;
 
-    if (emitterSet->_289 != 0)
-        ptcl->velocity = (ptcl->velocity + emitterSet->_25C * velocityMag) * velocityMagRandom;
+    if (emitterSet->dirSet != 0)
+        ptcl->velocity = (ptcl->velocity + emitterSet->dir * velocityMag) * velocityMagRandom;
 
     else
     {
-        f32 dispersionAngle = data->_3E8;
+        f32 dispersionAngle = data->dispersionAngle;
         if (dispersionAngle == 0.0f)
-            ptcl->velocity = (ptcl->velocity + data->_3DC * velocityMag) * velocityMagRandom;
+            ptcl->velocity = (ptcl->velocity + data->dir * velocityMag) * velocityMagRandom;
 
         else
         {
@@ -324,7 +324,7 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
 
             math::VEC3 base = (math::VEC3){ 0.0f, 1.0f, 0.0f };
             math::MTX34 mtx;
-            math::MTX34::MakeVectorRotation(&mtx, &base, &data->_3DC);
+            math::MTX34::MakeVectorRotation(&mtx, &base, &data->dir);
 
             math::MTX34::PSMultVec(&normalizedVel, &mtx, &normalizedVel);
             ptcl->velocity = (ptcl->velocity + normalizedVel * velocityMag) * velocityMagRandom;
@@ -332,12 +332,12 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
     }
 
     math::VEC3 randomVec3 = emitter->random.GetVec3();
-    ptcl->velocity.x += randomVec3.x * data->_3EC.x;
-    ptcl->velocity.y += randomVec3.y * data->_3EC.y;
-    ptcl->velocity.z += randomVec3.z * data->_3EC.z;
+    ptcl->velocity.x += randomVec3.x * data->diffusionVel.x;
+    ptcl->velocity.y += randomVec3.y * data->diffusionVel.y;
+    ptcl->velocity.z += randomVec3.z * data->diffusionVel.z;
 
     math::VEC3 addVelocity;
-    math::VEC3::MultMTX(&addVelocity, &emitterSet->_250, &emitterSet->matrixRT);
+    math::VEC3::MultMTX(&addVelocity, &emitterSet->addVelocity, &emitterSet->matrixRT);
     ptcl->velocity += addVelocity;
 
     ptcl->posDiff = ptcl->velocity;
@@ -348,10 +348,10 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
         ptcl->lifespan = 0x7FFFFFFF;
 
     else
-        ptcl->lifespan = (s32)((emitter->anim[1] - emitter->random.GetS32(data->ptclLifespanRandom)) * emitter->controller->_8);
+        ptcl->lifespan = (s32)((emitter->anim[1] - emitter->random.GetS32(data->ptclLifespanRandom)) * emitter->controller->life);
 
     s32 lifespan = ptcl->lifespan - 1;
-    math::VEC2 scaleRandom = (1.0f - data->_5DC * emitter->random.GetF32()) * emitterSet->_218;
+    math::VEC2 scaleRandom = (1.0f - data->ptclScaleRandom * emitter->random.GetF32()) * emitterSet->ptclEmitScale;
 
     if (lifespan == 0)
     {
@@ -388,13 +388,13 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
 
         if (found)
         {
-            ptcl->scale.x = data->_5E8.x * scaleRandom.x * emitter->anim[17];
-            ptcl->scale.y = data->_5E8.y * scaleRandom.y * emitter->anim[18];
+            ptcl->scale.x = data->ptclScaleStart.x * scaleRandom.x * emitter->anim[17];
+            ptcl->scale.y = data->ptclScaleStart.y * scaleRandom.y * emitter->anim[18];
         }
         else
         {
-            ptcl->scale.x = data->_5E8.x * scaleRandom.x * data->_5E0.x;
-            ptcl->scale.y = data->_5E8.y * scaleRandom.y * data->_5E0.y;
+            ptcl->scale.x = data->ptclScaleStart.x * scaleRandom.x * data->ptclEmitScale.x;
+            ptcl->scale.y = data->ptclScaleStart.y * scaleRandom.y * data->ptclEmitScale.y;
         }
     }
     else
@@ -407,9 +407,9 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
         ptcl->scaleAnim->time2 = (data->scaleAnimTime2 * lifespan) / 100;
         ptcl->scaleAnim->time3 = (data->scaleAnimTime3 * lifespan) / 100;
 
-        math::VEC2 scaleAnimStartDiff = data->_5F0 * (1.0f / (f32)ptcl->scaleAnim->time2);
-        math::VEC2 scale = data->_5E8 - scaleAnimStartDiff;
-        math::VEC2 scaleAnimEndDiff = data->_5F8 * (1.0f / (f32)(lifespan - ptcl->scaleAnim->time3));
+        math::VEC2 scaleAnimStartDiff = data->ptclScaleStartDiff * (1.0f / (f32)ptcl->scaleAnim->time2);
+        math::VEC2 scale = data->ptclScaleStart - scaleAnimStartDiff;
+        math::VEC2 scaleAnimEndDiff = data->ptclScaleEndDiff * (1.0f / (f32)(lifespan - ptcl->scaleAnim->time3));
 
         bool found = false;
 
@@ -443,19 +443,19 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
         }
         else
         {
-            ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * data->_5E0.x * scaleRandom.x;
-            ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * data->_5E0.y * scaleRandom.y;
-            ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * data->_5E0.x * scaleRandom.x;
-            ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * data->_5E0.y * scaleRandom.y;
+            ptcl->scaleAnim->startDiff.x = scaleAnimStartDiff.x * data->ptclEmitScale.x * scaleRandom.x;
+            ptcl->scaleAnim->startDiff.y = scaleAnimStartDiff.y * data->ptclEmitScale.y * scaleRandom.y;
+            ptcl->scaleAnim->endDiff.x = scaleAnimEndDiff.x * data->ptclEmitScale.x * scaleRandom.x;
+            ptcl->scaleAnim->endDiff.y = scaleAnimEndDiff.y * data->ptclEmitScale.y * scaleRandom.y;
 
-            ptcl->scale.x = scale.x * data->_5E0.x * scaleRandom.x;
-            ptcl->scale.y = scale.y * data->_5E0.y * scaleRandom.y;
+            ptcl->scale.x = scale.x * data->ptclEmitScale.x * scaleRandom.x;
+            ptcl->scale.y = scale.y * data->ptclEmitScale.y * scaleRandom.y;
         }
     }
 
-    ptcl->rotation.x = data->ptclRotate.x + emitter->random.GetF32() * data->ptclRotateRandom.x + emitterSet->_26C.x;
-    ptcl->rotation.y = data->ptclRotate.y + emitter->random.GetF32() * data->ptclRotateRandom.y + emitterSet->_26C.y;
-    ptcl->rotation.z = data->ptclRotate.z + emitter->random.GetF32() * data->ptclRotateRandom.z + emitterSet->_26C.z;
+    ptcl->rotation.x = data->ptclRotate.x + emitter->random.GetF32() * data->ptclRotateRandom.x + emitterSet->ptclRotate.x;
+    ptcl->rotation.y = data->ptclRotate.y + emitter->random.GetF32() * data->ptclRotateRandom.y + emitterSet->ptclRotate.y;
+    ptcl->rotation.z = data->ptclRotate.z + emitter->random.GetF32() * data->ptclRotateRandom.z + emitterSet->ptclRotate.z;
 
     ptcl->angularVelocity = (math::VEC3){ 0.0f, 0.0f, 0.0f }; // ???
 
@@ -543,12 +543,12 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
 
     ptcl->fluctuationAlpha = 1.0f;
     ptcl->fluctuationScale = 1.0f;
-    ptcl->_140 = 0;
+    ptcl->_unused = 0;
     ptcl->emitter = emitter;
     ptcl->childEmitCounter = 1000000.0f;
     ptcl->childPreCalcCounter = 0.0f;
     ptcl->childEmitLostTime = 0.0f;
-    ptcl->randomF32 = 1.0f - data->_2A4 * emitter->random.GetF32Range(-1.0f, 1.0f);
+    ptcl->randomF32 = 1.0f - data->momentumRandom * emitter->random.GetF32Range(-1.0f, 1.0f);
 
     CustomActionParticleEmitCallback callback = mSys->GetCurrentCustomActionParticleEmitCallback(emitter);
     if (callback != NULL)

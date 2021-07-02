@@ -7,11 +7,11 @@ namespace nw { namespace eft {
 
 enum BlendType
 {
-    BlendType_Type0 = 0,
-    BlendType_Type1 = 1,
-    BlendType_Type2 = 2,
-    BlendType_Type3 = 3,
-    BlendType_Type4 = 4,
+    BlendType_Normal = 0,
+    BlendType_Add = 1,
+    BlendType_Sub = 2,
+    BlendType_Screen = 3,
+    BlendType_Mult = 4,
     BlendType_User = 5,
     BlendType_Max = 6,
 };
@@ -50,9 +50,9 @@ static_assert(sizeof(CustomShaderCallBackID) == 4, "CustomShaderCallBackID size 
 
 enum DisplaySideType
 {
-    DisplaySideType_Cull_None = 0,
-    DisplaySideType_Cull_Back = 1,
-    DisplaySideType_Cull_Front = 2,
+    DisplaySideType_Both = 0,
+    DisplaySideType_Front = 1,
+    DisplaySideType_Back = 2,
     DisplaySideType_Max = 3,
 };
 static_assert(sizeof(DisplaySideType) == 4, "DisplaySideType size mismatch");
@@ -83,6 +83,25 @@ enum MeshType
 };
 static_assert(sizeof(MeshType) == 4, "MeshType size mismatch");
 
+enum ParticleBehaviorFlag
+{
+    ParticleBehaviorFlag_AirResist       = 0x0001,
+    ParticleBehaviorFlag_Gravity         = 0x0002,
+    ParticleBehaviorFlag_Rotate          = 0x0004,
+    ParticleBehaviorFlag_RotInertia      = 0x0008,
+    ParticleBehaviorFlag_WldPosDf        = 0x0010,
+    ParticleBehaviorFlag_ScaleAnim       = 0x0040,
+    ParticleBehaviorFlag_AlphaAnim       = 0x0080,
+    ParticleBehaviorFlag_Color0Anim      = 0x0100,
+    ParticleBehaviorFlag_Color1Anim      = 0x0200,
+    ParticleBehaviorFlag_Tex0UVShiftAnim = 0x0400,
+    ParticleBehaviorFlag_Tex1UVShiftAnim = 0x0800,
+    ParticleBehaviorFlag_Tex0PtnAnim     = 0x1000,
+    ParticleBehaviorFlag_Tex1PtnAnim     = 0x2000,
+    ParticleBehaviorFlag_HasTex1         = 0x4000,
+};
+static_assert(sizeof(ParticleBehaviorFlag) == 4, "ParticleBehaviorFlag size mismatch");
+
 enum PtclFollowType
 {
     PtclFollowType_SRT = 0,
@@ -100,6 +119,20 @@ enum PtclType // Actual name unknown
     PtclType_Max = 3,
 };
 static_assert(sizeof(PtclFollowType) == 4, "PtclFollowType size mismatch");
+
+enum ShaderAttrib
+{
+    ShaderAttrib_Scl        = 0x001,
+    ShaderAttrib_TexAnim    = 0x002,
+    ShaderAttrib_SubTexAnim = 0x004,
+    ShaderAttrib_WldPos     = 0x008,
+    ShaderAttrib_WldPosDf   = 0x010,
+    ShaderAttrib_Color0     = 0x020,
+    ShaderAttrib_Color1     = 0x040,
+    ShaderAttrib_Rot        = 0x080,
+    ShaderAttrib_EmMat      = 0x100,
+};
+static_assert(sizeof(ShaderAttrib) == 4, "ShaderAttrib size mismatch");
 
 enum ShaderType
 {
@@ -188,9 +221,9 @@ static_assert(sizeof(VertexTransformMode) == 4, "VertexTransformMode size mismat
 
 enum ZBufATestType
 {
-    ZBufATestType_Type0 = 0,
-    ZBufATestType_Type1 = 1,
-    ZBufATestType_Type2 = 2,
+    ZBufATestType_Normal = 0,
+    ZBufATestType_Ignore_Z = 1,
+    ZBufATestType_Alpha = 2,
     ZBufATestType_Max = 3,
 };
 static_assert(sizeof(ZBufATestType) == 4, "ZBufATestType size mismatch");

@@ -228,7 +228,7 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
             emitterSet->name = (emitterSet->data->name = &strTbl[emitterSet->data->nameOffs]);
             emitterSet->numEmitter = emitterSet->data->numEmitter;
             emitterSet->userData = emitterSet->data->userData;
-            emitterSet->_24 = 0;
+            emitterSet->_unused = 0;
             emitterSet->shaders = shaders;
             emitterSet->numShader = numShader;
             emitterSet->primitives = primitives;

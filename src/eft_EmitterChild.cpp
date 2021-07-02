@@ -21,7 +21,7 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         childPtcl->emitter = emitter;
 
         if (data->childFlags & 0x20)
-            childPtcl->velocity = ptcl->posDiff * childData->velocityScaleFactor;
+            childPtcl->velocity = ptcl->posDiff * childData->velInheritRatio;
 
         else
             childPtcl->velocity = math::VEC3::Zero();
@@ -32,19 +32,19 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
             alpha = ptcl->alpha * ptcl->fluctuationAlpha;
 
         else
-            alpha = childData->_184;
+            alpha = childData->ptclAlphaMid;
 
-        f32 scaleRandom = 1.0f - childData->_19C * emitter->random.GetF32();
+        f32 scaleRandom = 1.0f - childData->ptclScaleRandom * emitter->random.GetF32();
 
         if (data->childFlags & 8)
         {
-            childPtcl->scale.x = ptcl->scale.x * childData->_190 * ptcl->fluctuationScale * scaleRandom * emitter->anim[17];
-            childPtcl->scale.y = ptcl->scale.y * childData->_190 * ptcl->fluctuationScale * scaleRandom * emitter->anim[18];
+            childPtcl->scale.x = ptcl->scale.x * childData->scaleInheritRatio * ptcl->fluctuationScale * scaleRandom * emitter->anim[17];
+            childPtcl->scale.y = ptcl->scale.y * childData->scaleInheritRatio * ptcl->fluctuationScale * scaleRandom * emitter->anim[18];
         }
         else
         {
-            childPtcl->scale.x = scaleRandom * childData->_194.x;
-            childPtcl->scale.y = scaleRandom * childData->_194.y;
+            childPtcl->scale.x = scaleRandom * childData->ptclEmitScale.x;
+            childPtcl->scale.y = scaleRandom * childData->ptclEmitScale.y;
         }
 
         if (data->childFlags & 0x10)
@@ -73,9 +73,9 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         }
         else
         {
-            childPtcl->rotation.x = emitter->random.GetF32() * childData->_1B0.x + childData->_1A4.x;
-            childPtcl->rotation.y = emitter->random.GetF32() * childData->_1B0.y + childData->_1A4.y;
-            childPtcl->rotation.z = emitter->random.GetF32() * childData->_1B0.z + childData->_1A4.z;
+            childPtcl->rotation.x = childData->ptclRotate.x + emitter->random.GetF32() * childData->ptclRotateRandom.x;
+            childPtcl->rotation.y = childData->ptclRotate.y + emitter->random.GetF32() * childData->ptclRotateRandom.y;
+            childPtcl->rotation.z = childData->ptclRotate.z + emitter->random.GetF32() * childData->ptclRotateRandom.z;
         }
 
         if (data->childFlags & 2)
@@ -84,7 +84,7 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         }
         else
         {
-            childPtcl->color0.rgb() = childData->_160;
+            childPtcl->color0.rgb() = childData->ptclColor0;
             childPtcl->color0.a     = 0.0f;
         }
 
@@ -94,13 +94,13 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         }
         else
         {
-            childPtcl->color1.rgb() = childData->_16C;
+            childPtcl->color1.rgb() = childData->ptclColor1;
             childPtcl->color1.a     = 0.0f;
         }
 
-        childPtcl->angularVelocity.x = emitter->random.GetF32() * childData->_1C8.x + childData->_1BC.x;
-        childPtcl->angularVelocity.y = emitter->random.GetF32() * childData->_1C8.y + childData->_1BC.y;
-        childPtcl->angularVelocity.z = emitter->random.GetF32() * childData->_1C8.z + childData->_1BC.z;
+        childPtcl->angularVelocity.x = childData->angularVelocity.x + emitter->random.GetF32() * childData->angularVelocityRandom.x;
+        childPtcl->angularVelocity.y = childData->angularVelocity.y + emitter->random.GetF32() * childData->angularVelocityRandom.y;
+        childPtcl->angularVelocity.z = childData->angularVelocity.z + emitter->random.GetF32() * childData->angularVelocityRandom.z;
 
         childPtcl->texAnimParam[0].scroll = (math::VEC2){ 0.0f, 0.0f };
         childPtcl->texAnimParam[0].rotate = 0.0f;
@@ -113,14 +113,14 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         }
         else
         {
-            childPtcl->alphaAnim->startDiff = (alpha - childData->_18C) / (f32)childData->alphaAnimTime2;
-            childPtcl->alpha = childData->_18C;
+            childPtcl->alphaAnim->startDiff = (alpha - childData->ptclAlphaStart) / (f32)childData->alphaAnimTime2;
+            childPtcl->alpha = childData->ptclAlphaStart;
         }
-        childPtcl->alphaAnim->endDiff = (childData->_188 - alpha) / (f32)(childPtcl->lifespan - childData->alphaAnimTime3);
+        childPtcl->alphaAnim->endDiff = (childData->ptclAlphaEnd - alpha) / (f32)(childPtcl->lifespan - childData->alphaAnimTime3);
 
         f32 scaleAnimDurationInv = 1.0f / (childPtcl->lifespan - childData->scaleAnimTime1);
-        childPtcl->scaleAnim->startDiff.x = (childData->_1F8.x - 1.0f) * scaleAnimDurationInv * childPtcl->scale.x;
-        childPtcl->scaleAnim->startDiff.y = (childData->_1F8.y - 1.0f) * scaleAnimDurationInv * childPtcl->scale.y;
+        childPtcl->scaleAnim->startDiff.x = (childData->ptclScaleEnd.x - 1.0f) * scaleAnimDurationInv * childPtcl->scale.x;
+        childPtcl->scaleAnim->startDiff.y = (childData->ptclScaleEnd.y - 1.0f) * scaleAnimDurationInv * childPtcl->scale.y;
 
         childPtcl->fluctuationAlpha = 1.0f;
         childPtcl->fluctuationScale = 1.0f;
@@ -143,11 +143,11 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         math::VEC3 randomNormVec3 = emitter->random.GetNormalizedVec3();
         math::VEC3 randomVec3 = emitter->random.GetVec3();
 
-        childPtcl->velocity.x += randomNormVec3.x * childData->_14 + randomVec3.x * childData->_18.x;
-        childPtcl->velocity.y += randomNormVec3.y * childData->_14 + randomVec3.y * childData->_18.y;
-        childPtcl->velocity.z += randomNormVec3.z * childData->_14 + randomVec3.z * childData->_18.z;
+        childPtcl->velocity.x += randomNormVec3.x * childData->allDirVel + randomVec3.x * childData->diffusionVel.x;
+        childPtcl->velocity.y += randomNormVec3.y * childData->allDirVel + randomVec3.y * childData->diffusionVel.y;
+        childPtcl->velocity.z += randomNormVec3.z * childData->allDirVel + randomVec3.z * childData->diffusionVel.z;
 
-        childPtcl->pos = randomNormVec3 * childData->_24 + ptcl->pos;
+        childPtcl->pos = randomNormVec3 * childData->ptclPosRandom + ptcl->pos;
 
         childPtcl->counter = 0.0f;
         childPtcl->randomU32 = emitter->random.GetU32();
@@ -176,8 +176,8 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         }
 
         childPtcl->randomU32 = emitter->random.GetU32(); // Again... ?
-        childPtcl->randomF32 = 1.0f - childData->_34 * emitter->random.GetF32Range(-1.0f, 1.0f);
-        childPtcl->_140 = 0;
+        childPtcl->randomF32 = 1.0f - childData->momentumRandom * emitter->random.GetF32Range(-1.0f, 1.0f);
+        childPtcl->_unused = 0;
 
         CustomActionParticleEmitCallback callback = mSys->GetCurrentCustomActionParticleEmitCallback(emitter);
         if (callback != NULL)

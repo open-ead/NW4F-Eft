@@ -35,33 +35,33 @@ void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl
                 prev2Idx = stripeData->numSliceHistory - 1;
 
             math::VEC3 diff0;
-            math::VEC3::Subtract(&diff0, &ptcl->worldPos, &stripe->_5858);
+            math::VEC3::Subtract(&diff0, &ptcl->worldPos, &stripe->pos0);
             math::VEC3::Scale(&diff0, &diff0, sliceInterpolation);
-            math::VEC3::Add(&stripe->_5858, &stripe->_5858, &diff0);
+            math::VEC3::Add(&stripe->pos0, &stripe->pos0, &diff0);
 
             math::VEC3 diff1;
-            math::VEC3::Subtract(&diff1, &stripe->_5858, &stripe->_5864);
+            math::VEC3::Subtract(&diff1, &stripe->pos0, &stripe->pos1);
             math::VEC3::Scale(&diff1, &diff1, sliceInterpolation);
-            math::VEC3::Add(&stripe->_5864, &stripe->_5864, &diff1);
+            math::VEC3::Add(&stripe->pos1, &stripe->pos1, &diff1);
 
-            stripe->queue[prev2Idx].pos = stripe->_5858;
+            stripe->queue[prev2Idx].pos = stripe->pos0;
 
             math::VEC3 diff2;
-            math::VEC3::Subtract(&diff2, &ptcl->worldPos, &stripe->_5864);
+            math::VEC3::Subtract(&diff2, &ptcl->worldPos, &stripe->pos1);
             math::VEC3::Scale(&diff2, &diff2, 0.7f);
-            math::VEC3::Add(&stripe->queue[prevIdx].pos, &stripe->_5864, &diff2);
+            math::VEC3::Add(&stripe->queue[prevIdx].pos, &stripe->pos1, &diff2);
 
             currentSlice->pos = ptcl->worldPos;
         }
         else
         {
-            stripe->_5858 = (stripe->_5864 = (currentSlice->pos = ptcl->worldPos));
+            stripe->pos0 = (stripe->pos1 = (currentSlice->pos = ptcl->worldPos));
         }
 
         currentSlice->emitterMatrixSRT = emitter->matrixSRT;
     }
 
-    currentSlice->scale = ptcl->scale.x * emitter->emitterSet->_220.x;
+    currentSlice->scale = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
 
     if (stripe->queueRear != stripe->queueFront)
     {
@@ -130,19 +130,19 @@ void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl
 void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core, const ChildData* childData)
 {
     s32 counter = (s32)ptcl->counter - 1;
-    if (counter < ((ptcl->lifespan - 1) * childData->_4 / 100))
+    if (counter < ((ptcl->lifespan - 1) * childData->startFramePercent / 100))
         return;
 
-    if (ptcl->childEmitCounter >= childData->_C || childData->_C == 0 && childData->ptclMaxLifespan == 1)
+    if (ptcl->childEmitCounter >= childData->emissionInterval || childData->emissionInterval == 0 && childData->ptclMaxLifespan == 1)
     {
         if (ptcl->childPreCalcCounter > 0.0f)
         {
             f32 time = emitter->counter - ptcl->childPreCalcCounter + ptcl->childEmitLostTime;
-            if (childData->_C != 0)
-                time /= childData->_C;
+            if (childData->emissionInterval != 0)
+                time /= childData->emissionInterval;
 
-            if (ptcl->childEmitLostTime >= childData->_C)
-                ptcl->childEmitLostTime -= childData->_C;
+            if (ptcl->childEmitLostTime >= childData->emissionInterval)
+                ptcl->childEmitLostTime -= childData->emissionInterval;
 
             ptcl->childEmitLostTime += emitter->counter - ptcl->childPreCalcCounter - (s32)time;
         }
