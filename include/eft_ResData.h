@@ -18,7 +18,8 @@ struct TextureRes
     u16 height;
     GX2TileMode tileMode;
     u32 swizzle;
-    u8 _unusedPad[8];
+    u32 alignment;
+    u32 pitch;
     u8 wrapMode;
     u8 filterMode;
     u32 numMips;

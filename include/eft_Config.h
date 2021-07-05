@@ -21,14 +21,14 @@ public:
     {
     }
 
-    virtual ~Config() { } // deleted
+    virtual ~Config() { }
 
-    virtual void SetHeap(Heap* heap) // deleted, not sure if correct
+    virtual void SetEffectHeap(Heap* heap)
     {
         this->heap = heap;
     }
 
-    virtual Heap* GetHeap() const
+    virtual Heap* GetEffectHeap() const
     {
         return heap;
     }

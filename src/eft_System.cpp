@@ -17,8 +17,8 @@ namespace nw { namespace eft {
 System::System(const Config& config)
     : initialized(false)
 {
-    if (config.GetHeap())
-        Initialize(config.GetHeap(), config);
+    if (config.GetEffectHeap())
+        Initialize(config.GetEffectHeap(), config);
 }
 
 System::~System()
@@ -418,6 +418,7 @@ EmitterSet* System::AllocEmitterSet(Handle* handle)
 
 EmitterInstance* System::AllocEmitter(u8 groupID)
 {
+    EmitterInstance* emitter = NULL;
     s32 i = 0;
     do
     {
@@ -426,30 +427,30 @@ EmitterInstance* System::AllocEmitter(u8 groupID)
 
         if (emitters[currentEmitterIdx].calc == NULL)
         {
-            EmitterInstance* emitter = &emitters[currentEmitterIdx];
-            if (emitter == NULL) // ???
-                return NULL;
-
-            if (emitterGroups[groupID] == NULL)
-            {
-                emitterGroups[groupID] = emitter;
-                emitter->next = NULL;
-                emitter->prev = NULL;
-            }
-            else
-            {
-                emitterGroups[groupID]->prev = emitter;
-                emitter->next = emitterGroups[groupID];
-                emitterGroups[groupID] = emitter;
-                emitter->prev = NULL;
-            }
-
-            numUnusedEmitters--;
-            return emitter;
+            emitter = &emitters[currentEmitterIdx];
+            break;
         }
     } while (++i < numEmitterMax);
 
-    return NULL;
+    if (emitter == NULL)
+        return NULL;
+
+    if (emitterGroups[groupID] == NULL)
+    {
+        emitterGroups[groupID] = emitter;
+        emitter->next = NULL;
+        emitter->prev = NULL;
+    }
+    else
+    {
+        emitterGroups[groupID]->prev = emitter;
+        emitter->next = emitterGroups[groupID];
+        emitterGroups[groupID] = emitter;
+        emitter->prev = NULL;
+    }
+
+    numUnusedEmitters--;
+    return emitter;
 }
 
 void System::AddEmitterSetToDrawList(EmitterSet* emitterSet, u8 groupID)

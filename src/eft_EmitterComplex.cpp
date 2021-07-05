@@ -44,7 +44,7 @@ void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl
             math::VEC3::Scale(&diff1, &diff1, sliceInterpolation);
             math::VEC3::Add(&stripe->pos1, &stripe->pos1, &diff1);
 
-            stripe->queue[prev2Idx].pos = stripe->pos0;
+            stripe->queue[prev2Idx].pos = stripe->pos1;
 
             math::VEC3 diff2;
             math::VEC3::Subtract(&diff2, &ptcl->worldPos, &stripe->pos1);
@@ -158,7 +158,7 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
     }
 }
 
-void EmitterComplexCalc::CalcComplexParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
+void EmitterComplexCalc::CalcComplex(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
 {
     const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
 
@@ -287,7 +287,7 @@ u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, boo
             }
 
             CalcComplexParticleBehavior(emitter, ptcl, core);
-            CalcComplexParticle(emitter, ptcl, core);
+            CalcComplex(emitter, ptcl, core);
         }
 
         if (callback1 != NULL)

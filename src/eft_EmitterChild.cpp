@@ -125,7 +125,10 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
         childPtcl->fluctuationAlpha = 1.0f;
         childPtcl->fluctuationScale = 1.0f;
 
-        if (childData->texPtnAnimNum > 1) // TexPtnAnim Type Random
+        if (childData->texPtnAnimNum <= 1)
+            childPtcl->texAnimParam[0].offset = (math::VEC2){ 0.0f, 0.0f };
+
+        else // TexPtnAnim Type Random
         {
             s32 texPtnAnimIdx = emitter->random.GetU32(childData->texPtnAnimNum);
             s32 texPtnAnimIdxDiv = childData->texPtnAnimIdxDiv;
@@ -134,10 +137,6 @@ void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstanc
 
             childPtcl->texAnimParam[0].offset.x = childData->uvScaleInit.x * (f32)offsetX;
             childPtcl->texAnimParam[0].offset.y = childData->uvScaleInit.y * (f32)offsetY;
-        }
-        else
-        {
-            childPtcl->texAnimParam[0].offset = (math::VEC2){ 0.0f, 0.0f };
         }
 
         math::VEC3 randomNormVec3 = emitter->random.GetNormalizedVec3();

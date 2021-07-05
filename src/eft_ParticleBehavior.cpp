@@ -43,7 +43,8 @@ static inline void TexPtnAnim(u32 texIdx, PtclInstance* ptcl, const SimpleEmitte
 {
     s32 period = data->texAnimParam[texIdx].texPtnAnimPeriod;
     s16 size = data->texAnimParam[texIdx].texPtnAnimUsedSize;
-    s32 idx, counter = (s32)ptcl->counter;
+    s32 counter = (s32)ptcl->counter;
+    u32 idx;
 
     // Four animation types:
     // 1. Fit to lifespan
@@ -82,7 +83,8 @@ static inline void ChildTexPtnAnim(PtclInstance* ptcl, u32 childFlags, const Chi
 {
     s32 period = childData->texPtnAnimPeriod;
     s16 size = childData->texPtnAnimUsedSize;
-    s32 idx, counter = (s32)ptcl->counter;
+    s32 counter = (s32)ptcl->counter;
+    u32 idx;
 
     // Four animation types:
     // 1. Fit to lifespan
