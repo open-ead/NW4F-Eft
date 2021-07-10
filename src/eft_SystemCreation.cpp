@@ -105,7 +105,7 @@ void System::InitializeEmitter(EmitterInstance* emitter, const SimpleEmitterData
 
     emitter->primitive = NULL;
     if (emitter->data->meshType == MeshType_Primitive)
-        emitter->primitive = resources[resourceID]->GetPrimitive(emitterSetID, emitter->data->primitiveIdx);
+        emitter->primitive = resources[resourceID]->GetPrimitive(emitterSetID, emitter->data->primitive.idx);
 
     emitter->childPrimitive = NULL;
     if (emitter->data->type == EmitterType_Complex
@@ -113,7 +113,7 @@ void System::InitializeEmitter(EmitterInstance* emitter, const SimpleEmitterData
     {
         const ChildData* childData = reinterpret_cast<const ChildData*>(cdata + 1);
         if(childData->meshType == MeshType_Primitive)
-            emitter->childPrimitive = resources[resourceID]->GetPrimitive(emitterSetID, childData->primitiveIdx);
+            emitter->childPrimitive = resources[resourceID]->GetPrimitive(emitterSetID, childData->primitive.idx);
     }
 }
 
