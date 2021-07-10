@@ -38,6 +38,13 @@ struct TextureRes
 };
 static_assert(sizeof(TextureRes) == 0x114, "TextureRes size mismatch");
 
+struct EmitterPrimitive
+{
+    u8 _unusedPad[8];
+    u32 idx;
+};
+static_assert(sizeof(EmitterPrimitive) == 0xC, "EmitterPrimitive size mismatch");
+
 struct EmitterData // Actual name not known
 {
     EmitterType type;
@@ -52,8 +59,7 @@ struct EmitterData // Actual name not known
     void* keyAnimArray;
     u32 keyAnimArrayOffs;
     u32 keyAnimArraySize;
-    u8 _unusedPad1[8];
-    u32 primitiveIdx;
+    EmitterPrimitive primitive;
 };
 static_assert(sizeof(EmitterData) == 0x280, "EmitterData size mismatch");
 
@@ -225,8 +231,7 @@ struct ChildData
     f32 allDirVel;
     math::VEC3 diffusionVel;
     f32 ptclPosRandom;
-    u8 _unusedPad0[8];
-    u32 primitiveIdx;
+    EmitterPrimitive primitive;
     f32 momentumRandom;
     BlendType blendType;
     MeshType meshType;
@@ -236,7 +241,7 @@ struct ChildData
     DisplaySideType displaySideType;
     math::VEC3 ptclColor0;
     math::VEC3 ptclColor1;
-    u8 _unusedPad1[4];
+    u8 _unusedPad0[4];
     FragmentComposite primitiveColorBlend;
     FragmentComposite primitiveAlphaBlend;
     f32 ptclAlphaMid;
@@ -278,7 +283,7 @@ struct ChildData
     char userMacro2[16];
     u32 shaderUserFlag;
     u32 shaderUserSwitchFlag;
-    u8 _unusedPad2[0x2FC - 0x27C];
+    u8 _unusedPad1[0x2FC - 0x27C];
 };
 static_assert(sizeof(ChildData) == 0x2FC, "ChildData size mismatch");
 
