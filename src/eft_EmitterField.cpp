@@ -131,7 +131,7 @@ const void* EmitterCalc::_ptclField_Collision(EmitterInstance* emitter, PtclInst
                 math::VEC3 worldVelocity;
                 math::MTX34::MultVecSR(&worldVelocity, matrixSRT, &ptcl->velocity);
 
-                worldVelocity.y *= -collisionData->friction;
+                worldVelocity.y *= -collisionData->bounceRate;
 
                 math::MTX34 matrixSRTInv;
                 math::MTX34::Inverse(&matrixSRTInv, matrixSRT);
@@ -156,7 +156,7 @@ const void* EmitterCalc::_ptclField_Collision(EmitterInstance* emitter, PtclInst
             if (ptcl->pos.y < y)
             {
                 ptcl->pos.y = y;
-                ptcl->velocity.y *= -collisionData->friction;
+                ptcl->velocity.y *= -collisionData->bounceRate;
             }
         }
     }
