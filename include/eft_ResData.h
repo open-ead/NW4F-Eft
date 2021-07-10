@@ -315,7 +315,7 @@ struct FieldCollisionData
     u16 collisionType;
     u16 coordSystem;
     f32 y;
-    f32 friction;
+    f32 bounceRate;
 };
 static_assert(sizeof(FieldCollisionData) == 0xC, "FieldCollisionData size mismatch");
 
