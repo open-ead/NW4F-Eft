@@ -38,6 +38,21 @@ struct TextureRes
 };
 static_assert(sizeof(TextureRes) == 0x114, "TextureRes size mismatch");
 
+struct KeyFrameAnimArray
+{
+    char magic[4];
+    u32 numAnim;
+};
+static_assert(sizeof(KeyFrameAnimArray) == 8, "KeyFrameAnimArray size mismatch");
+
+struct EmitterKeyAnimArray
+{
+    KeyFrameAnimArray* ptr;
+    u32 offset;
+    u32 size;
+};
+static_assert(sizeof(EmitterKeyAnimArray) == 0xC, "EmitterKeyAnimArray size mismatch");
+
 struct EmitterPrimitive
 {
     u8 _unusedPad[8];
@@ -56,9 +71,7 @@ struct EmitterData // Actual name not known
     u32 nameOffs;
     const char* name;
     TextureRes textures[2];
-    void* keyAnimArray;
-    u32 keyAnimArrayOffs;
-    u32 keyAnimArraySize;
+    EmitterKeyAnimArray keyAnimArray;
     EmitterPrimitive primitive;
 };
 static_assert(sizeof(EmitterData) == 0x280, "EmitterData size mismatch");
@@ -422,12 +435,6 @@ struct PrimitiveTable // Actual name not known
 };
 static_assert(sizeof(PrimitiveTable) == 0xC, "PrimitiveTable size mismatch");
 
-struct KeyFrameAnimArray
-{
-    char magic[4];
-    u32 numAnim;
-};
-
 struct KeyFrameAnim
 {
     u32 numKeys;
@@ -437,12 +444,14 @@ struct KeyFrameAnim
     u32 nextOffs;
     u8 _unusedPad[4];
 };
+static_assert(sizeof(KeyFrameAnim) == 0x18, "KeyFrameAnim size mismatch");
 
 struct KeyFrameAnimKey
 {
     f32 time;
     f32 value;
 };
+static_assert(sizeof(KeyFrameAnimKey) == 8, "KeyFrameAnimKey size mismatch");
 
 } } // namespace nw::eft
 

@@ -44,7 +44,7 @@ void EmitterInstance::Init(const SimpleEmitterData* data)
 
     _unused = 0;
 
-    animArray = static_cast<KeyFrameAnimArray*>(data->keyAnimArray);
+    animArray = data->keyAnimArray.ptr;
 
     emitLostRate = 0.0f;
     isEmitted = false;

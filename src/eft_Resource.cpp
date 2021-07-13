@@ -282,8 +282,8 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
                                 CreateOriginalTextureHandle(heap, textureDataTbl + texture->originalTexDataOffs, *texture);
                         }
 
-                        if (emitterRef->data->keyAnimArraySize != 0)
-                            emitterRef->data->keyAnimArray = reinterpret_cast<void*>((u32)argResource + resource->keyAnimArrayTblOffs + emitterRef->data->keyAnimArrayOffs);
+                        if (emitterRef->data->keyAnimArray.size != 0)
+                            emitterRef->data->keyAnimArray.ptr = reinterpret_cast<KeyFrameAnimArray*>((u32)argResource + resource->keyAnimArrayTblOffs + emitterRef->data->keyAnimArray.offset);
                     }
                 }
             }
