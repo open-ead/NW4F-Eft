@@ -117,7 +117,7 @@ void System::InitializeEmitter(EmitterInstance* emitter, const SimpleEmitterData
     }
 }
 
-bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s32 emitterSetID, u32 resourceID, u8 groupID, u32 emitterEnableMask)
+bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixRT, s32 emitterSetID, u32 resourceID, u8 groupID, u32 emitterEnableMask)
 {
     Random* gRandom = PtclRandom::GetGlobalRandom();
 
@@ -129,8 +129,8 @@ bool System::CreateEmitterSetID(Handle* handle, const math::MTX34& matrixSRT, s3
     if (emitterSet == NULL)
         return false;
 
-    emitterSet->matrixSRT = matrixSRT;
-    emitterSet->matrixRT  = matrixSRT;
+    emitterSet->matrixSRT = matrixRT;
+    emitterSet->matrixRT  = matrixRT;
 
     emitterSet->_unusedFlags = 0;
     emitterSet->allDirVel = 1.0f;

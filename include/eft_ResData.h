@@ -318,7 +318,7 @@ static_assert(sizeof(FieldMagnetData) == 0x14, "FieldMagnetData size mismatch");
 struct FieldSpinData
 {
     s32 angle;
-    u32 axis;
+    s32 axis;
     f32 diffusionVel;
 };
 static_assert(sizeof(FieldSpinData) == 0xC, "FieldSpinData size mismatch");
