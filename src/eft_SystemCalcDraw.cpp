@@ -90,7 +90,7 @@ void System::CalcChildParticle(EmitterInstance* emitter, CpuCore core)
             ShaderEmitterPostCalcArg arg = {
                 .emitter = emitter,
                 .noCalcBehavior = noCalcBehavior,
-                .childParticle = false,
+                .childParticle = true,
             };
             callback(arg);
         }
