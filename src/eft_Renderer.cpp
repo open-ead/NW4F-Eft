@@ -439,12 +439,13 @@ void Renderer::EntryParticle(EmitterInstance* emitter, bool flushCache, void* ar
                 EntryChildParticleSub(emitter, flushCache, argData);
         }
     }
-    else
+    else if (!stripe)
     {
-        if (emitter->data->displayParent != 0 && !stripe && emitter->numDrawParticle != 0 && emitter->ptclAttributeBuffer != NULL)
-        {
-            currentParticleType = PtclType_Simple;
+        currentParticleType = emitter->data->type == EmitterType_Simple ? PtclType_Simple
+                                                                        : PtclType_Complex;
 
+        if (emitter->data->displayParent != 0 && emitter->numDrawParticle != 0 && emitter->ptclAttributeBuffer != NULL)
+        {
             if (callback != NULL)
                 callback(arg);
 
