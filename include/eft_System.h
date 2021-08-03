@@ -11,6 +11,12 @@ struct EmitterInstance;
 struct PtclInstance;
 class Renderer;
 
+struct EmitterMatrixSetArg
+{
+    EmitterInstance* emitter;
+};
+static_assert(sizeof(EmitterMatrixSetArg) == 4, "EmitterMatrixSetArg size mismatch");
+
 struct EmitterPreCalcArg
 {
     EmitterInstance* emitter;
@@ -62,6 +68,24 @@ struct EmitterDrawOverrideArg
 };
 static_assert(sizeof(EmitterDrawOverrideArg) == 0x10, "EmitterDrawOverrideArg size mismatch");
 
+struct ShaderEmitterInitializeArg
+{
+    EmitterInstance* emitter;
+};
+static_assert(sizeof(ShaderEmitterInitializeArg) == 4, "ShaderEmitterInitializeArg size mismatch");
+
+struct ShaderEmitterFinalizeArg
+{
+    EmitterInstance* emitter;
+};
+static_assert(sizeof(ShaderEmitterFinalizeArg) == 4, "ShaderEmitterFinalizeArg size mismatch");
+
+struct ShaderEmitterPreCalcArg
+{
+    EmitterInstance* emitter;
+};
+static_assert(sizeof(ShaderEmitterPreCalcArg) == 4, "ShaderEmitterPreCalcArg size mismatch");
+
 struct ShaderEmitterPostCalcArg
 {
     EmitterInstance* emitter;
@@ -88,6 +112,7 @@ struct RenderStateSetArg
 };
 static_assert(sizeof(RenderStateSetArg) == 0x10, "RenderStateSetArg size mismatch");
 
+typedef void (*CustomActionEmitterMatrixSetCallback)(EmitterMatrixSetArg& arg);
 typedef void (*CustomActionEmitterPreCalcCallback)(EmitterPreCalcArg& arg);
 typedef void (*CustomActionEmitterPostCalcCallback)(EmitterPostCalcArg& arg);
 typedef bool (*CustomActionParticleEmitCallback)(ParticleEmitArg& arg);
@@ -95,11 +120,16 @@ typedef bool (*CustomActionParticleRemoveCallback)(ParticleRemoveArg& arg);
 typedef void (*CustomActionParticleCalcCallback)(ParticleCalcArg& arg);
 typedef void (*CustomActionParticleMakeAttributeCallback)(const ParticleMakeAttrArg& arg); // const... ?
 typedef void (*CustomActionEmitterDrawOverrideCallback)(EmitterDrawOverrideArg& arg);
+typedef void (*CustomShaderEmitterInitializeCallback)(ShaderEmitterInitializeArg& arg);
+typedef void (*CustomShaderEmitterFinalizeCallback)(ShaderEmitterFinalizeArg& arg);
+typedef void (*CustomShaderEmitterPreCalcCallback)(ShaderEmitterPreCalcArg& arg);
 typedef void (*CustomShaderEmitterPostCalcCallback)(ShaderEmitterPostCalcArg& arg);
 typedef void (*CustomShaderDrawOverrideCallback)(ShaderDrawOverrideArg& arg);
 typedef void (*CustomShaderRenderStateSetCallback)(RenderStateSetArg& arg);
+typedef void (*DrawPathRenderStateSetCallback)(RenderStateSetArg& arg);
 
 struct AlphaAnim;
+struct ComplexEmitterParam;
 class Config;
 class EmitterCalc;
 class EmitterSet;
@@ -125,22 +155,23 @@ public:
     System(const Config& config);
     virtual ~System(); // deleted
 
-    virtual void Initialize(Heap* heap, const Config& config);
+    virtual void Initialize(Heap* heap, Heap* dynamicHeap, const Config& config);
 
     void RemoveStripe(PtclStripe* stripe);
-    void RemovePtcl_();
+    void RemoveStripe_();
     EmitterSet* RemoveEmitterSetFromDrawList(EmitterSet* emitterSet);
     void RemovePtcl();
-    void AddPtclRemoveList(PtclInstance* ptcl, CpuCore core);
+    void AddStripeRemoveList(PtclStripe* stripe, CpuCore core);
     void EmitChildParticle();
     void AddPtclAdditionList(PtclInstance* ptcl, CpuCore core);
-    PtclStripe* AllocAndConnectStripe(EmitterInstance* emitter, PtclInstance* ptcl);
-    PtclInstance* AllocPtcl(PtclType type);
+    PtclStripe* AllocAndConnectStripe(EmitterInstance* emitter);
+    PtclInstance* AllocPtcl();
+    inline PtclInstance* AllocPtcl(EmitterInstance* emitter);
     EmitterSet* AllocEmitterSet(Handle* handle);
     EmitterInstance* AllocEmitter(u8 groupID);
     void AddEmitterSetToDrawList(EmitterSet* emitterSet, u8 groupID);
 
-    void InitializeEmitter(EmitterInstance* emitter, const SimpleEmitterData* data, u32 resourceID, s32 emitterSetID, u32 seed, bool keepCreateID);
+    void InitializeEmitter(EmitterInstance* emitter, const SimpleEmitterData* data, EmitterStaticUniformBlock* esub, EmitterStaticUniformBlock* cesub, u32 resourceID, s32 emitterSetID, u32 seed, bool keepCreateID);
     bool CreateEmitterSetID(Handle* handle, const math::MTX34& matrixRT, s32 emitterSetID, u32 resourceID, u8 groupID, u32 emitterEnableMask = 0xFFFFFFFF);
 
     void BeginFrame();
@@ -150,19 +181,19 @@ public:
     void CalcChildParticle(EmitterInstance* emitter, CpuCore core);
     void FlushCache();
     void FlushGpuCache();
-    inline void CalcEmitter(EmitterInstance* emitter, f32 emissionSpeed);
+    void CalcEmitter(EmitterInstance* emitter, f32 emissionSpeed);
     void CalcParticle(bool flushCache);
-    void Calc(bool flushCache);
     void BeginRender(const math::MTX44& proj, const math::MTX34& view, const math::VEC3& cameraWorldPos, f32 zNear, f32 zFar);
-    void RenderEmitter(EmitterInstance* emitter, bool flushCache, void* argData);
+    void RenderEmitter(const EmitterInstance* emitter, void* argData);
     void EndRender();
 
     void ClearResource(Heap* heap, u32 resourceID);
-    void EntryResource(Heap* heap, void* resource, u32 resourceID);
+    void EntryResource(Heap* heap, void* resource, u32 resourceID, bool);
     void KillEmitter(EmitterInstance* emitter);
     void KillEmitterGroup(u8 groupID);
     void KillEmitterSet(EmitterSet* emitterSet);
 
+    CustomActionEmitterMatrixSetCallback GetCurrentCustomActionEmitterMatrixSetCallback(const EmitterInstance* emitter);
     CustomActionEmitterPreCalcCallback GetCurrentCustomActionEmitterPreCalcCallback(const EmitterInstance* emitter);
     CustomActionEmitterPostCalcCallback GetCurrentCustomActionEmitterPostCalcCallback(const EmitterInstance* emitter);
     CustomActionParticleEmitCallback GetCurrentCustomActionParticleEmitCallback(const EmitterInstance* emitter);
@@ -170,50 +201,55 @@ public:
     CustomActionParticleCalcCallback GetCurrentCustomActionParticleCalcCallback(const EmitterInstance* emitter);
     CustomActionParticleMakeAttributeCallback GetCurrentCustomActionParticleMakeAttributeCallback(const EmitterInstance* emitter);
     CustomActionEmitterDrawOverrideCallback GetCurrentCustomActionEmitterDrawOverrideCallback(const EmitterInstance* emitter);
+    CustomShaderEmitterInitializeCallback GetCustomShaderEmitterInitializeCallback(CustomShaderCallBackID callbackID);
+    CustomShaderEmitterFinalizeCallback GetCustomShaderEmitterFinalizeCallback(CustomShaderCallBackID callbackID);
+    CustomShaderEmitterPreCalcCallback GetCustomShaderEmitterPreCalcCallback(CustomShaderCallBackID callbackID);
     CustomShaderEmitterPostCalcCallback GetCustomShaderEmitterPostCalcCallback(CustomShaderCallBackID callbackID);
     CustomShaderDrawOverrideCallback GetCustomShaderDrawOverrideCallback(CustomShaderCallBackID callbackID);
     CustomShaderRenderStateSetCallback GetCustomShaderRenderStateSetCallback(CustomShaderCallBackID callbackID);
+    DrawPathRenderStateSetCallback GetDrawPathRenderStateSetCallback(DrawPathFlag flag);
 
     // For qsort
     static int ComparePtclViewZ(const void* a, const void* b);
 
-    bool initialized;
-    Heap* heap;
+    static bool mInitialized;
+    u32 counter;
+    u8 doubleBufferSwapped;
+    u8 _unused;
     Resource** resources;
     u32 numResourceMax;
     EmitterSet* emitterSets;
     s32 numEmitterSetMax;
-    s32 numEmitterSetMaxMask;
-    math::MTX44 view[CpuCore_Max];
-    EmitterInstance* emitterGroups[64];  // Maximum of 64 groups
+    s32 currentEmitterSetIdx;
     EmitterSet* emitterSetGroupHead[64]; // Maximum of 64 groups
     EmitterSet* emitterSetGroupTail[64]; // Maximum of 64 groups
+    PtclViewZ* sortedEmitterSets[CpuCore_Max];
+    u32 numSortedEmitterSets[CpuCore_Max];
     EmitterInstance* emitters;
-    EmitterStaticUniformBlock* emitterStaticUniformBlocks;
-    s32 currentEmitterIdx;
+    s32 numEmitterMax;
     s32 numUnusedEmitters;
+    s32 currentEmitterIdx;
+    EmitterInstance* emitterGroups[64];  // Maximum of 64 groups
     PtclInstance* particles;
+    s32 numParticleMax;
     s32 currentParticleIdx;
-    AlphaAnim* alphaAnim;
+    AlphaAnim* alphaAnim[2];
     ScaleAnim* scaleAnim;
+    ComplexEmitterParam* complexParam;
     PtclInstance** childParticles[CpuCore_Max];
     s32 numChildParticle[CpuCore_Max];
-    PtclInstance** particlesToRemove[CpuCore_Max];
-    s32 numParticleToRemove[CpuCore_Max];
+    PtclStripe** stripesToRemove[CpuCore_Max];
+    s32 numStripeToRemove[CpuCore_Max];
     PtclStripe* stripes;
+    u32 numStripeMax;
+    u32 currentStripeIdx;
     PtclStripe* stripeGroups[64]; // Maximum of 64 groups
+    math::MTX44 view[CpuCore_Max];
     u32 _unused0;
-    s32 currentEmitterSetIdx;
-    s32 currentStripeIdx;
-    s32 numEmitterMax;
-    s32 numParticleMax;
-    s32 numStripeMax;
-    s32 numEmitterMaxMask;
-    s32 numParticleMaxMask;
-    s32 numStripeMaxMask;
+    u32 numCalcEmitterSet;
     u32 numCalcEmitter;
     u32 numCalcParticle;
-    u32 numCalcEmitterSet;
+    u32 numCalcParticleGpu;
     u32 numEmittedParticle;
     u32 numCalcStripe;
     u64 activeGroupsFlg;
@@ -226,9 +262,16 @@ public:
     void* rendererWork[CpuCore_Max];
     void* emitterSimpleCalcWork;
     void* emitterComplexCalcWork;
-    u8 _unusedPad[4];
-    s32 _unkCallbackVal; // When not equal to -1, currentCallbackID must be valid
+    void* emitterSimpleGpuCalcWork;
+    u8 isSharedPlaneEnable;
+    math::VEC2 sharedPlaneX; // Min / Max
+    f32 sharedPlaneY;        //       Max
+    math::VEC2 sharedPlaneZ; // Min / Max
+    u32 streamOutParam[64]; // Maximum of 64 groups
+    EmitterInstance* streamOutEmitterHead;
+    EmitterInstance* streamOutEmitterTail;
     CustomActionCallBackID currentCallbackID;
+    CustomActionEmitterMatrixSetCallback customActionEmitterMatrixSetCallback[CustomActionCallBackID_Max];
     CustomActionEmitterPreCalcCallback customActionEmitterPreCalcCallback[CustomActionCallBackID_Max];
     CustomActionParticleEmitCallback customActionParticleEmitCallback[CustomActionCallBackID_Max];
     CustomActionParticleRemoveCallback customActionParticleRemoveCallback[CustomActionCallBackID_Max];
@@ -236,15 +279,50 @@ public:
     CustomActionParticleMakeAttributeCallback customActionParticleMakeAttributeCallback[CustomActionCallBackID_Max];
     CustomActionEmitterPostCalcCallback customActionEmitterPostCalcCallback[CustomActionCallBackID_Max];
     CustomActionEmitterDrawOverrideCallback customActionEmitterDrawOverrideCallback[CustomActionCallBackID_Max];
+    CustomShaderEmitterInitializeCallback customShaderEmitterInitializeCallback[CustomShaderCallBackID_Max];
+    CustomShaderEmitterFinalizeCallback customShaderEmitterFinalizeCallback[CustomShaderCallBackID_Max];
+    CustomShaderEmitterPreCalcCallback customShaderEmitterPreCalcCallback[CustomShaderCallBackID_Max];
     CustomShaderEmitterPostCalcCallback customShaderEmitterPostCalcCallback[CustomShaderCallBackID_Max];
     CustomShaderDrawOverrideCallback customShaderDrawOverrideCallback[CustomShaderCallBackID_Max];
     CustomShaderRenderStateSetCallback customShaderRenderStateSetCallback[CustomShaderCallBackID_Max];
-    PtclViewZ* sortedEmitterSets[CpuCore_Max];
-    u32 numSortedEmitterSets[CpuCore_Max];
+    u32 drawPathCallbackFlags[DrawPathCallback_Max];
+    DrawPathRenderStateSetCallback drawPathRenderStateSetCallback[DrawPathCallback_Max];
     u32 _unused1[CpuCore_Max];
-    u32 doubleBufferSwapped;
 };
-static_assert(sizeof(System) == 0xA28, "System size mismatch");
+static_assert(sizeof(System) == 0xC28, "System size mismatch");
+
+PtclInstance* System::AllocPtcl(EmitterInstance* emitter)
+{
+    PtclInstance* ptcl;
+
+    if (emitter->data->vertexTransformMode == VertexTransformMode_Stripe)
+    {
+        PtclStripe* stripe = AllocAndConnectStripe(emitter);
+        if (stripe == NULL)
+            return NULL;
+
+        ptcl = AllocPtcl();
+        if (ptcl == NULL)
+            return NULL;
+
+        ptcl->type = emitter->calc->GetPtclType();
+        ptcl->data = emitter->data;
+        ptcl->complexParam->stripe = stripe;
+        stripe->particle = ptcl;
+    }
+    else
+    {
+        ptcl = AllocPtcl();
+        if (ptcl == NULL)
+            return NULL;
+
+        ptcl->type = emitter->calc->GetPtclType();
+        ptcl->data = emitter->data;
+        ptcl->complexParam->stripe = NULL;
+    }
+
+    return ptcl;
+}
 
 } } // namespace nw::eft
 

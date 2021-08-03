@@ -150,6 +150,12 @@ bool TextureSampler::Setup(TextureFilterMode filterMode, TextureWrapMode wrapMod
     return true;
 }
 
+bool TextureSampler::Initialize(TextureFilterMode filterMode, TextureWrapMode wrapModeX, TextureWrapMode wrapModeY)
+{
+    Setup(filterMode, wrapModeX, wrapModeY);
+    return true;
+}
+
 bool TextureSampler::SetupLOD(f32 maxLOD, f32 biasLOD)
 {
     GX2InitSamplerLOD(&sampler, 0.0f, maxLOD, biasLOD);
@@ -170,6 +176,13 @@ void* VertexBuffer::AllocateVertexBuffer(Heap* heap, u32 bufSize, u32 elemSize)
     return buffer;
 }
 
+void VertexBuffer::SetVertexBuffer(void* buf, u32 bufSize, u32 elemSize)
+{
+    buffer = buf;
+    size = elemSize;
+    bufferSize = bufSize;
+}
+
 void VertexBuffer::Finalize(Heap* heap)
 {
     if (buffer != NULL)
@@ -177,11 +190,6 @@ void VertexBuffer::Finalize(Heap* heap)
         heap->Free(buffer);
         buffer = NULL;
     }
-}
-
-void VertexBuffer::Invalidate()
-{
-    DCFlushRange(buffer, bufferSize);
 }
 
 void VertexBuffer::BindBuffer(u32 index, u32 size, u32 stride)
@@ -253,12 +261,17 @@ s32 Shader::GetFragmentSamplerLocation(const char* name)
     return GX2GetPixelSamplerVarLocation(pixelShader, name);
 }
 
+s32 Shader::GetVertexSamplerLocation(const char* name)
+{
+    return GX2GetVertexSamplerVarLocation(vertexShader, name);
+}
+
 s32 Shader::GetAttributeLocation(const char* name)
 {
     return GX2GetVertexAttribVarLocation(vertexShader, name);
 }
 
-u32 Shader::GetAttribute(const char* name, u32 buffer, VertexFormat attribFormat, u32 offset, bool instanceID)
+u32 Shader::GetAttribute(const char* name, u32 buffer, VertexFormat attribFormat, u32 offset, bool instanceID, bool endianSwap)
 {
     s32 location = GetAttributeLocation(name);
     if (location == -1)
@@ -272,6 +285,9 @@ u32 Shader::GetAttribute(const char* name, u32 buffer, VertexFormat attribFormat
         attributes[numAttribute].indexType = GX2_ATTRIB_INDEX_INSTANCE_ID;
         attributes[numAttribute].aluDivisor = 1;
     }
+
+    if (endianSwap)
+        attributes[numAttribute].endianSwap = GX2_ENDIANSWAP_NONE;
 
     numAttribute++;
     return buffer;
@@ -319,21 +335,23 @@ bool UniformBlock::InitializePixelUniformBlock(Shader* shader, const char* name,
     return true;
 }
 
-void UniformBlock::BindUniformBlock(const void* buffer)
+void UniformBlock::BindUniformBlock(const void* buffer, s32 bufSize)
 {
     if (bufferSize == 0)
         return;
 
+    u32 size = (bufSize != -1) ? bufSize : bufferSize;
+
     switch (shaderStage)
     {
     case ShaderStage_Vertex:
-        GX2SetVertexUniformBlock(location, bufferSize, buffer);
+        GX2SetVertexUniformBlock(location, size, buffer);
         break;
     case ShaderStage_Fragment:
-        GX2SetPixelUniformBlock(location, bufferSize, buffer);
+        GX2SetPixelUniformBlock(location, size, buffer);
         break;
     case ShaderStage_Geometry:
-        GX2SetGeometryUniformBlock(location, bufferSize, buffer);
+        GX2SetGeometryUniformBlock(location, size, buffer);
         break;
     }
 }

@@ -10,15 +10,10 @@
 
 namespace nw { namespace eft {
 
-u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex)
+u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, const StripeData* stripeData)
 {
-    if (stripe == NULL || stripe->data == NULL)
-        return 0;
-
+    stripe->drawFirstVertex = 0;
     stripe->numDraw = 0;
-
-    const ComplexEmitterData* cdata = stripe->data;
-    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
 
     s32 histQueueCount = stripe->queueCount;
     s32 sliceHistInterval = stripeData->sliceHistInterval;
@@ -57,15 +52,18 @@ u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffe
         if (sliceHistIdx < 0)
             sliceHistIdx += stripeData->numSliceHistory;
 
-        f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
+        f32 alpha0 = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha0 * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
+        f32 alpha1 = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha1 * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
 
         buffer0->pos.xyz() = stripe->queue[sliceHistIdx].pos;
-        buffer0->pos.w     = alpha * stripe->particle->emitter->anim[14];
+        buffer0->pos.w     = alpha0 * stripe->particle->emitter->anim[14];
         buffer1->pos.xyz() = buffer0->pos.xyz();
         buffer1->pos.w     = buffer0->pos.w;
 
         buffer0->dir.xyz() = stripe->queue[sliceHistIdx].dir;
+        buffer0->dir.w     = alpha1 * stripe->particle->emitter->anim[14];
         buffer1->dir.xyz() = buffer0->dir.xyz();
+        buffer1->dir.w     = buffer0->dir.w;
 
         buffer0->outer.xyz() = stripe->queue[sliceHistIdx].outer;
         buffer1->outer.xyz() = buffer0->outer.xyz();
@@ -73,21 +71,20 @@ u32 Renderer::MakeStripeAttributeBlockCore(PtclStripe* stripe, StripeVertexBuffe
         buffer0->outer.w =  stripe->queue[sliceHistIdx].scale;
         buffer1->outer.w = -stripe->queue[sliceHistIdx].scale;
 
-        buffer0->texCoord.x = stripe->particle->texAnimParam[0].offset.x;
-        buffer0->texCoord.y = stripe->particle->texAnimParam[0].offset.y + texRatio * stripe->data->texAnimParam[0].uvScaleInit.y;
-        buffer1->texCoord.x = stripe->particle->texAnimParam[0].offset.x +            stripe->data->texAnimParam[0].uvScaleInit.x;
-        buffer1->texCoord.y = buffer0->texCoord.y;
+        buffer1->texCoord.x = stripe->texAnimParam[0].offset.x;
+        buffer1->texCoord.y = stripe->texAnimParam[0].offset.y + texRatio * stripe->data->texAnimParam[0].uvScaleInit.y;
+        buffer1->texCoord.z = stripe->texAnimParam[1].offset.x;
+        buffer1->texCoord.w = stripe->texAnimParam[1].offset.y + texRatio * stripe->data->texAnimParam[1].uvScaleInit.y;
 
-        buffer0->texCoord.z = stripe->particle->texAnimParam[1].offset.x;
-        buffer0->texCoord.w = stripe->particle->texAnimParam[1].offset.y + texRatio * stripe->data->texAnimParam[1].uvScaleInit.y;
-        buffer1->texCoord.z = stripe->particle->texAnimParam[1].offset.x +            stripe->data->texAnimParam[1].uvScaleInit.x;
-        buffer1->texCoord.w = buffer0->texCoord.w;
+        buffer0->texCoord.x = stripe->texAnimParam[0].offset.x +            stripe->data->texAnimParam[0].uvScaleInit.x;
+        buffer0->texCoord.y = buffer1->texCoord.y;
+        buffer0->texCoord.z = stripe->texAnimParam[1].offset.x +            stripe->data->texAnimParam[1].uvScaleInit.x;
+        buffer0->texCoord.w = buffer1->texCoord.w;
 
         numDrawStripe += 2;
     }
 
     stripe->numDraw = numDrawStripe;
-    stripeNumDrawVertex += numDrawStripe;
 
     return numDrawStripe;
 }
@@ -116,15 +113,12 @@ void Renderer::GetPositionOnCubic(math::VEC3* result, const math::VEC3& startPos
     math::MTX34::MultVec(result, (const math::MTX34*)&mtx, &timeVector);
 }
 
-u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, s32 numDivisions)
+u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex, const StripeData* stripeData)
 {
-    if (stripe == NULL || stripe->data == NULL)
-        return 0;
+    s32 numDivisions = stripeData->numDivisions;
 
+    stripe->drawFirstVertex = 0;
     stripe->numDraw = 0;
-
-    const ComplexEmitterData* cdata = stripe->data;
-    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
 
     s32 histQueueCount = stripe->queueCount; if (histQueueCount < 3) return 0;
     s32 sliceHistInterval = stripeData->sliceHistInterval;
@@ -208,10 +202,11 @@ u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVerte
         math::VEC3 pos;
         GetPositionOnCubic(&pos, stripe->queue[sliceHistIdx].pos, startVel, stripe->queue[nextSliceHistIdx].pos, endVel, delta);
 
-        f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
+        f32 alpha0 = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha0 * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
+        f32 alpha1 = (stripeData->alphaStart + alphaRange * ratio) * stripe->particle->alpha1 * stripe->particle->emitter->emitterSet->color.a * stripe->particle->emitter->fadeAlpha;
 
         buffer0->pos.xyz() = pos;
-        buffer0->pos.w     = alpha * stripe->particle->emitter->anim[14];
+        buffer0->pos.w     = alpha0 * stripe->particle->emitter->anim[14];
         buffer1->pos.xyz() = pos;
         buffer1->pos.w     = buffer0->pos.w;
 
@@ -223,86 +218,165 @@ u32 Renderer::MakeStripeAttributeBlockCoreDivide(PtclStripe* stripe, StripeVerte
         buffer1->outer.w     = -stripe->queue[sliceHistIdx].scale;
 
         buffer0->dir.xyz() = stripe->queue[sliceHistIdx].dir * invDelta + stripe->queue[nextSliceHistIdx].dir * delta;
+        buffer0->dir.w     = alpha1 * stripe->particle->emitter->anim[14];
         buffer1->dir.xyz() = buffer0->dir.xyz();
+        buffer1->dir.w     = buffer0->dir.w;
 
-        buffer0->texCoord.x = stripe->particle->texAnimParam[0].offset.x;
-        buffer0->texCoord.y = stripe->particle->texAnimParam[0].offset.y + texRatio * stripe->data->texAnimParam[0].uvScaleInit.y;
-        buffer1->texCoord.x = stripe->particle->texAnimParam[0].offset.x +            stripe->data->texAnimParam[0].uvScaleInit.x;
+        buffer1->texCoord.x = stripe->texAnimParam[0].offset.x;
+        buffer0->texCoord.y = stripe->texAnimParam[0].offset.y + texRatio * stripe->data->texAnimParam[0].uvScaleInit.y;
+        buffer0->texCoord.x = stripe->texAnimParam[0].offset.x +            stripe->data->texAnimParam[0].uvScaleInit.x;
         buffer1->texCoord.y = buffer0->texCoord.y;
 
-        buffer0->texCoord.z = stripe->particle->texAnimParam[1].offset.x;
-        buffer0->texCoord.w = stripe->particle->texAnimParam[1].offset.y + texRatio * stripe->data->texAnimParam[1].uvScaleInit.y;
-        buffer1->texCoord.z = stripe->particle->texAnimParam[1].offset.x +            stripe->data->texAnimParam[1].uvScaleInit.x;
+        buffer1->texCoord.z = stripe->texAnimParam[1].offset.x;
+        buffer0->texCoord.w = stripe->texAnimParam[1].offset.y + texRatio * stripe->data->texAnimParam[1].uvScaleInit.y;
+        buffer0->texCoord.z = stripe->texAnimParam[1].offset.x +            stripe->data->texAnimParam[1].uvScaleInit.x;
         buffer1->texCoord.w = buffer0->texCoord.w;
 
         numDrawStripe += 2;
     }
 
     stripe->numDraw = numDrawStripe;
-    stripeNumDrawVertex += numDrawStripe;
 
     return numDrawStripe;
 }
 
-bool Renderer::MakeStripeAttributeBlock(EmitterInstance* emitter)
+bool Renderer::MakeStripeAttributeBlock(const EmitterInstance* emitter, PtclInstance* ptcl)
 {
-    PtclInstance* ptclFirst = emitter->particleHead;
-    if (ptclFirst == NULL || ptclFirst->stripe == NULL || ptclFirst->stripe->data == NULL)
+    PtclStripe* stripe = ptcl->complexParam->stripe;
+    if (stripe == NULL)
         return false;
 
-    const ComplexEmitterData* cdata = ptclFirst->stripe->data;
-    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+    stripe->stripeUniformBlock = NULL;
+    stripe->stripeUniformBlockCross = NULL;
+    stripe->stripeVertexBuffer = NULL;
+
+    if (stripe->data == NULL || ptcl->data == NULL)
+        return false;
+
+    const StripeData* stripeData = emitter->GetStripeData();
     u32 numDivisions = stripeData->numDivisions;
 
-    u32 numVertex = 0;
-    u32 numDrawStripe = 0;
-
-    for (PtclInstance* ptcl = ptclFirst; ptcl != NULL; ptcl = ptcl->next)
-    {
-        if (ptcl->lifespan == 0)
-            continue;
-
-        PtclStripe* stripe = ptcl->stripe;
-        if (stripe == NULL || stripe->data == NULL)
-            continue;
-
-        u32 numSliceHistory = std::min( stripeData->sliceHistInterval + (stripeData->sliceHistInterval - 1) * numDivisions,
-                                        stripe->queueCount            + (stripe->queueCount            - 1) * numDivisions );
-        if (numSliceHistory <= 1)
-            continue;
-
-        numVertex += (numSliceHistory - 1) * 2;
-    }
-
+    u32 numVertex = stripe->queueCount;
     if (numVertex == 0)
         return false;
 
-    emitter->stripeVertexBuffer = static_cast<StripeVertexBuffer*>(AllocFromDoubleBuffer(sizeof(StripeVertexBuffer) * numVertex));
-    if (emitter->stripeVertexBuffer == NULL)
+    numVertex += (stripe->queueCount - 1) * numDivisions;
+    numVertex *= 2;
+
+    math::VEC3 emitterSetColor = emitter->emitterSet->color.rgb();
+    emitterSetColor.x *= emitter->data->colorScaleFactor;
+    emitterSetColor.y *= emitter->data->colorScaleFactor;
+    emitterSetColor.z *= emitter->data->colorScaleFactor;
+
+    math::VEC3 emitterColor0;
+    emitterColor0.x = emitterSetColor.x * emitter->anim[11];
+    emitterColor0.y = emitterSetColor.y * emitter->anim[12];
+    emitterColor0.z = emitterSetColor.z * emitter->anim[13];
+
+    math::VEC3 emitterColor1;
+    emitterColor1.x = emitterSetColor.x * emitter->anim[19];
+    emitterColor1.y = emitterSetColor.y * emitter->anim[20];
+    emitterColor1.z = emitterSetColor.z * emitter->anim[21];
+
+    stripe->stripeVertexBuffer = static_cast<StripeVertexBuffer*>(AllocFromDoubleBuffer(sizeof(StripeVertexBuffer) * numVertex));
+    if (stripe->stripeVertexBuffer == NULL)
         return false;
 
     if (numDivisions == 0)
-    {
-        for (PtclInstance* ptcl = ptclFirst; ptcl != NULL; ptcl = ptcl->next)
-        {
-            if (ptcl->lifespan == 0)
-                continue;
+        stripe->numDraw = MakeStripeAttributeBlockCore(stripe, stripe->stripeVertexBuffer, 0, stripeData);
 
-            numDrawStripe += MakeStripeAttributeBlockCore(ptcl->stripe, emitter->stripeVertexBuffer, numDrawStripe);
-        }
-    }
     else
-    {
-        for (PtclInstance* ptcl = ptclFirst; ptcl != NULL; ptcl = ptcl->next)
-        {
-            if (ptcl->lifespan == 0)
-                continue;
+        stripe->numDraw = MakeStripeAttributeBlockCoreDivide(stripe, stripe->stripeVertexBuffer, 0, stripeData);
 
-            numDrawStripe += MakeStripeAttributeBlockCoreDivide(ptcl->stripe, emitter->stripeVertexBuffer, numDrawStripe, numDivisions);
-        }
+    stripeNumCalcVertex += stripe->numDraw;
+
+    stripe->stripeUniformBlock = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
+    if (stripe->stripeUniformBlock == NULL)
+        return false;
+
+    math::VEC3 ptclColor0 = ptcl->color0.rgb();
+    ptclColor0.x *= emitterColor0.x;
+    ptclColor0.y *= emitterColor0.y;
+    ptclColor0.z *= emitterColor0.z;
+
+    math::VEC3 ptclColor1 = ptcl->color1.rgb();
+    ptclColor1.x *= emitterColor1.x;
+    ptclColor1.y *= emitterColor1.y;
+    ptclColor1.z *= emitterColor1.z;
+
+    {
+        StripeUniformBlock* uniformBlock = stripe->stripeUniformBlock;
+
+        uniformBlock->stParam.x = 1.0f;
+        uniformBlock->stParam.y = 0.0f;
+        uniformBlock->stParam.z = emitter->data->cameraOffset;
+        uniformBlock->stParam.w = ptcl->scale.x;
+
+        uniformBlock->uvScrollAnim.x = stripe->texAnimParam[0].offset.x + stripe->texAnimParam[0].scroll.x;
+        uniformBlock->uvScrollAnim.y = stripe->texAnimParam[0].offset.y - stripe->texAnimParam[0].scroll.y;
+        uniformBlock->uvScrollAnim.z = stripe->texAnimParam[1].offset.x + stripe->texAnimParam[1].scroll.x;
+        uniformBlock->uvScrollAnim.w = stripe->texAnimParam[1].offset.y - stripe->texAnimParam[1].scroll.y;
+
+        uniformBlock->uvScaleRotateAnim0.x = stripe->texAnimParam[0].scale.x;
+        uniformBlock->uvScaleRotateAnim0.y = stripe->texAnimParam[0].scale.y;
+        uniformBlock->uvScaleRotateAnim0.z = stripe->texAnimParam[0].rotate;
+        uniformBlock->uvScaleRotateAnim0.w = 0.0f;
+
+        uniformBlock->uvScaleRotateAnim1.x = stripe->texAnimParam[1].scale.x;
+        uniformBlock->uvScaleRotateAnim1.y = stripe->texAnimParam[1].scale.y;
+        uniformBlock->uvScaleRotateAnim1.z = stripe->texAnimParam[1].rotate;
+        uniformBlock->uvScaleRotateAnim1.w = 0.0f;
+
+        uniformBlock->vtxColor0.xyz() = ptclColor0;
+        uniformBlock->vtxColor0.w = ptcl->emitter->fadeAlpha;
+
+        uniformBlock->vtxColor1.xyz() = ptclColor1;
+        uniformBlock->vtxColor1.w = ptcl->emitter->fadeAlpha;
+
+        uniformBlock->emitterMat = math::MTX44(ptcl->emitter->matrixSRT);
+
+        GX2EndianSwap(uniformBlock, sizeof(StripeUniformBlock));
     }
 
-    emitter->numDrawStripe = numDrawStripe;
+    if (stripeData->crossType == 1)
+    {
+        stripe->stripeUniformBlockCross = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
+        if (stripe->stripeUniformBlockCross == NULL)
+            return true;
+
+        StripeUniformBlock* uniformBlock = stripe->stripeUniformBlockCross;
+
+        uniformBlock->stParam.x = 0.0f;
+        uniformBlock->stParam.y = 1.0f;
+        uniformBlock->stParam.z = emitter->data->cameraOffset;
+        uniformBlock->stParam.w = ptcl->scale.x;
+
+        uniformBlock->uvScrollAnim.x = stripe->texAnimParam[0].offset.x + stripe->texAnimParam[0].scroll.x;
+        uniformBlock->uvScrollAnim.y = stripe->texAnimParam[0].offset.y - stripe->texAnimParam[0].scroll.y;
+        uniformBlock->uvScrollAnim.z = stripe->texAnimParam[1].offset.x + stripe->texAnimParam[1].scroll.x;
+        uniformBlock->uvScrollAnim.w = stripe->texAnimParam[1].offset.y - stripe->texAnimParam[1].scroll.y;
+
+        uniformBlock->uvScaleRotateAnim0.x = stripe->texAnimParam[0].scale.x;
+        uniformBlock->uvScaleRotateAnim0.y = stripe->texAnimParam[0].scale.y;
+        uniformBlock->uvScaleRotateAnim0.z = stripe->texAnimParam[0].rotate;
+        uniformBlock->uvScaleRotateAnim0.w = 0.0f;
+
+        uniformBlock->uvScaleRotateAnim1.x = stripe->texAnimParam[1].scale.x;
+        uniformBlock->uvScaleRotateAnim1.y = stripe->texAnimParam[1].scale.y;
+        uniformBlock->uvScaleRotateAnim1.z = stripe->texAnimParam[1].rotate;
+        uniformBlock->uvScaleRotateAnim1.w = 0.0f;
+
+        uniformBlock->vtxColor0.xyz() = ptclColor0;
+        uniformBlock->vtxColor0.w = ptcl->emitter->fadeAlpha;
+
+        uniformBlock->vtxColor1.xyz() = ptclColor1;
+        uniformBlock->vtxColor1.w = ptcl->emitter->fadeAlpha;
+
+        uniformBlock->emitterMat = math::MTX44(ptcl->emitter->matrixSRT);
+
+        GX2EndianSwap(uniformBlock, sizeof(StripeUniformBlock));
+    }
+
     return true;
 }
 
@@ -344,13 +418,12 @@ bool Renderer::ConnectionStripeUvScaleCalc(f32& invTexRatio, f32& texRatioSub, c
 
 }
 
-u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex)
+u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer)
 {
     if (numParticles < 2)
         return 0;
 
-    const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(emitter->particleHead->data);
-    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+    const StripeData* stripeData = emitter->GetStripeData();
 
     bool edgeConnected = false;
     s32 numSliceHistory = numParticles;
@@ -378,7 +451,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
 
     for (s32 i = 0; i < numSliceHistory; i++)
     {
-        u32 idx = firstVertex + numDrawStripe;
+        u32 idx = 0 + numDrawStripe;
         StripeVertexBuffer* buffer0 = &stripeVertexBuffer[idx + 0];
         StripeVertexBuffer* buffer1 = &stripeVertexBuffer[idx + 1];
 
@@ -429,7 +502,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
 
         math::VEC3 dir = nextPos - currPos;
 
-        f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * ptcl->alpha;
+        f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * ptcl->alpha0;
 
         if (stripeData->dirInterpolation != 1.0f)
         {
@@ -464,8 +537,8 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
             buffer0->outer.xyz() = eyeVec;
             buffer1->outer.xyz() = eyeVec;
 
-            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
-            buffer1->outer.w     = -buffer0->outer.w;
+            buffer1->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
+            buffer0->outer.w     = -buffer1->outer.w;
         }
         else if (stripeData->type == 2)
         {
@@ -483,11 +556,11 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
                 outer.z = ptcl->matrixSRT.m[2][1];
             }
 
-            buffer0->outer.xyz() = outer * ptcl->scale.x;
-            buffer1->outer.xyz() = outer * ptcl->scale.x;
+            buffer0->outer.xyz() = outer;
+            buffer1->outer.xyz() = outer;
 
-            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
-            buffer1->outer.w     = -buffer0->outer.w;
+            buffer1->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
+            buffer0->outer.w     = -buffer1->outer.w;
         }
         else if (stripeData->type == 1)
         {
@@ -512,8 +585,8 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
             buffer0->outer.xyz() = outer;
             buffer1->outer.xyz() = outer;
 
-            buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
-            buffer1->outer.w     = -buffer0->outer.w;
+            buffer1->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
+            buffer0->outer.w     = -buffer1->outer.w;
         }
 
         buffer0->texCoord.x = emitter->data->texAnimParam[0].uvScaleInit.x;
@@ -535,11 +608,11 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
         }
     }
 
-    stripeNumDrawVertex += numDrawStripe;
+    stripeNumCalcVertex += numDrawStripe;
     return numDrawStripe;
 }
 
-u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer, s32 firstVertex)
+u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer)
 {
     const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(emitter->particleHead->data);
     const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
@@ -670,7 +743,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
             if (i == numSliceHistory - 1 && j != 0)
                 break;
 
-            u32 idx = firstVertex + numDrawStripe;
+            u32 idx = 0 + numDrawStripe;
             StripeVertexBuffer* buffer0 = &stripeVertexBuffer[idx + 0];
             StripeVertexBuffer* buffer1 = &stripeVertexBuffer[idx + 1];
 
@@ -719,7 +792,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
             f32 ratio    = (f32)currentSliceIdx * invRatio;
             f32 texRatio = 1.0f - ((f32)currentSliceIdx * invTexRatio) - texRatioSub;
 
-            f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * ptcl->alpha;
+            f32 alpha = (stripeData->alphaStart + alphaRange * ratio) * ptcl->alpha0;
 
             buffer0->pos.xyz() = vtxPos;
             buffer0->pos.w     = alpha * ptcl->emitter->anim[14] * ptcl->emitter->emitterSet->color.a;
@@ -740,8 +813,8 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
                 buffer0->outer.xyz() = eyeVec;
                 buffer1->outer.xyz() = eyeVec;
 
-                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
-                buffer1->outer.w     = -buffer0->outer.w;
+                buffer1->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
+                buffer0->outer.w     = -buffer1->outer.w;
             }
             else if (stripeData->type == 2)
             {
@@ -759,11 +832,11 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
                     outer.z = ptcl->matrixSRT.m[2][1];
                 }
 
-                buffer0->outer.xyz() = outer * ptcl->scale.x;
-                buffer1->outer.xyz() = outer * ptcl->scale.x;
+                buffer0->outer.xyz() = outer;
+                buffer1->outer.xyz() = outer;
 
-                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
-                buffer1->outer.w     = -buffer0->outer.w;
+                buffer1->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
+                buffer0->outer.w     = -buffer1->outer.w;
             }
             else if (stripeData->type == 1)
             {
@@ -788,18 +861,18 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
                 buffer0->outer.xyz() = outer;
                 buffer1->outer.xyz() = outer;
 
-                buffer0->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
-                buffer1->outer.w     = -buffer0->outer.w;
+                buffer1->outer.w     = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * divRatio + _ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x * invDivRatio;
+                buffer0->outer.w     = -buffer1->outer.w;
             }
 
-            buffer0->texCoord.x = 0.0f;
+            buffer0->texCoord.x = emitter->data->texAnimParam[0].uvScaleInit.x;
             buffer0->texCoord.y = 1.0f - texRatio * emitter->data->texAnimParam[0].uvScaleInit.y;
-            buffer1->texCoord.x = emitter->data->texAnimParam[0].uvScaleInit.x;
+            buffer1->texCoord.x = 0.0f;
             buffer1->texCoord.y = 1.0f - texRatio * emitter->data->texAnimParam[0].uvScaleInit.y;
 
-            buffer1->texCoord.z = 0.0f;
-            buffer0->texCoord.w = 1.0f - texRatio * emitter->data->texAnimParam[1].uvScaleInit.y;
             buffer0->texCoord.z = emitter->data->texAnimParam[1].uvScaleInit.x;
+            buffer0->texCoord.w = 1.0f - texRatio * emitter->data->texAnimParam[1].uvScaleInit.y;
+            buffer1->texCoord.z = 0.0f;
             buffer1->texCoord.w = 1.0f - texRatio * emitter->data->texAnimParam[1].uvScaleInit.y;
 
             numDrawStripe += 2;
@@ -817,22 +890,21 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
             ptcl_next2 = ptclFirst;
     }
 
-    stripeNumDrawVertex += numDrawStripe;
+    stripeNumCalcVertex += numDrawStripe;
     return numDrawStripe;
 }
 
-StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance* emitter, bool flushCache)
+StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance* emitter)
 {
     u32 numParticles = emitter->numParticles;
     if (numParticles == 0)
         return NULL;
 
-    PtclInstance* ptclFirst = emitter->particleHead;
-    if (ptclFirst == NULL)
+    PtclInstance* ptcl = emitter->particleHead;
+    if (ptcl == NULL)
         return NULL;
 
-    const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(ptclFirst->data);
-    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
+    const StripeData* stripeData = emitter->GetStripeData();
 
     u32 numDivisions = stripeData->numDivisions;
     u32 connectionType = stripeData->connectionType;
@@ -847,93 +919,26 @@ StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance
     if (numVertex == 0)
         return NULL;
 
-    StripeVertexBuffer* stripeVertexBuffer = static_cast<StripeVertexBuffer*>(AllocFromDoubleBuffer(sizeof(StripeVertexBuffer) * numVertex));
-    if (stripeVertexBuffer == NULL)
+    emitter->stripeVertexBuffer = static_cast<StripeVertexBuffer*>(AllocFromDoubleBuffer(sizeof(StripeVertexBuffer) * numVertex));
+    if (emitter->stripeVertexBuffer == NULL)
         return NULL;
 
-    if (numDivisions == 0)
-        emitter->numDrawStripe = MakeConnectionStripeAttributeBlockCore(emitter, numParticles, ptclLast, ptclBeforeLast, connectionType, stripeVertexBuffer, 0);
+    emitter->connectionStripeUniformBlock = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
+    if (emitter->connectionStripeUniformBlock == NULL)
+        return NULL;
 
-    else
-        emitter->numDrawStripe = MakeConnectionStripeAttributeBlockCoreDivide(emitter, numParticles, ptclLast, ptclBeforeLast, connectionType, stripeVertexBuffer, 0);
-
-    if (flushCache)
-        GX2Invalidate(GX2_INVALIDATE_CPU_ATTRIB_BUFFER, stripeVertexBuffer, sizeof(StripeVertexBuffer) * numVertex);
-
-    return stripeVertexBuffer;
-}
-
-bool Renderer::SetupStripeDrawSetting(const EmitterInstance* emitter, bool flushCache, void* argData)
-{
-    if (emitter->shader == NULL)
-        return false;
-
-    const SimpleEmitterData* data = emitter->data;
-
-    ParticleShader* shader = emitter->shader[shaderType];
-    if (shader == NULL)
-        return false;
-
-    shader->Bind();
-
-    shader->vertexViewUniformBlock.BindUniformBlock(viewUniformBlock);
-    shader->fragmentViewUniformBlock.BindUniformBlock(viewUniformBlock);
-    shader->fragmentEmitterStaticUniformBlock.BindUniformBlock(emitter->emitterStaticUniformBlock);
-
-    renderContext.SetupZBufATest(data->zBufATestType);
-    renderContext.SetupBlendType(data->blendType);
-    renderContext.SetupDisplaySideType(data->displaySideType);
-
-    renderContext.SetupTexture(&data->textures[0], TextureSlot_0, shader->fragmentSamplerLocations[0]);
-
-    if (data->textures[1].initialized != 0)
-        renderContext.SetupTexture(&data->textures[1], TextureSlot_1, shader->fragmentSamplerLocations[1]);
-    else
-        renderContext.SetupTexture((const TextureRes*)NULL, TextureSlot_1, (FragmentTextureLocation){ 0u });
-
-    if (shader->fragmentShaderKey.softEdge && this->textures[0] != NULL)
-        renderContext.SetupTexture(this->textures[0], TextureSlot_2, shader->fragmentSamplerLocations2[0]);
-
-    if (shader->fragmentShaderKey.shaderMode == 1 && this->textures[1] != NULL)
-        renderContext.SetupTexture(this->textures[1], TextureSlot_2, shader->fragmentSamplerLocations2[1]);
-
-    CustomShaderRenderStateSetCallback callback = system->GetCustomShaderRenderStateSetCallback(static_cast<CustomShaderCallBackID>(data->shaderUserSetting));
-    if (callback != NULL)
+    if (stripeData->crossType == 1)
     {
-        RenderStateSetArg arg = {
-            .emitter = emitter,
-            .renderer = this,
-            .flushCache = flushCache,
-            .argData = argData,
-        };
-        callback(arg);
+        emitter->connectionStripeUniformBlockCross = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
+        if (emitter->connectionStripeUniformBlockCross == NULL)
+            return NULL;
     }
 
-    return true;
-}
+    if (numDivisions == 0)
+        emitter->numDrawStripe = MakeConnectionStripeAttributeBlockCore(emitter, numParticles, ptclLast, ptclBeforeLast, connectionType, emitter->stripeVertexBuffer);
 
-void Renderer::EntryConnectionStripe(EmitterInstance* emitter, bool flushCache, void* argData)
-{
-    ParticleShader* shader = emitter->shader[shaderType];
-    if (shader == NULL)
-        return;
-
-    PtclInstance* ptcl = emitter->particleHead;
-    if (ptcl == NULL)
-        return;
-
-    currentParticleType = PtclType_Complex;
-
-    StripeVertexBuffer* stripeVertexBuffer = MakeConnectionStripeAttributeBlock(emitter, flushCache);
-    if (stripeVertexBuffer == NULL || emitter->numDrawStripe < 4)
-        return;
-
-    currentParticleType = PtclType_Complex;
-
-    if (!SetupStripeDrawSetting(emitter, flushCache, argData))
-        return;
-
-    VertexBuffer::BindExtBuffer(0, sizeof(StripeVertexBuffer) * emitter->numDrawStripe, 0, sizeof(StripeVertexBuffer), stripeVertexBuffer);
+    else
+        emitter->numDrawStripe = MakeConnectionStripeAttributeBlockCoreDivide(emitter, numParticles, ptclLast, ptclBeforeLast, connectionType, emitter->stripeVertexBuffer);
 
     math::VEC3 emitterSetColor = emitter->emitterSet->color.rgb();
     emitterSetColor.x *= emitter->data->colorScaleFactor;
@@ -950,10 +955,6 @@ void Renderer::EntryConnectionStripe(EmitterInstance* emitter, bool flushCache, 
     emitterColor1.y = emitterSetColor.y * emitter->anim[20];
     emitterColor1.z = emitterSetColor.z * emitter->anim[21];
 
-    const ComplexEmitterData* cdata = static_cast<const ComplexEmitterData*>(emitter->data);
-    const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
-    u32 numDrawStripe = emitter->numDrawStripe;
-
     math::VEC3 ptclColor0 = ptcl->color0.rgb();
     ptclColor0.x *= emitterColor0.x;
     ptclColor0.y *= emitterColor0.y;
@@ -965,9 +966,7 @@ void Renderer::EntryConnectionStripe(EmitterInstance* emitter, bool flushCache, 
     ptclColor1.z *= emitterColor1.z;
 
     {
-        StripeUniformBlock* uniformBlock = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
-        if (uniformBlock == NULL)
-            return;
+        StripeUniformBlock* uniformBlock = emitter->connectionStripeUniformBlock;
 
         uniformBlock->stParam.x = 1.0f;
         uniformBlock->stParam.y = 0.0f;
@@ -990,26 +989,19 @@ void Renderer::EntryConnectionStripe(EmitterInstance* emitter, bool flushCache, 
         uniformBlock->uvScaleRotateAnim1.w = 0.0f;
 
         uniformBlock->vtxColor0.xyz() = ptclColor0;
-        uniformBlock->vtxColor0.w = ptcl->emitter->fadeAlpha;
+        uniformBlock->vtxColor0.w = emitter->fadeAlpha;
 
         uniformBlock->vtxColor1.xyz() = ptclColor1;
-        uniformBlock->vtxColor1.w = ptcl->emitter->fadeAlpha;
+        uniformBlock->vtxColor1.w = emitter->fadeAlpha;
 
-        uniformBlock->emitterMat = math::MTX44(ptcl->emitter->matrixSRT);
+        uniformBlock->emitterMat = math::MTX44(emitter->matrixSRT);
 
         GX2EndianSwap(uniformBlock, sizeof(StripeUniformBlock));
-        if (flushCache)
-            GX2Invalidate(GX2_INVALIDATE_CPU_UNIFORM_BLOCK, uniformBlock, sizeof(StripeUniformBlock));
-
-        shader->stripeUniformBlock.BindUniformBlock(uniformBlock);
-        GX2Draw(GX2_PRIMITIVE_TRIANGLE_STRIP, numDrawStripe);
     }
 
     if (stripeData->crossType == 1)
     {
-        StripeUniformBlock* uniformBlock = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
-        if (uniformBlock == NULL)
-            return;
+        StripeUniformBlock* uniformBlock = emitter->connectionStripeUniformBlockCross;
 
         uniformBlock->stParam.x = 0.0f;
         uniformBlock->stParam.y = 1.0f;
@@ -1032,23 +1024,111 @@ void Renderer::EntryConnectionStripe(EmitterInstance* emitter, bool flushCache, 
         uniformBlock->uvScaleRotateAnim1.w = 0.0f;
 
         uniformBlock->vtxColor0.xyz() = ptclColor0;
-        uniformBlock->vtxColor0.w = ptcl->emitter->fadeAlpha;
+        uniformBlock->vtxColor0.w = emitter->fadeAlpha;
 
         uniformBlock->vtxColor1.xyz() = ptclColor1;
-        uniformBlock->vtxColor1.w = ptcl->emitter->fadeAlpha;
+        uniformBlock->vtxColor1.w = emitter->fadeAlpha;
 
-        uniformBlock->emitterMat = math::MTX44(ptcl->emitter->matrixSRT);
+        uniformBlock->emitterMat = math::MTX44(emitter->matrixSRT);
 
         GX2EndianSwap(uniformBlock, sizeof(StripeUniformBlock));
-        if (flushCache)
-            GX2Invalidate(GX2_INVALIDATE_CPU_UNIFORM_BLOCK, uniformBlock, sizeof(StripeUniformBlock));
+    }
+    else
+    {
+        emitter->connectionStripeUniformBlockCross = NULL;
+    }
 
+    return emitter->stripeVertexBuffer;
+}
+
+bool Renderer::SetupStripeDrawSetting(const EmitterInstance* emitter, void* argData)
+{
+    if (emitter->shader == NULL)
+        return false;
+
+    const SimpleEmitterData* data = emitter->data;
+
+    ParticleShader* shader = emitter->shader[shaderType];
+    if (shader == NULL)
+        return false;
+
+    shader->Bind();
+
+    shader->vertexViewUniformBlock.BindUniformBlock(viewUniformBlock);
+    shader->fragmentViewUniformBlock.BindUniformBlock(viewUniformBlock);
+    shader->fragmentEmitterStaticUniformBlock.BindUniformBlock(emitter->emitterStaticUniformBlock);
+
+    renderContext.SetupZBufATest(data->zBufATestType);
+    renderContext.SetupBlendType(data->blendType);
+    renderContext.SetupDisplaySideType(data->displaySideType);
+
+    SetupTexture(shader, &data->textures[0], &data->textures[1], &data->textures[2]);
+
+    CustomShaderRenderStateSetCallback callback = system->GetCustomShaderRenderStateSetCallback(static_cast<CustomShaderCallBackID>(data->shaderUserSetting));
+    if (callback != NULL)
+    {
+        RenderStateSetArg arg = {
+            .emitter = emitter,
+            .renderer = this,
+            .flushCache = true,
+            .argData = argData,
+        };
+        callback(arg);
+    }
+
+    if (system->GetDrawPathRenderStateSetCallback(static_cast<DrawPathFlag>(1 << emitter->data->_bitForUnusedFlag)) != NULL)
+    {
+        RenderStateSetArg arg = {
+            .emitter = emitter,
+            .renderer = this,
+            .flushCache = true,
+            .argData = argData,
+        };
+        system->GetDrawPathRenderStateSetCallback(static_cast<DrawPathFlag>(1 << emitter->data->_bitForUnusedFlag))(arg);
+    }
+
+    return true;
+}
+
+// This function was moved to eft_RendererConnectionStripe.cpp
+void Renderer::EntryConnectionStripe(const EmitterInstance* emitter, void* argData)
+{
+    ParticleShader* shader = emitter->shader[shaderType];
+    if (shader == NULL)
+        return;
+
+    StripeVertexBuffer* stripeVertexBuffer = emitter->stripeVertexBuffer;
+    if (stripeVertexBuffer == NULL || emitter->numDrawStripe < 4)
+        return;
+
+    currentParticleType = PtclType_Complex;
+
+    if (!SetupStripeDrawSetting(emitter, argData))
+        return;
+
+    VertexBuffer::BindExtBuffer(0, sizeof(StripeVertexBuffer) * emitter->numDrawStripe, 0, sizeof(StripeVertexBuffer), stripeVertexBuffer);
+
+    const StripeData* stripeData = emitter->GetStripeData();
+
+    {
+        StripeUniformBlock* uniformBlock = emitter->connectionStripeUniformBlock;
         shader->stripeUniformBlock.BindUniformBlock(uniformBlock);
-        GX2Draw(GX2_PRIMITIVE_TRIANGLE_STRIP, numDrawStripe);
+        GX2Draw(GX2_PRIMITIVE_TRIANGLE_STRIP, emitter->numDrawStripe);
+
+        stripeNumDrawVertex += emitter->numDrawStripe;
+    }
+
+    if (stripeData->crossType == 1 && emitter->connectionStripeUniformBlockCross != NULL && stripeData->type != 0)
+    {
+        StripeUniformBlock* uniformBlock = emitter->connectionStripeUniformBlockCross;
+        shader->stripeUniformBlock.BindUniformBlock(uniformBlock);
+        GX2Draw(GX2_PRIMITIVE_TRIANGLE_STRIP, emitter->numDrawStripe);
+
+        stripeNumDrawVertex += emitter->numDrawStripe;
     }
 }
 
-void Renderer::EntryStripe(EmitterInstance* emitter, bool flushCache, void* argData)
+void Renderer::EntryStripe(const EmitterInstance* emitter, void* argData)
 {
     if (emitter->data->displayParent == 0)
         return;
@@ -1057,143 +1137,60 @@ void Renderer::EntryStripe(EmitterInstance* emitter, bool flushCache, void* argD
     if (shader == NULL)
         return;
 
-    if (emitter->data->vertexTransformMode == VertexTransformMode_Complex_Stripe)
-        return EntryConnectionStripe(emitter, flushCache, argData);
-
-    StripeVertexBuffer* stripeVertexBuffer = emitter->stripeVertexBuffer;
-    if (stripeVertexBuffer == NULL)
-        return;
+    const StripeData* stripeData = emitter->GetStripeData();
 
     currentParticleType = PtclType_Complex;
 
-    if (!SetupStripeDrawSetting(emitter, flushCache, argData))
+    if (emitter->data->vertexTransformMode == VertexTransformMode_Complex_Stripe)
+    {
+        EntryConnectionStripe(emitter, argData);
+        numDrawEmitter++;
+        return;
+    }
+
+    if (!SetupStripeDrawSetting(emitter, argData))
         return;
 
-    VertexBuffer::BindExtBuffer(0, sizeof(StripeVertexBuffer) * emitter->numDrawStripe, 0, sizeof(StripeVertexBuffer), stripeVertexBuffer);
-
-    math::VEC3 emitterSetColor = emitter->emitterSet->color.rgb();
-    emitterSetColor.x *= emitter->data->colorScaleFactor;
-    emitterSetColor.y *= emitter->data->colorScaleFactor;
-    emitterSetColor.z *= emitter->data->colorScaleFactor;
-
-    math::VEC3 emitterColor0;
-    emitterColor0.x = emitterSetColor.x * emitter->anim[11];
-    emitterColor0.y = emitterSetColor.y * emitter->anim[12];
-    emitterColor0.z = emitterSetColor.z * emitter->anim[13];
-
-    math::VEC3 emitterColor1;
-    emitterColor1.x = emitterSetColor.x * emitter->anim[19];
-    emitterColor1.y = emitterSetColor.y * emitter->anim[20];
-    emitterColor1.z = emitterSetColor.z * emitter->anim[21];
+    u32 numDraw = 0;
 
     for (PtclInstance* ptcl = emitter->particleHead; ptcl != NULL; ptcl = ptcl->next)
     {
-        PtclStripe* stripe = ptcl->stripe;
+        PtclStripe* stripe = ptcl->complexParam->stripe;
 
-        if (stripe == NULL)
-            continue;
-
-        const ComplexEmitterData* cdata = stripe->data;
-        if (cdata == NULL)
-            continue;
-
-        const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)cdata + cdata->stripeDataOffs);
-        if (stripe->numDraw < 4)
-            continue;
-
-        math::VEC3 ptclColor0 = ptcl->color0.rgb();
-        ptclColor0.x *= emitterColor0.x;
-        ptclColor0.y *= emitterColor0.y;
-        ptclColor0.z *= emitterColor0.z;
-
-        math::VEC3 ptclColor1 = ptcl->color1.rgb();
-        ptclColor1.x *= emitterColor1.x;
-        ptclColor1.y *= emitterColor1.y;
-        ptclColor1.z *= emitterColor1.z;
-
+        if (stripe == NULL
+            || stripe->data == NULL
+            || stripe->stripeVertexBuffer == NULL
+            || stripe->stripeUniformBlock == NULL
+            || stripe->numDraw < 4)
         {
-            StripeUniformBlock* uniformBlock = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
-            if (uniformBlock == NULL)
-                break;
-
-            uniformBlock->stParam.x = 1.0f;
-            uniformBlock->stParam.y = 0.0f;
-            uniformBlock->stParam.z = emitter->data->cameraOffset;
-            uniformBlock->stParam.w = ptcl->scale.x;
-
-            uniformBlock->uvScrollAnim.x = ptcl->texAnimParam[0].offset.x + ptcl->texAnimParam[0].scroll.x;
-            uniformBlock->uvScrollAnim.y = ptcl->texAnimParam[0].offset.y - ptcl->texAnimParam[0].scroll.y;
-            uniformBlock->uvScrollAnim.z = ptcl->texAnimParam[1].offset.x + ptcl->texAnimParam[1].scroll.x;
-            uniformBlock->uvScrollAnim.w = ptcl->texAnimParam[1].offset.y - ptcl->texAnimParam[1].scroll.y;
-
-            uniformBlock->uvScaleRotateAnim0.x = ptcl->texAnimParam[0].scale.x;
-            uniformBlock->uvScaleRotateAnim0.y = ptcl->texAnimParam[0].scale.y;
-            uniformBlock->uvScaleRotateAnim0.z = ptcl->texAnimParam[0].rotate;
-            uniformBlock->uvScaleRotateAnim0.w = 0.0f;
-
-            uniformBlock->uvScaleRotateAnim1.x = ptcl->texAnimParam[1].scale.x;
-            uniformBlock->uvScaleRotateAnim1.y = ptcl->texAnimParam[1].scale.y;
-            uniformBlock->uvScaleRotateAnim1.z = ptcl->texAnimParam[1].rotate;
-            uniformBlock->uvScaleRotateAnim1.w = 0.0f;
-
-            uniformBlock->vtxColor0.xyz() = ptclColor0;
-            uniformBlock->vtxColor0.w = ptcl->emitter->fadeAlpha;
-
-            uniformBlock->vtxColor1.xyz() = ptclColor1;
-            uniformBlock->vtxColor1.w = ptcl->emitter->fadeAlpha;
-
-            uniformBlock->emitterMat = math::MTX44(ptcl->emitter->matrixSRT);
-
-            GX2EndianSwap(uniformBlock, sizeof(StripeUniformBlock));
-            if (flushCache)
-                GX2Invalidate(GX2_INVALIDATE_CPU_UNIFORM_BLOCK, uniformBlock, sizeof(StripeUniformBlock));
-
-            shader->stripeUniformBlock.BindUniformBlock(uniformBlock);
-            GX2DrawEx(GX2_PRIMITIVE_TRIANGLE_STRIP, ptcl->stripe->numDraw, ptcl->stripe->drawFirstVertex, 1);
+            continue;
         }
 
-        if (stripeData->crossType == 1)
+        VertexBuffer::BindExtBuffer(0, sizeof(StripeVertexBuffer) * stripe->numDraw, 0, sizeof(StripeVertexBuffer), stripe->stripeVertexBuffer);
+
+        if (stripe->stripeUniformBlock != NULL && stripe->numDraw != 0)
         {
-            StripeUniformBlock* uniformBlock = static_cast<StripeUniformBlock*>(AllocFromDoubleBuffer(sizeof(StripeUniformBlock)));
-            if (uniformBlock == NULL)
-                break;
-
-            uniformBlock->stParam.x = 0.0f;
-            uniformBlock->stParam.y = 1.0f;
-            uniformBlock->stParam.z = emitter->data->cameraOffset;
-            uniformBlock->stParam.w = ptcl->scale.x;
-
-            uniformBlock->uvScrollAnim.x = ptcl->texAnimParam[0].offset.x + ptcl->texAnimParam[0].scroll.x;
-            uniformBlock->uvScrollAnim.y = ptcl->texAnimParam[0].offset.y - ptcl->texAnimParam[0].scroll.y;
-            uniformBlock->uvScrollAnim.z = ptcl->texAnimParam[1].offset.x + ptcl->texAnimParam[1].scroll.x;
-            uniformBlock->uvScrollAnim.w = ptcl->texAnimParam[1].offset.y - ptcl->texAnimParam[1].scroll.y;
-
-            uniformBlock->uvScaleRotateAnim0.x = ptcl->texAnimParam[0].scale.x;
-            uniformBlock->uvScaleRotateAnim0.y = ptcl->texAnimParam[0].scale.y;
-            uniformBlock->uvScaleRotateAnim0.z = ptcl->texAnimParam[0].rotate;
-            uniformBlock->uvScaleRotateAnim0.w = 0.0f;
-
-            uniformBlock->uvScaleRotateAnim1.x = ptcl->texAnimParam[1].scale.x;
-            uniformBlock->uvScaleRotateAnim1.y = ptcl->texAnimParam[1].scale.y;
-            uniformBlock->uvScaleRotateAnim1.z = ptcl->texAnimParam[1].rotate;
-            uniformBlock->uvScaleRotateAnim1.w = 0.0f;
-
-            uniformBlock->vtxColor0.xyz() = ptclColor0;
-            uniformBlock->vtxColor0.w = ptcl->emitter->fadeAlpha;
-
-            uniformBlock->vtxColor1.xyz() = ptclColor1;
-            uniformBlock->vtxColor1.w = ptcl->emitter->fadeAlpha;
-
-            uniformBlock->emitterMat = math::MTX44(ptcl->emitter->matrixSRT);
-
-            GX2EndianSwap(uniformBlock, sizeof(StripeUniformBlock));
-            if (flushCache)
-                GX2Invalidate(GX2_INVALIDATE_CPU_UNIFORM_BLOCK, uniformBlock, sizeof(StripeUniformBlock));
-
+            StripeUniformBlock* uniformBlock = stripe->stripeUniformBlock;
             shader->stripeUniformBlock.BindUniformBlock(uniformBlock);
-            GX2DrawEx(GX2_PRIMITIVE_TRIANGLE_STRIP, ptcl->stripe->numDraw, ptcl->stripe->drawFirstVertex, 1);
+            GX2DrawEx(GX2_PRIMITIVE_TRIANGLE_STRIP, stripe->numDraw, stripe->drawFirstVertex, 1);
+
+            stripeNumDrawVertex += stripe->numDraw - stripe->drawFirstVertex;
+            numDraw++;
+        }
+
+        if (stripe->stripeUniformBlockCross != NULL && stripe->numDraw != 0 && stripeData->type != 0)
+        {
+            StripeUniformBlock* uniformBlock = stripe->stripeUniformBlockCross;
+            shader->stripeUniformBlock.BindUniformBlock(uniformBlock);
+            GX2DrawEx(GX2_PRIMITIVE_TRIANGLE_STRIP, stripe->numDraw, stripe->drawFirstVertex, 1);
+
+            stripeNumDrawVertex += stripe->numDraw - stripe->drawFirstVertex;
+            numDraw++;
         }
     }
+
+    numDrawParticle += numDraw;
+    numDrawEmitter++;
 }
 
 } } // namespace nw::eft

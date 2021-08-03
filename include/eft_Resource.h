@@ -33,24 +33,23 @@ public:
         u32 _userData;
 
         const char* name;
-        u8 _unused;
         ParticleShader** shaders;
         u32 numShader;
         Primitive** primitives;
         u32 numPrimitive;
     };
-    static_assert(sizeof(EmitterSet) == 0x38, "EmitterSet size mismatch");
+    static_assert(sizeof(EmitterSet) == 0x34, "EmitterSet size mismatch");
 
 public:
-    Resource(Heap* heap, void* resource, u32 resourceID, System* system);
+    Resource(Heap* heap, void* resource, u32 resourceID, System* system, bool);
     virtual ~Resource(); // deleted
 
-    void CreateFtexbTextureHandle(Heap* heap, void* data, TextureRes& texture);
-    void CreateOriginalTextureHandle(Heap* heap, void* data, TextureRes& texture);
-    void Initialize(Heap* heap, void* resource, u32 resourceID, System* system);
+    static void CreateFtexbTextureHandle(Heap* heap, void* data, TextureRes& texture);
+    static void CreateOriginalTextureHandle(Heap* heap, void* data, TextureRes& texture);
+    void Initialize(Heap* heap, void* resource, u32 resourceID, System* system, bool);
     static void DeleteTextureHandle(Heap* heap, TextureRes& texture, bool originalTexture);
     void Finalize(Heap* heap);
-    ParticleShader* GetShader(s32 emitterSetID, const VertexShaderKey* vertexShaderKey, const FragmentShaderKey* fragmentShaderKey);
+    ParticleShader* GetShader(s32 emitterSetID, u32 index);
 
     Primitive* GetPrimitive(s32 emitterSetID, u32 index)
     {
@@ -75,8 +74,9 @@ public:
     u32 numShader;
     Primitive** primitives;
     u32 numPrimitive;
+    EmitterStaticUniformBlock* emitterStaticUniformBlocks;
 };
-static_assert(sizeof(Resource) == 0x30, "Resource size mismatch");
+static_assert(sizeof(Resource) == 0x34, "Resource size mismatch");
 
 } } // namespace nw::eft
 

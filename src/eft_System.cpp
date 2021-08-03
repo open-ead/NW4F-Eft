@@ -1,8 +1,11 @@
 #include <eft_Config.h>
 #include <eft_EmitterComplex.h>
+#include <eft_EmitterFieldCurlNoise.h>
 #include <eft_EmitterSet.h>
+#include <eft_EmitterSimpleGpu.h>
 #include <eft_Handle.h>
 #include <eft_Heap.h>
+#include <eft_Misc.h>
 #include <eft_Particle.h>
 #include <eft_Random.h>
 #include <eft_Renderer.h>
@@ -12,46 +15,52 @@
 #include <cstring>
 #include <new>
 
+#include <nn/util/detail/util_Symbol.h>
+
 namespace nw { namespace eft {
 
+bool System::mInitialized = false;
+
 System::System(const Config& config)
-    : initialized(false)
 {
+    NN_UTIL_REFER_SYMBOL("[SDK+NINTENDO:NW4F_1_11_0_eft]");
+
     if (config.GetEffectHeap())
-        Initialize(config.GetEffectHeap(), config);
+        Initialize(config.GetEffectHeap(), config.GetEffectHeap(), config);
 }
 
 System::~System()
 {
 }
 
-void System::Initialize(Heap* argHeap, const Config& config)
+void System::Initialize(Heap* heap, Heap* dynamicHeap, const Config& config)
 {
-    heap = argHeap;
-    numResourceMax = config.numResourceMax;
+    numResourceMax = config.numResourceMax + config.numExtraResourceMax;
     numEmitterMax = config.numEmitterMax;
     numParticleMax = config.numParticleMax;
     numEmitterSetMax = config.numEmitterSetMax;
     numStripeMax = config.numStripeMax;
 
-    numCalcParticle = 0;
-    numUnusedEmitters = numEmitterMax;
-    _unused0 = 0;
-    numEmitterSetMaxMask = numEmitterSetMax - 1;
-    currentCallbackID = CustomActionCallBackID_Invalid;
-    numEmitterMaxMask = numEmitterMax - 1;
-    _unkCallbackVal = -1;
-    numStripeMaxMask = numStripeMax - 1;
-    numCalcEmitterSet = 0;
-    numCalcEmitter = 0;
-    currentEmitterSetIdx = 0;
+    SetStaticHeap(heap);
+    SetDynamicHeap(dynamicHeap);
+    InitializeDelayFreeList(numEmitterMax * 3);
+    SetSuppressOutputLog(config.suppressOutputLog);
+
     numCalcStripe = 0;
-    currentStripeIdx = 0;
+    numUnusedEmitters = numEmitterMax;
+    numCalcEmitter = 0;
     currentEmitterIdx = 0;
-    currentEmitterSetCreateID = 0;
-    numParticleMaxMask = numParticleMax - 1;
-    doubleBufferSwapped = 0;
     currentParticleIdx = 0;
+    numCalcParticle = 0;
+    counter = 0;
+    currentEmitterSetCreateID = 0;
+    currentStripeIdx = 0;
+    numCalcParticleGpu = 0;
+    currentEmitterSetIdx = 0;
+    currentCallbackID = CustomActionCallBackID_Invalid;
+    _unused0 = 0;
+    numCalcEmitterSet = 0;
+    doubleBufferSwapped = 0;
 
     memset(emitterGroups,           0, 64 * sizeof(EmitterInstance*));
     memset(emitterSetGroupHead,     0, 64 * sizeof(EmitterSet*));
@@ -61,16 +70,22 @@ void System::Initialize(Heap* argHeap, const Config& config)
     memset(_unusedFlags[CpuCore_1], 0, 64 * sizeof(u32));
     memset(_unusedFlags[CpuCore_2], 0, 64 * sizeof(u32));
 
-    PtclRandom::Initialize(heap);
+    for (u32 i = 0; i < 64u; i++)
+        streamOutParam[i] = 1;
 
-    resourceWork = heap->Alloc(sizeof(Resource*) * (numResourceMax + 0x10u));
-    resources = new (resourceWork) Resource*[(numResourceMax + 0x10u)];
-    memset(resources, 0, sizeof(Resource*) * (numResourceMax + 0x10u));
+    PtclRandom::Initialize();
+
+    InitializeCurlNoise();
+
+    resourceWork = heap->Alloc(sizeof(Resource*) * numResourceMax);
+    resources = new (resourceWork) Resource*[numResourceMax];
+    memset(resources, 0, sizeof(Resource*) * numResourceMax);
 
     for (u32 i = 0; i < CpuCore_Max; i++)
     {
         rendererWork[i] = heap->Alloc(sizeof(Renderer));
-        renderers[i] = new (rendererWork[i]) Renderer(heap, this, config);
+        renderers[i] = new (rendererWork[i]) Renderer(this, config);
+        renderers[i]->textures[TextureSlot_Curl_Noise] = GetCurlNoiseTexture();
     }
 
     emitterSetWork = heap->Alloc(sizeof(EmitterSet) * numEmitterSetMax + 32);
@@ -80,24 +95,33 @@ void System::Initialize(Heap* argHeap, const Config& config)
         emitterSets[i].system = this;
 
     emitters = static_cast<EmitterInstance*>(heap->Alloc(sizeof(EmitterInstance) * numEmitterMax));
-    emitterStaticUniformBlocks = static_cast<EmitterStaticUniformBlock*>(heap->Alloc(sizeof(EmitterStaticUniformBlock) * numEmitterMax * 2));
 
     for (s32 i = 0; i < numEmitterMax; i++)
     {
         emitters[i].calc = NULL;
-        emitters[i].emitterStaticUniformBlock = &emitterStaticUniformBlocks[i];
-        emitters[i].childEmitterStaticUniformBlock = &emitterStaticUniformBlocks[numEmitterMax + i];
+        emitters[i].emitterStaticUniformBlock = NULL;
+        emitters[i].childEmitterStaticUniformBlock = NULL;
+        emitters[i].ptclAttributeBuffer = NULL;
+        emitters[i].ptclAttributeBufferGpu = NULL;
+        emitters[i].numPtclAttributeBufferGpuMax = 0;
+        emitters[i].posStreamOutAttributeBuffer.Invalidate();
+        emitters[i].vecStreamOutAttributeBuffer.Invalidate();
+        emitters[i].swapStreamOut = true;
     }
 
     particles = static_cast<PtclInstance*>(heap->Alloc(sizeof(PtclInstance) * numParticleMax));
-    alphaAnim = static_cast<AlphaAnim*>(heap->Alloc(sizeof(AlphaAnim) * numParticleMax));
+    alphaAnim[0] = static_cast<AlphaAnim*>(heap->Alloc(sizeof(AlphaAnim) * numParticleMax));
+    alphaAnim[1] = static_cast<AlphaAnim*>(heap->Alloc(sizeof(AlphaAnim) * numParticleMax));
     scaleAnim = static_cast<ScaleAnim*>(heap->Alloc(sizeof(ScaleAnim) * numParticleMax));
+    complexParam = static_cast<ComplexEmitterParam*>(heap->Alloc(sizeof(ComplexEmitterParam) * numParticleMax));
 
     for (s32 i = 0; i < numParticleMax; i++)
     {
         particles[i].data = NULL;
-        particles[i].alphaAnim = &alphaAnim[i];
+        particles[i].alphaAnim[0] = &alphaAnim[0][i];
+        particles[i].alphaAnim[1] = &alphaAnim[1][i];
         particles[i].scaleAnim = &scaleAnim[i];
+        particles[i].complexParam = &complexParam[i];
     }
 
     emitterSimpleCalcWork = heap->Alloc(sizeof(EmitterSimpleCalc));
@@ -106,20 +130,18 @@ void System::Initialize(Heap* argHeap, const Config& config)
     emitterComplexCalcWork = heap->Alloc(sizeof(EmitterComplexCalc));
     emitterCalc[EmitterType_Complex] = new (emitterComplexCalcWork) EmitterComplexCalc(this);
 
-    EmitterCalc::InitializeFluctuationTable(heap);
+    emitterSimpleGpuCalcWork = heap->Alloc(sizeof(EmitterSimpleGpuCalc));
+    emitterCalc[EmitterType_SimpleGpu] = new (emitterSimpleGpuCalcWork) EmitterSimpleGpuCalc(this);
+
+    EmitterCalc::InitializeFluctuationTable();
 
     for (u32 i = 0; i < CpuCore_Max; i++)
     {
-        particlesToRemove[i] = static_cast<PtclInstance**>(heap->Alloc(sizeof(PtclInstance*) * numParticleMax));
         childParticles[i] = static_cast<PtclInstance**>(heap->Alloc(sizeof(PtclInstance*) * numParticleMax));
-        numParticleToRemove[i] = 0;
         numChildParticle[i] = 0;
 
         for (s32 j = 0; j < numParticleMax; j++)
-        {
-            particlesToRemove[i][j] = NULL;
             childParticles[i][j] = NULL;
-        }
     }
 
     stripes = static_cast<PtclStripe*>(heap->Alloc(sizeof(PtclStripe) * numStripeMax));
@@ -129,10 +151,21 @@ void System::Initialize(Heap* argHeap, const Config& config)
         stripes[i].data = NULL;
         stripes[i].queueFront = 0;
         stripes[i].queueRear = 0;
+        stripes[i].numDraw = 0;
+    }
+
+    for (u32 i = 0; i < CpuCore_Max; i++)
+    {
+        numStripeToRemove[i] = 0;
+        stripesToRemove[i] = static_cast<PtclStripe**>(heap->Alloc(sizeof(PtclStripe*) * numStripeMax));
+
+        for (u32 j = 0; j < numStripeMax; j++)
+            stripesToRemove[i][j] = NULL;
     }
 
     for (u32 i = 0; i < CustomActionCallBackID_Max; i++)
     {
+        customActionEmitterMatrixSetCallback[i] = NULL;
         customActionEmitterPreCalcCallback[i] = NULL;
         customActionParticleEmitCallback[i] = NULL;
         customActionParticleRemoveCallback[i] = NULL;
@@ -144,9 +177,18 @@ void System::Initialize(Heap* argHeap, const Config& config)
 
     for (u32 i = 0; i < CustomShaderCallBackID_Max; i++)
     {
+        customShaderEmitterInitializeCallback[i] = NULL;
+        customShaderEmitterFinalizeCallback[i] = NULL;
+        customShaderEmitterPreCalcCallback[i] = NULL;
         customShaderEmitterPostCalcCallback[i] = NULL;
         customShaderDrawOverrideCallback[i] = NULL;
         customShaderRenderStateSetCallback[i] = NULL;
+    }
+
+    for (u32 i = 0; i < DrawPathCallback_Max; i++)
+    {
+        drawPathCallbackFlags[i] = 0;
+        drawPathRenderStateSetCallback[i] = NULL;
     }
 
     for (u32 i = 0; i < CpuCore_Max; i++)
@@ -156,7 +198,14 @@ void System::Initialize(Heap* argHeap, const Config& config)
         _unused1[i] = 0;
     }
 
-    initialized = true;
+    isSharedPlaneEnable = 0;
+    sharedPlaneX = (math::VEC2){ -50, 50 };
+    sharedPlaneY = 0;
+    sharedPlaneZ = (math::VEC2){ -50, 50 };
+
+    LOG("System Alloced Size : %d \n", GetAllocedSizeFromStaticHeap());
+
+    mInitialized = true;
 }
 
 void System::RemoveStripe(PtclStripe* stripe)
@@ -180,84 +229,20 @@ void System::RemoveStripe(PtclStripe* stripe)
     }
 }
 
-void System::RemovePtcl_()
+void System::RemoveStripe_()
 {
     for (u32 i = 0; i < CpuCore_Max; i++)
     {
-        for (s32 j = 0; j < numParticleToRemove[i]; j++)
+        for (s32 j = 0; j < numStripeToRemove[i]; j++)
         {
-            PtclInstance* ptcl = particlesToRemove[i][j];
+            PtclStripe* stripe = stripesToRemove[i][j];
 
-            // EmitterCalc::RemoveParticle(PtclInstance*, CpuCore)
-            {
-                EmitterInstance* emitter = ptcl->emitter;
+            RemoveStripe(stripe);
 
-                if (ptcl->type == PtclType_Child) emitter->numChildParticles--;
-                else                              emitter->numParticles--;
-
-                if (emitter->particleHead == ptcl)
-                {
-                    emitter->particleHead = ptcl->next;
-
-                    if (emitter->particleHead != NULL)
-                        emitter->particleHead->prev = NULL;
-
-                    if (emitter->particleTail == ptcl)
-                        emitter->particleTail = NULL;
-                }
-                else if (emitter->childParticleHead == ptcl)
-                {
-                    emitter->childParticleHead = ptcl->next;
-
-                    if (emitter->childParticleHead != NULL)
-                        emitter->childParticleHead->prev = NULL;
-
-                    if (emitter->childParticleTail == ptcl)
-                        emitter->childParticleTail = NULL;
-                }
-                else if (emitter->particleTail == ptcl)
-                {
-                    emitter->particleTail = ptcl->prev;
-
-                    if (emitter->particleTail != NULL)
-                        emitter->particleTail->next = NULL;
-                }
-                else if (emitter->childParticleTail == ptcl)
-                {
-                    emitter->childParticleTail = ptcl->prev;
-
-                    if (emitter->childParticleTail != NULL)
-                        emitter->childParticleTail->next = NULL;
-                }
-                else
-                {
-                    if (ptcl->next != NULL)
-                        ptcl->next->prev = ptcl->prev;
-
-                    //if (ptcl->prev != NULL) <-- No check, because... Nintendo
-                        ptcl->prev->next = ptcl->next;
-                }
-
-                CustomActionParticleRemoveCallback callback = GetCurrentCustomActionParticleRemoveCallback( ptcl->emitter );
-                if(callback != NULL)
-                {
-                    ParticleRemoveArg arg = { .ptcl = ptcl };
-                    callback(arg);
-                }
-
-                ptcl->data = NULL;
-            }
-
-            if (ptcl->stripe != NULL)
-            {
-                RemoveStripe(ptcl->stripe);
-                ptcl->stripe = NULL;
-            }
-
-            particlesToRemove[i][j] = NULL;
+            stripesToRemove[i][j] = NULL;
         }
 
-        numParticleToRemove[i] = 0;
+        numStripeToRemove[i] = 0;
     }
 }
 
@@ -285,6 +270,9 @@ EmitterSet* System::RemoveEmitterSetFromDrawList(EmitterSet* emitterSet)
 
         if (emitterSet->prev != NULL)
             emitterSet->prev->next = emitterSet->next;
+
+        else
+            ERROR("EmitterSet Remove Failed.\n");
     }
 
     emitterSet->next = NULL;
@@ -295,7 +283,7 @@ EmitterSet* System::RemoveEmitterSetFromDrawList(EmitterSet* emitterSet)
 
 void System::RemovePtcl()
 {
-    RemovePtcl_();
+    RemoveStripe_();
 
     for(u32 i = 0; i < 64u; i++)
         for (EmitterSet* emitterSet = emitterSetGroupHead[i]; emitterSet != NULL; )
@@ -303,10 +291,9 @@ void System::RemovePtcl()
                                                        : emitterSet->next;
 }
 
-void System::AddPtclRemoveList(PtclInstance* ptcl, CpuCore core)
+void System::AddStripeRemoveList(PtclStripe* stripe, CpuCore core)
 {
-    particlesToRemove[core][numParticleToRemove[core]++] = ptcl;
-    ptcl->lifespan = 0;
+    stripesToRemove[core][numStripeToRemove[core]++] = stripe;
 }
 
 void System::EmitChildParticle()
@@ -333,16 +320,18 @@ void System::AddPtclAdditionList(PtclInstance* ptcl, CpuCore core)
     numChildParticle[core]++;
 }
 
-PtclStripe* System::AllocAndConnectStripe(EmitterInstance* emitter, PtclInstance* ptcl)
+PtclStripe* System::AllocAndConnectStripe(EmitterInstance* emitter)
 {
     s32 i = 0;
     do
     {
         currentStripeIdx++;
-        currentStripeIdx &= numStripeMaxMask;
+        if (currentStripeIdx >= numStripeMax) currentStripeIdx = 0;
 
         if (stripes[currentStripeIdx].data == NULL)
         {
+            const SimpleEmitterData* data = emitter->data;
+
             PtclStripe* stripe = &stripes[currentStripeIdx];
             u8 groupID = emitter->groupID;
 
@@ -360,38 +349,84 @@ PtclStripe* System::AllocAndConnectStripe(EmitterInstance* emitter, PtclInstance
                 stripe->prev = NULL;
             }
 
-            stripe->particle = ptcl;
+            stripe->particle = NULL;
             stripe->queueFront = 0;
             stripe->queueRear  = 0;
             stripe->queueCount = 0;
             stripe->groupID = emitter->groupID;
-            stripe->data = static_cast<const ComplexEmitterData*>(emitter->data);
+            stripe->data = emitter->GetComplexEmitterData();
             stripe->counter = 0;
             stripe->queue[0].outer = math::VEC3::Zero();
+            stripe->stripeUniformBlock = NULL;
+            stripe->stripeUniformBlockCross = NULL;
+            stripe->stripeVertexBuffer = NULL;
+
+            stripe->texAnimParam[0].scroll.x = data->texAnimParam[0].texInitScroll.x - data->texAnimParam[0].texInitScrollRandom.x * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[0].scroll.y = data->texAnimParam[0].texInitScroll.y - data->texAnimParam[0].texInitScrollRandom.y * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[0].scale.x  = data->texAnimParam[0].texInitScale.x  - data->texAnimParam[0].texInitScaleRandom.x  * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[0].scale.y  = data->texAnimParam[0].texInitScale.y  - data->texAnimParam[0].texInitScaleRandom.y  * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[0].rotate   = data->texAnimParam[0].texInitRotate   - data->texAnimParam[0].texInitRotateRandom   * emitter->random.GetF32Range(-1.0f, 1.0f);
+
+            stripe->texAnimParam[1].scroll.x = data->texAnimParam[1].texInitScroll.x - data->texAnimParam[1].texInitScrollRandom.x * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[1].scroll.y = data->texAnimParam[1].texInitScroll.y - data->texAnimParam[1].texInitScrollRandom.y * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[1].scale.x  = data->texAnimParam[1].texInitScale.x  - data->texAnimParam[1].texInitScaleRandom.x  * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[1].scale.y  = data->texAnimParam[1].texInitScale.y  - data->texAnimParam[1].texInitScaleRandom.y  * emitter->random.GetF32Range(-1.0f, 1.0f);
+            stripe->texAnimParam[1].rotate   = data->texAnimParam[1].texInitRotate   - data->texAnimParam[1].texInitRotateRandom   * emitter->random.GetF32Range(-1.0f, 1.0f);
+
+            stripe->texAnimParam[0].offset = (math::VEC2){ 0.0f, 0.0f };
+
+            if (data->texAnimParam[0].texPtnAnimNum > 1) // TexPtnAnim Type Random
+            {
+                s32 texPtnAnimIdx = emitter->random.GetU32(data->texAnimParam[0].texPtnAnimNum);
+                s32 texPtnAnimIdxDiv = data->texAnimParam[0].texPtnAnimIdxDiv[0];
+                s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
+                s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
+
+                stripe->texAnimParam[0].offset.x = data->texAnimParam[0].uvScaleInit.x * (f32)offsetX;
+                stripe->texAnimParam[0].offset.y = data->texAnimParam[0].uvScaleInit.y * (f32)offsetY;
+            }
+
+            stripe->texAnimParam[1].offset = (math::VEC2){ 0.0f, 0.0f };
+
+            if (data->texAnimParam[1].texPtnAnimNum > 1) // TexPtnAnim Type Random
+            {
+                s32 texPtnAnimIdx = emitter->random.GetU32(data->texAnimParam[1].texPtnAnimNum);
+                s32 texPtnAnimIdxDiv = data->texAnimParam[1].texPtnAnimIdxDiv[0];
+                s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
+                s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
+
+                stripe->texAnimParam[1].offset.x = data->texAnimParam[1].uvScaleInit.x * (f32)offsetX;
+                stripe->texAnimParam[1].offset.y = data->texAnimParam[1].uvScaleInit.y * (f32)offsetY;
+            }
+
+            stripe->flags = 0;
 
             return stripe;
         }
     } while (++i < numStripeMax);
 
+    WARNING("StripeInstance is Empty.\n");
+
     return NULL;
 }
 
-PtclInstance* System::AllocPtcl(PtclType type)
+PtclInstance* System::AllocPtcl()
 {
     s32 i = 0;
     do
     {
         currentParticleIdx++;
-        currentParticleIdx &= numParticleMaxMask;
+        if (currentParticleIdx >= numParticleMax) currentParticleIdx = 0;
 
         if (particles[currentParticleIdx].data == NULL)
         {
             numEmittedParticle++;
             PtclInstance* ptcl = &particles[currentParticleIdx];
-            ptcl->type = type;
             return ptcl;
         }
     } while (++i < numParticleMax);
+
+    WARNING("Particle is Empty.\n");
 
     return NULL;
 }
@@ -403,7 +438,7 @@ EmitterSet* System::AllocEmitterSet(Handle* handle)
     do
     {
         currentEmitterSetIdx++;
-        currentEmitterSetIdx &= numEmitterSetMaxMask;
+        if (currentEmitterSetIdx >= numEmitterSetMax) currentEmitterSetIdx = 0;
 
         if (emitterSets[currentEmitterSetIdx].numEmitter == 0)
         {
@@ -413,6 +448,13 @@ EmitterSet* System::AllocEmitterSet(Handle* handle)
     } while (++i < numEmitterSetMax);
 
     handle->emitterSet = emitterSet;
+
+    if (emitterSet == NULL)
+    {
+        WARNING("Emitter Set is Empty.\n");
+        return NULL;
+    }
+
     return emitterSet;
 }
 
@@ -423,7 +465,7 @@ EmitterInstance* System::AllocEmitter(u8 groupID)
     do
     {
         currentEmitterIdx++;
-        currentEmitterIdx &= numEmitterMaxMask;
+        if (currentEmitterIdx >= numEmitterMax) currentEmitterIdx = 0;
 
         if (emitters[currentEmitterIdx].calc == NULL)
         {
@@ -433,7 +475,12 @@ EmitterInstance* System::AllocEmitter(u8 groupID)
     } while (++i < numEmitterMax);
 
     if (emitter == NULL)
+    {
+        WARNING("Emitter is Empty.\n");
         return NULL;
+    }
+
+    OSBlockSet(&emitter->numParticles, 0, sizeof(EmitterInstance) - ((u32)&emitter->numParticles - (u32)emitter));
 
     if (emitterGroups[groupID] == NULL)
     {

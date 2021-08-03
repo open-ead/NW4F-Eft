@@ -27,8 +27,9 @@ public:
     void BindShader();
     bool CreateShader(Heap* heap, const void* binary, u32 binarySize);
     s32 GetFragmentSamplerLocation(const char* name);
+    s32 GetVertexSamplerLocation(const char* name);
     s32 GetAttributeLocation(const char* name);
-    u32 GetAttribute(const char* name, u32 buffer, VertexFormat attribFormat, u32 offset, bool instanceID);
+    u32 GetAttribute(const char* name, u32 buffer, VertexFormat attribFormat, u32 offset, bool instanceID, bool endianSwap = false);
     void SetupShader(Heap* heap);
 
     GX2VertexShader* vertexShader;
@@ -50,6 +51,7 @@ public:
     ~TextureSampler();
 
     bool Setup(TextureFilterMode filterMode, TextureWrapMode wrapModeX, TextureWrapMode wrapModeY);
+    bool Initialize(TextureFilterMode filterMode, TextureWrapMode wrapModeX, TextureWrapMode wrapModeY);
     bool SetupLOD(f32 maxLOD, f32 biasLOD);
 
     GX2Sampler sampler;
@@ -79,7 +81,7 @@ public:
 
     bool InitializeVertexUniformBlock(Shader* shader, const char* name, u32);
     bool InitializePixelUniformBlock(Shader* shader, const char* name, u32);
-    void BindUniformBlock(const void* buffer);
+    void BindUniformBlock(const void* buffer, s32 bufSize = -1);
 
     bool initialized;
     bool blockNotExist;
@@ -96,9 +98,10 @@ class VertexBuffer
 public:
     VertexBuffer();
 
-    void* AllocateVertexBuffer(Heap* heap, u32 bufSize, u32 size);
+    void* AllocateVertexBuffer(Heap* heap, u32 bufSize, u32 elemSize);
+    void SetVertexBuffer(void* buf, u32 bufSize, u32 elemSize);
     void Finalize(Heap* heap);
-    void Invalidate();
+    inline void Invalidate();
     void BindBuffer(u32 index, u32 size, u32 stride);
 
     static void BindExtBuffer(u32 index, u32 size, u32, u32 stride, void* buffer);
@@ -109,6 +112,11 @@ public:
     void* buffer;
 };
 static_assert(sizeof(VertexBuffer) == 0x10, "VertexBuffer size mismatch");
+
+void VertexBuffer::Invalidate()
+{
+    DCFlushRange(buffer, bufferSize);
+}
 
 } } // namespace nw::eft
 

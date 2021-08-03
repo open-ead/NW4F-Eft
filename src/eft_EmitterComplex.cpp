@@ -1,184 +1,194 @@
 #include <eft_EmitterComplex.h>
 #include <eft_EmitterSet.h>
 #include <eft_Renderer.h>
+#include <eft_Shader.h>
 #include <eft_System.h>
 #include <eft_UniformBlock.h>
 
 namespace nw { namespace eft {
 
-void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl, const StripeData* stripeData, const ComplexEmitterData* data, CpuCore core)
+void EmitterComplexCalc::CalcStripe(EmitterInstance* emitter, PtclInstance* ptcl, const StripeData* stripeData, const ComplexEmitterData* data, CpuCore core, bool noMakePtclAttributeBuffer)
 {
-    s32 counter = (s32)ptcl->counter - 1;
+    s32 counter = ptcl->counterS32 - 1;
+    System* system = emitter->emitterSet->system;
 
-    PtclStripe* stripe = ptcl->stripe;
+    PtclStripe* stripe = ptcl->complexParam->stripe;
     if (stripe == NULL)
         return;
 
+    stripe->texAnimParam[0].scroll.x += data->texAnimParam[0].texIncScroll.x * emitter->emissionSpeed;
+    stripe->texAnimParam[0].scroll.y += data->texAnimParam[0].texIncScroll.y * emitter->emissionSpeed;
+    stripe->texAnimParam[0].scale.x  += data->texAnimParam[0].texIncScale.x  * emitter->emissionSpeed;
+    stripe->texAnimParam[0].scale.y  += data->texAnimParam[0].texIncScale.y  * emitter->emissionSpeed;
+    stripe->texAnimParam[0].rotate   += data->texAnimParam[0].texIncRotate   * emitter->emissionSpeed;
+
+    stripe->texAnimParam[1].scroll.x += data->texAnimParam[1].texIncScroll.x * emitter->emissionSpeed;
+    stripe->texAnimParam[1].scroll.y += data->texAnimParam[1].texIncScroll.y * emitter->emissionSpeed;
+    stripe->texAnimParam[1].scale.x  += data->texAnimParam[1].texIncScale.x  * emitter->emissionSpeed;
+    stripe->texAnimParam[1].scale.y  += data->texAnimParam[1].texIncScale.y  * emitter->emissionSpeed;
+    stripe->texAnimParam[1].rotate   += data->texAnimParam[1].texIncRotate   * emitter->emissionSpeed;
+
     PtclStripeSliceHistory* currentSlice = &stripe->queue[stripe->queueRear];
 
-    if (data->stripeFlags & 1)
+    if (!(stripe->flags & 1) || stripe->queueRear < stripeData->numSliceHistory - 1)
     {
-        currentSlice->pos = ptcl->pos;
-        math::MTX34::Copy(&currentSlice->emitterMatrixSRT, &math::MTX34::Identity());
-    }
-    else
-    {
-        f32 sliceInterpolation = stripeData->sliceInterpolation;
-        if (counter > 2 && stripeData->numSliceHistory > 3 && sliceInterpolation < 1.0f && stripe->queueRear != stripe->queueFront)
+        if ((s32)(floorf(ptcl->counter + emitter->emissionSpeed) - floorf(ptcl->counter)) == 0)
+            return;
+
+        if (data->stripeFlags & 1)
+        {
+            currentSlice->pos = ptcl->pos;
+            math::MTX34::Copy(&currentSlice->emitterMatrixSRT, &math::MTX34::Identity());
+        }
+        else
+        {
+            f32 sliceInterpolation = stripeData->sliceInterpolation;
+            if (counter > 2 && stripeData->numSliceHistory > 3 && sliceInterpolation < 1.0f && stripe->queueRear != stripe->queueFront)
+            {
+                s32 prevIdx = stripe->queueRear - 1;
+                if (prevIdx < 0)
+                    prevIdx = stripeData->numSliceHistory - 1;
+
+                s32 prev2Idx = prevIdx - 1;
+                if (prev2Idx < 0)
+                    prev2Idx = stripeData->numSliceHistory - 1;
+
+                math::VEC3 diff0;
+                math::VEC3::Subtract(&diff0, &ptcl->worldPos, &stripe->pos0);
+                math::VEC3::Scale(&diff0, &diff0, sliceInterpolation);
+                math::VEC3::Add(&stripe->pos0, &stripe->pos0, &diff0);
+
+                math::VEC3 diff1;
+                math::VEC3::Subtract(&diff1, &stripe->pos0, &stripe->pos1);
+                math::VEC3::Scale(&diff1, &diff1, sliceInterpolation);
+                math::VEC3::Add(&stripe->pos1, &stripe->pos1, &diff1);
+
+                stripe->queue[prev2Idx].pos = stripe->pos1;
+
+                math::VEC3 diff2;
+                math::VEC3::Subtract(&diff2, &ptcl->worldPos, &stripe->pos1);
+                math::VEC3::Scale(&diff2, &diff2, 0.7f);
+                math::VEC3::Add(&stripe->queue[prevIdx].pos, &stripe->pos1, &diff2);
+
+                currentSlice->pos = ptcl->worldPos;
+            }
+            else
+            {
+                stripe->pos0 = (stripe->pos1 = (currentSlice->pos = ptcl->worldPos));
+            }
+
+            currentSlice->emitterMatrixSRT = emitter->matrixSRT;
+        }
+
+        currentSlice->scale = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
+
+        if (stripe->queueRear != stripe->queueFront)
         {
             s32 prevIdx = stripe->queueRear - 1;
             if (prevIdx < 0)
                 prevIdx = stripeData->numSliceHistory - 1;
 
-            s32 prev2Idx = prevIdx - 1;
-            if (prev2Idx < 0)
-                prev2Idx = stripeData->numSliceHistory - 1;
+            PtclStripeSliceHistory* prevSlice = &stripe->queue[prevIdx];
 
-            math::VEC3 diff0;
-            math::VEC3::Subtract(&diff0, &ptcl->worldPos, &stripe->pos0);
-            math::VEC3::Scale(&diff0, &diff0, sliceInterpolation);
-            math::VEC3::Add(&stripe->pos0, &stripe->pos0, &diff0);
+            if (counter < 2)
+            {
+                math::VEC3::Subtract(&stripe->currentSliceDir, &currentSlice->pos, &prevSlice->pos);
+                if (stripe->currentSliceDir.Magnitude() > 0.0f)
+                    stripe->currentSliceDir.Normalize();
+            }
+            else
+            {
+                math::VEC3 posDiff;
+                math::VEC3::Subtract(&posDiff, &currentSlice->pos, &prevSlice->pos);
+                if (posDiff.Magnitude() > 0.0f)
+                    posDiff.Normalize();
 
-            math::VEC3 diff1;
-            math::VEC3::Subtract(&diff1, &stripe->pos0, &stripe->pos1);
-            math::VEC3::Scale(&diff1, &diff1, sliceInterpolation);
-            math::VEC3::Add(&stripe->pos1, &stripe->pos1, &diff1);
+                math::VEC3 diff;
+                math::VEC3::Subtract(&diff, &posDiff, &stripe->currentSliceDir);
+                math::VEC3::Scale(&diff, &diff, stripeData->dirInterpolation);
+                math::VEC3::Add(&stripe->currentSliceDir, &stripe->currentSliceDir, &diff);
+                if (stripe->currentSliceDir.Magnitude() > 0.0f)
+                    stripe->currentSliceDir.Normalize();
+            }
 
-            stripe->queue[prev2Idx].pos = stripe->pos1;
+            currentSlice->dir = stripe->currentSliceDir;
 
-            math::VEC3 diff2;
-            math::VEC3::Subtract(&diff2, &ptcl->worldPos, &stripe->pos1);
-            math::VEC3::Scale(&diff2, &diff2, 0.7f);
-            math::VEC3::Add(&stripe->queue[prevIdx].pos, &stripe->pos1, &diff2);
+            if (stripeData->type == 2)
+            {
+                currentSlice->outer.x = currentSlice->emitterMatrixSRT.m[0][1];
+                currentSlice->outer.y = currentSlice->emitterMatrixSRT.m[1][1];
+                currentSlice->outer.z = currentSlice->emitterMatrixSRT.m[2][1];
+            }
+            else
+            {
+                math::VEC3 outer = (math::VEC3){ currentSlice->emitterMatrixSRT.m[0][1],
+                                                 currentSlice->emitterMatrixSRT.m[1][1],
+                                                 currentSlice->emitterMatrixSRT.m[2][1] };
+                math::VEC3::CrossProduct(&outer, &outer, &stripe->currentSliceDir);
+                if (outer.Magnitude() > 0.0f)
+                    outer.Normalize();
 
-            currentSlice->pos = ptcl->worldPos;
+                currentSlice->outer = outer;
+            }
         }
-        else
-        {
-            stripe->pos0 = (stripe->pos1 = (currentSlice->pos = ptcl->worldPos));
-        }
 
-        currentSlice->emitterMatrixSRT = emitter->matrixSRT;
+        if (++stripe->queueRear >= stripeData->numSliceHistory)
+            stripe->queueRear = 0;
+
+        if (stripe->queueRear == stripe->queueFront
+            && ++stripe->queueFront >= stripeData->numSliceHistory)
+            stripe->queueFront = 0;
+
+        if (++stripe->queueCount >= stripeData->numSliceHistory)
+            stripe->queueCount = stripeData->numSliceHistory;
     }
 
-    currentSlice->scale = ptcl->scale.x * emitter->emitterSet->ptclEffectiveScale.x;
-
-    if (stripe->queueRear != stripe->queueFront)
-    {
-        s32 prevIdx = stripe->queueRear - 1;
-        if (prevIdx < 0)
-            prevIdx = stripeData->numSliceHistory - 1;
-
-        PtclStripeSliceHistory* prevSlice = &stripe->queue[prevIdx];
-
-        if (counter < 2)
-        {
-            math::VEC3::Subtract(&stripe->currentSliceDir, &currentSlice->pos, &prevSlice->pos);
-            if (stripe->currentSliceDir.Magnitude() > 0.0f)
-                stripe->currentSliceDir.Normalize();
-        }
-        else
-        {
-            math::VEC3 posDiff;
-            math::VEC3::Subtract(&posDiff, &currentSlice->pos, &prevSlice->pos);
-            if (posDiff.Magnitude() > 0.0f)
-                posDiff.Normalize();
-
-            math::VEC3 diff;
-            math::VEC3::Subtract(&diff, &posDiff, &stripe->currentSliceDir);
-            math::VEC3::Scale(&diff, &diff, stripeData->dirInterpolation);
-            math::VEC3::Add(&stripe->currentSliceDir, &stripe->currentSliceDir, &diff);
-            if (stripe->currentSliceDir.Magnitude() > 0.0f)
-                stripe->currentSliceDir.Normalize();
-        }
-
-        currentSlice->dir = stripe->currentSliceDir;
-
-        if (stripeData->type == 2)
-        {
-            currentSlice->outer.x = currentSlice->emitterMatrixSRT.m[0][1];
-            currentSlice->outer.y = currentSlice->emitterMatrixSRT.m[1][1];
-            currentSlice->outer.z = currentSlice->emitterMatrixSRT.m[2][1];
-        }
-        else
-        {
-            math::VEC3 outer = (math::VEC3){ currentSlice->emitterMatrixSRT.m[0][1],
-                                             currentSlice->emitterMatrixSRT.m[1][1],
-                                             currentSlice->emitterMatrixSRT.m[2][1] };
-            math::VEC3::CrossProduct(&outer, &outer, &stripe->currentSliceDir);
-            if (outer.Magnitude() > 0.0f)
-                outer.Normalize();
-
-            currentSlice->outer = outer;
-        }
-    }
-
-    if (++stripe->queueRear >= stripeData->numSliceHistory)
-        stripe->queueRear = 0;
-
-    if (stripe->queueRear == stripe->queueFront
-        && ++stripe->queueFront >= stripeData->numSliceHistory)
-        stripe->queueFront = 0;
-
-    if (++stripe->queueCount >= stripeData->numSliceHistory)
-        stripe->queueCount = stripeData->numSliceHistory;
-
-    stripe->emitterMatrixSRT = emitter->matrixSRT;
     stripe->counter++;
+
+    if (!noMakePtclAttributeBuffer)
+        system->renderers[core]->MakeStripeAttributeBlock(emitter, ptcl);
 }
 
 void EmitterComplexCalc::EmitChildParticle(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core, const ChildData* childData)
 {
-    s32 counter = (s32)ptcl->counter - 1;
+    s32 counter = ptcl->counterS32;
     if (counter < ((ptcl->lifespan - 1) * childData->startFramePercent / 100))
         return;
 
-    if (ptcl->childEmitCounter >= childData->emissionInterval || childData->emissionInterval == 0 && childData->ptclMaxLifespan == 1)
+    if (ptcl->complexParam->childEmitCounter >= childData->emissionInterval || childData->emissionInterval == 0 && childData->ptclMaxLifespan == 1)
     {
-        if (ptcl->childPreCalcCounter > 0.0f)
+        if (ptcl->complexParam->childPreCalcCounter > 0.0f)
         {
-            f32 time = emitter->counter - ptcl->childPreCalcCounter + ptcl->childEmitLostTime;
+            f32 time = emitter->counter - ptcl->complexParam->childPreCalcCounter + ptcl->complexParam->childEmitLostTime;
             if (childData->emissionInterval != 0)
                 time /= childData->emissionInterval;
 
-            if (ptcl->childEmitLostTime >= childData->emissionInterval)
-                ptcl->childEmitLostTime -= childData->emissionInterval;
+            if (ptcl->complexParam->childEmitLostTime >= childData->emissionInterval)
+                ptcl->complexParam->childEmitLostTime -= childData->emissionInterval;
 
-            ptcl->childEmitLostTime += emitter->counter - ptcl->childPreCalcCounter - (s32)time;
+            ptcl->complexParam->childEmitLostTime += emitter->counter - ptcl->complexParam->childPreCalcCounter - (s32)time;
         }
 
         mSys->AddPtclAdditionList(ptcl, core);
 
-        ptcl->childEmitCounter = 0.0f;
-        ptcl->childPreCalcCounter = emitter->counter;
+        ptcl->complexParam->childEmitCounter = 0.0f;
+        ptcl->complexParam->childPreCalcCounter = emitter->counter;
     }
     else
     {
-        ptcl->childEmitCounter += emitter->emissionSpeed;
-    }
-}
-
-void EmitterComplexCalc::CalcComplex(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
-{
-    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
-
-    if (data->vertexTransformMode == VertexTransformMode_Stripe)
-    {
-        const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)data + data->stripeDataOffs);
-        CalcStripe(emitter, ptcl, stripeData, data, core);
-    }
-
-    if (data->childFlags & 1)
-    {
-        const ChildData* childData = reinterpret_cast<const ChildData*>(data + 1);
-        EmitChildParticle(emitter, ptcl, core, childData);
+        ptcl->complexParam->childEmitCounter += emitter->emissionSpeed;
     }
 }
 
 u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer)
 {
+    emitter->numDrawParticle = 0;
+    if (emitter->numParticles == 0)
+        return 0;
+
     System* system = emitter->emitterSet->system;
     VertexTransformMode vertexTransformMode = emitter->data->vertexTransformMode;
+    PtclAttributeBuffer* ptclAttributeBuffer = NULL;
 
     if (!noMakePtclAttributeBuffer
         && vertexTransformMode != VertexTransformMode_Stripe
@@ -188,31 +198,19 @@ u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, boo
 
         emitter->ptclAttributeBuffer = static_cast<PtclAttributeBuffer*>(renderers[core]->AllocFromDoubleBuffer(sizeof(PtclAttributeBuffer) * emitter->numParticles));
         if (emitter->ptclAttributeBuffer == NULL)
+        {
+            emitter->emitterDynamicUniformBlock = NULL;
             return 0;
+        }
 
-        emitter->emitterDynamicUniformBlock = static_cast<EmitterDynamicUniformBlock*>(renderers[core]->AllocFromDoubleBuffer(sizeof(EmitterDynamicUniformBlock)));
+        emitter->emitterDynamicUniformBlock = MakeEmitterUniformBlock(emitter, core, NULL, false);
         if (emitter->emitterDynamicUniformBlock == NULL)
         {
             emitter->ptclAttributeBuffer = NULL;
             return 0;
         }
 
-        math::VEC3 emitterSetColor = emitter->emitterSet->color.rgb();
-        emitterSetColor.x *= emitter->data->colorScaleFactor;
-        emitterSetColor.y *= emitter->data->colorScaleFactor;
-        emitterSetColor.z *= emitter->data->colorScaleFactor;
-
-        emitter->emitterDynamicUniformBlock->emitterColor0.x = emitterSetColor.x * emitter->anim[11];
-        emitter->emitterDynamicUniformBlock->emitterColor0.y = emitterSetColor.y * emitter->anim[12];
-        emitter->emitterDynamicUniformBlock->emitterColor0.z = emitterSetColor.z * emitter->anim[13];
-        emitter->emitterDynamicUniformBlock->emitterColor0.w = emitter->emitterSet->color.a * emitter->anim[14] * emitter->fadeAlpha;
-
-        emitter->emitterDynamicUniformBlock->emitterColor1.x = emitterSetColor.x * emitter->anim[19];
-        emitter->emitterDynamicUniformBlock->emitterColor1.y = emitterSetColor.y * emitter->anim[20];
-        emitter->emitterDynamicUniformBlock->emitterColor1.z = emitterSetColor.z * emitter->anim[21];
-        emitter->emitterDynamicUniformBlock->emitterColor1.w = emitter->emitterSet->color.a * emitter->anim[14] * emitter->fadeAlpha;
-
-        GX2EndianSwap(emitter->emitterDynamicUniformBlock, sizeof(EmitterDynamicUniformBlock));
+        ptclAttributeBuffer = emitter->ptclAttributeBuffer;
     }
     else
     {
@@ -220,93 +218,135 @@ u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, boo
         emitter->emitterDynamicUniformBlock = NULL;
     }
 
-    emitter->numDrawParticle = 0;
-
-    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
+    const ComplexEmitterData* data = emitter->GetComplexEmitterData();
 
     CustomActionParticleCalcCallback callback1 = mSys->GetCurrentCustomActionParticleCalcCallback(emitter);
     CustomActionParticleMakeAttributeCallback callback2 = mSys->GetCurrentCustomActionParticleMakeAttributeCallback(emitter);
 
     PtclInstance* ptcl = emitter->particleHead;
-    bool reversed = false;
+    const ChildData* childData = emitter->GetChildData();
+    const StripeData* stripeData = NULL;
+    u32 shaderAvailableAttribFlg = emitter->shader[ShaderType_Normal]->shaderAvailableAttribFlg;
 
-    if (emitter->data->flags & 0x400)
+    bool isStripe = false;
+    if (vertexTransformMode == VertexTransformMode_Stripe
+        || vertexTransformMode == VertexTransformMode_Complex_Stripe)
     {
-        ptcl = emitter->particleTail;
-        reversed = true;
+        isStripe = true;
+        stripeData = emitter->GetStripeData();
     }
 
-    for (; ptcl != NULL; ptcl = reversed ? ptcl->prev : ptcl->next)
+    bool simpleStripe = vertexTransformMode == VertexTransformMode_Stripe;
+    bool complexStripe = vertexTransformMode == VertexTransformMode_Complex_Stripe;
+
+    f32 numBehaviorIterF32 = emitter->counter - emitter->counter2;
+    u32 numBehaviorIter = (u32)numBehaviorIterF32;
+    f32 numBehaviorIterDelta = numBehaviorIterF32 - numBehaviorIter;
+    bool behaviorRepeat = emitter->emissionSpeed > 1.0f;
+
+    PtclInstance* next;
+
+    for (; ptcl != NULL; ptcl = next)
     {
-        if (ptcl->data == NULL)
-            continue;
+        next = ptcl->next;
+        PtclStripe* stripe = ptcl->complexParam->stripe;
 
         if (!noCalcBehavior)
         {
-            if (ptcl->lifespan <= (s32)ptcl->counter || ptcl->lifespan == 1 && ptcl->counter != 0.0f)
+            if (isStripe && stripe != NULL)
             {
-                PtclStripe* stripe = ptcl->stripe;
-                if (stripe != NULL)
+                ptcl->counterS32 = (s32)ptcl->counter;
+                if (ptcl->counterS32 >= ptcl->lifespan || ptcl->lifespan == 1 && ptcl->counter != 0.0f)
                 {
                     const StripeData* stripeData = reinterpret_cast<const StripeData*>((u32)data + data->stripeDataOffs);
 
-                    if (stripe->queueFront == stripe->queueRear)
-                        RemoveParticle(emitter, ptcl, core);
-
-                    else
+                    if (stripe->queueFront != stripe->queueRear)
                     {
                         if (++stripe->queueFront >= stripeData->numSliceHistory)
                             stripe->queueFront = 0;
 
                         stripe->queueCount--;
-                        stripe->emitterMatrixSRT = emitter->matrixSRT;
 
-                        ptcl->texAnimParam[0].scroll.x += data->texAnimParam[0].texIncScroll.x;
-                        ptcl->texAnimParam[0].scroll.y += data->texAnimParam[0].texIncScroll.y;
-                        ptcl->texAnimParam[0].scale.x  += data->texAnimParam[0].texIncScale.x;
-                        ptcl->texAnimParam[0].scale.y  += data->texAnimParam[0].texIncScale.y;
-                        ptcl->texAnimParam[0].rotate   += data->texAnimParam[0].texIncRotate;
+                        stripe->texAnimParam[0].scroll.x += data->texAnimParam[0].texIncScroll.x * emitter->emissionSpeed;
+                        stripe->texAnimParam[0].scroll.y += data->texAnimParam[0].texIncScroll.y * emitter->emissionSpeed;
+                        stripe->texAnimParam[0].scale.x  += data->texAnimParam[0].texIncScale.x  * emitter->emissionSpeed;
+                        stripe->texAnimParam[0].scale.y  += data->texAnimParam[0].texIncScale.y  * emitter->emissionSpeed;
+                        stripe->texAnimParam[0].rotate   += data->texAnimParam[0].texIncRotate   * emitter->emissionSpeed;
 
-                        ptcl->texAnimParam[1].scroll.x += data->texAnimParam[1].texIncScroll.x;
-                        ptcl->texAnimParam[1].scroll.y += data->texAnimParam[1].texIncScroll.y;
-                        ptcl->texAnimParam[1].scale.x  += data->texAnimParam[1].texIncScale.x;
-                        ptcl->texAnimParam[1].scale.y  += data->texAnimParam[1].texIncScale.y;
-                        ptcl->texAnimParam[1].rotate   += data->texAnimParam[1].texIncRotate;
+                        stripe->texAnimParam[1].scroll.x += data->texAnimParam[1].texIncScroll.x * emitter->emissionSpeed;
+                        stripe->texAnimParam[1].scroll.y += data->texAnimParam[1].texIncScroll.y * emitter->emissionSpeed;
+                        stripe->texAnimParam[1].scale.x  += data->texAnimParam[1].texIncScale.x  * emitter->emissionSpeed;
+                        stripe->texAnimParam[1].scale.y  += data->texAnimParam[1].texIncScale.y  * emitter->emissionSpeed;
+                        stripe->texAnimParam[1].rotate   += data->texAnimParam[1].texIncRotate   * emitter->emissionSpeed;
 
                         emitter->numDrawParticle++;
+
+                        stripe->counter++;
+                        if (!noMakePtclAttributeBuffer)
+                            system->renderers[core]->MakeStripeAttributeBlock(emitter, ptcl);
+                    }
+                    else
+                    {
+                        RemoveParticle(ptcl, core);
                     }
 
                     stripe->counter++;
-                }
-                else
-                {
-                    RemoveParticle(emitter, ptcl, core);
-                }
+                    if (!noMakePtclAttributeBuffer)
+                        system->renderers[core]->MakeStripeAttributeBlock(emitter, ptcl);
 
-                continue;
+                    continue;
+                }
+            }
+            else
+            {
+                ptcl->counterS32 = (s32)ptcl->counter;
+                if (ptcl->counterS32 >= ptcl->lifespan || ptcl->lifespan == 1 && ptcl->counter > 1.0f)
+                {
+                    RemoveParticle(ptcl, core);
+                    continue;
+                }
             }
 
-            CalcComplexParticleBehavior(emitter, ptcl, core);
-            CalcComplex(emitter, ptcl, core);
+            if (behaviorRepeat)
+            {
+                for (u32 i = 0; i < numBehaviorIter; i++)
+                    CalcComplexParticleBehavior(emitter, ptcl, 1.0f);
+
+                if (numBehaviorIterDelta != 0.0f)
+                    CalcComplexParticleBehavior(emitter, ptcl, numBehaviorIterDelta);
+            }
+            else
+            {
+                CalcComplexParticleBehavior(emitter, ptcl, emitter->emissionSpeed);
+            }
+
+            if (isStripe && stripe != NULL && emitter->emissionSpeed != 0.0f)
+                CalcStripe(emitter, ptcl, stripeData, data, core, noMakePtclAttributeBuffer);
+
+
+            if (childData != NULL && emitter->emissionSpeed != 0.0f)
+                EmitChildParticle(emitter, ptcl, core, childData);
+
+            if (callback1 != NULL)
+            {
+                ParticleCalcArg arg = {
+                    .emitter = emitter,
+                    .ptcl = ptcl,
+                    .core = core,
+                    .noCalcBehavior = noCalcBehavior,
+                };
+                callback1(arg);
+
+                if (ptcl->data == NULL)
+                    continue;
+            }
         }
 
-        if (callback1 != NULL)
+        if (!isStripe && !noMakePtclAttributeBuffer)
         {
-            ParticleCalcArg arg = {
-                .emitter = emitter,
-                .ptcl = ptcl,
-                .core = core,
-                .noCalcBehavior = noCalcBehavior,
-            };
-            callback1(arg);
-        }
-
-        if (!noMakePtclAttributeBuffer
-            && vertexTransformMode != VertexTransformMode_Stripe
-            && vertexTransformMode != VertexTransformMode_Complex_Stripe)
-        {
-            MakeParticleAttributeBuffer(&emitter->ptclAttributeBuffer[emitter->numDrawParticle], ptcl, emitter->shaderAvailableAttribFlg, emitter->data->cameraOffset);
-            ptcl->ptclAttributeBuffer = &emitter->ptclAttributeBuffer[emitter->numDrawParticle++];
+            ptcl->ptclAttributeBuffer = ptclAttributeBuffer;
+            MakeParticleAttributeBuffer(ptclAttributeBuffer++, ptcl, shaderAvailableAttribFlg);
+            emitter->numDrawParticle++;
 
             if (callback2 != NULL)
             {
@@ -319,48 +359,45 @@ u32 EmitterComplexCalc::CalcParticle(EmitterInstance* emitter, CpuCore core, boo
                 callback2(arg);
             }
         }
+
+        if (simpleStripe && !noMakePtclAttributeBuffer)
+            system->renderers[core]->MakeStripeAttributeBlock(emitter, ptcl);
     }
 
-    if (data->vertexTransformMode == VertexTransformMode_Stripe)
-        system->renderers[core]->MakeStripeAttributeBlock(emitter);
+    if (complexStripe)
+        system->renderers[core]->MakeConnectionStripeAttributeBlock(emitter);
 
-    emitter->isCalculated = true;
-    return emitter->numDrawParticle;
+    emitter->emitterBehaviorFlg |= EmitterBehaviorFlag_IsCalculated;
+    return emitter->numParticles;
 }
 
+// This was moved to eft_EmitterChild.cpp
 u32 EmitterComplexCalc::CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer)
 {
+    emitter->numDrawChildParticle = 0;
+    if (emitter->numChildParticles == 0)
+        return 0;
+
+    const ComplexEmitterData* data = emitter->GetComplexEmitterData();
+    const ChildData* childData = emitter->GetChildData();
+
     if (!noMakePtclAttributeBuffer)
     {
         Renderer** const renderers = emitter->emitterSet->system->renderers;
 
         emitter->childPtclAttributeBuffer = static_cast<PtclAttributeBuffer*>(renderers[core]->AllocFromDoubleBuffer(sizeof(PtclAttributeBuffer) * emitter->numChildParticles));
         if (emitter->childPtclAttributeBuffer == NULL)
-            return 0;
-
-        emitter->childEmitterDynamicUniformBlock = static_cast<EmitterDynamicUniformBlock*>(renderers[core]->AllocFromDoubleBuffer(sizeof(EmitterDynamicUniformBlock)));
-        if (emitter->childEmitterDynamicUniformBlock == NULL)
         {
-            emitter->ptclAttributeBuffer = NULL; // NOT childPtclAttributeBuffer... bug?
+            emitter->childEmitterDynamicUniformBlock = NULL;
             return 0;
         }
 
-        math::VEC3 emitterSetColor = emitter->emitterSet->color.rgb();
-        emitterSetColor.x *= emitter->data->colorScaleFactor;
-        emitterSetColor.y *= emitter->data->colorScaleFactor;
-        emitterSetColor.z *= emitter->data->colorScaleFactor;
-
-        emitter->childEmitterDynamicUniformBlock->emitterColor0.x = emitterSetColor.x * emitter->anim[11];
-        emitter->childEmitterDynamicUniformBlock->emitterColor0.y = emitterSetColor.y * emitter->anim[12];
-        emitter->childEmitterDynamicUniformBlock->emitterColor0.z = emitterSetColor.z * emitter->anim[13];
-        emitter->childEmitterDynamicUniformBlock->emitterColor0.w = emitter->emitterSet->color.a * emitter->anim[14] * emitter->fadeAlpha;
-
-        emitter->childEmitterDynamicUniformBlock->emitterColor1.x = emitterSetColor.x * emitter->anim[19];
-        emitter->childEmitterDynamicUniformBlock->emitterColor1.y = emitterSetColor.y * emitter->anim[20];
-        emitter->childEmitterDynamicUniformBlock->emitterColor1.z = emitterSetColor.z * emitter->anim[21];
-        emitter->childEmitterDynamicUniformBlock->emitterColor1.w = emitter->emitterSet->color.a * emitter->anim[14] * emitter->fadeAlpha;
-
-        GX2EndianSwap(emitter->childEmitterDynamicUniformBlock, sizeof(EmitterDynamicUniformBlock));
+        emitter->childEmitterDynamicUniformBlock = MakeEmitterUniformBlock(emitter, core, childData, false);
+        if (emitter->childEmitterDynamicUniformBlock == NULL)
+        {
+            emitter->childPtclAttributeBuffer = NULL;
+            return 0;
+        }
     }
     else
     {
@@ -368,23 +405,29 @@ u32 EmitterComplexCalc::CalcChildParticle(EmitterInstance* emitter, CpuCore core
         emitter->childEmitterDynamicUniformBlock = NULL;
     }
 
-    emitter->numDrawChildParticle = 0;
-
-    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
-
     CustomActionParticleCalcCallback callback1 = mSys->GetCurrentCustomActionParticleCalcCallback(emitter);
     CustomActionParticleMakeAttributeCallback callback2 = mSys->GetCurrentCustomActionParticleMakeAttributeCallback(emitter);
 
-    for (PtclInstance* ptcl = emitter->childParticleHead; ptcl != NULL; ptcl = ptcl->next)
+    u32 shaderAvailableAttribFlg = emitter->childShader[ShaderType_Normal]->shaderAvailableAttribFlg;
+
+    f32 numBehaviorIterF32 = emitter->counter - emitter->counter2;
+    u32 numBehaviorIter = (u32)numBehaviorIterF32;
+    f32 numBehaviorIterDelta = numBehaviorIterF32 - numBehaviorIter;
+    bool behaviorRepeat = emitter->emissionSpeed > 1.0f;
+
+    PtclInstance* ptcl = emitter->childParticleHead;
+    PtclInstance* next;
+
+    for (; ptcl != NULL; ptcl = next)
     {
-        if (ptcl->data == NULL)
-            continue;
+        next = ptcl->next;
 
         if (!noCalcBehavior)
         {
-            if (ptcl->lifespan <= (s32)ptcl->counter || ptcl->lifespan == 1 && ptcl->counter != 0.0f)
+            ptcl->counterS32 = (s32)ptcl->counter;
+            if (ptcl->counterS32 >= ptcl->lifespan || ptcl->lifespan == 1 && ptcl->counter > 1.0f)
             {
-                RemoveParticle(emitter, ptcl, core);
+                RemoveParticle(ptcl, core);
                 continue;
             }
 
@@ -394,7 +437,18 @@ u32 EmitterComplexCalc::CalcChildParticle(EmitterInstance* emitter, CpuCore core
                 ptcl->matrixRT = emitter->matrixRT;
             }
 
-            CalcChildParticleBehavior(emitter, ptcl);
+            if (behaviorRepeat)
+            {
+                for (u32 i = 0; i < numBehaviorIter; i++)
+                    CalcChildParticleBehavior(emitter, ptcl, 1.0f);
+
+                if (numBehaviorIterDelta != 0.0f)
+                    CalcChildParticleBehavior(emitter, ptcl, numBehaviorIterDelta);
+            }
+            else
+            {
+                CalcChildParticleBehavior(emitter, ptcl, emitter->emissionSpeed);
+            }
         }
 
         if (callback1 != NULL)
@@ -406,12 +460,16 @@ u32 EmitterComplexCalc::CalcChildParticle(EmitterInstance* emitter, CpuCore core
                 .noCalcBehavior = noCalcBehavior,
             };
             callback1(arg);
+
+            if (ptcl->data == NULL)
+                continue;
         }
 
         if (!noMakePtclAttributeBuffer)
         {
-            MakeParticleAttributeBuffer(&emitter->childPtclAttributeBuffer[emitter->numDrawChildParticle], ptcl, emitter->childShaderAvailableAttribFlg, 0.0f);
-            ptcl->ptclAttributeBuffer = &emitter->childPtclAttributeBuffer[emitter->numDrawChildParticle++];
+            ptcl->ptclAttributeBuffer = &emitter->childPtclAttributeBuffer[emitter->numDrawChildParticle];
+            MakeParticleAttributeBuffer(ptcl->ptclAttributeBuffer, ptcl, shaderAvailableAttribFlg);
+            emitter->numDrawParticle++;
 
             if (callback2 != NULL)
             {
@@ -426,7 +484,7 @@ u32 EmitterComplexCalc::CalcChildParticle(EmitterInstance* emitter, CpuCore core
         }
     }
 
-    emitter->isCalculated = true;
+    emitter->emitterBehaviorFlg |= EmitterBehaviorFlag_IsCalculated;
     return emitter->numDrawChildParticle;
 }
 

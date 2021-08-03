@@ -50,4 +50,59 @@ f32 CalcAnimKeyFrame(KeyFrameAnim* anim, f32 frame)
     return secStartKey.value * (1.0f - rate) + secEndKey.value * rate;
 }
 
+u32 CalcAnimKeyFrameIndex(KeyFrameAnim* anim, f32 time)
+{
+    KeyFrameAnimKey* keys = reinterpret_cast<KeyFrameAnimKey*>(anim + 1);
+    if (anim->numKeys == 1)
+        return 0;
+
+    s32 startIdx = -1;
+    for (u32 i = 0; i < anim->numKeys; i++)
+    {
+        if (time < keys[i].time) break;
+        startIdx++;
+    }
+
+    if (startIdx < 0)
+        startIdx = 0;
+
+    return startIdx;
+}
+
+f32 CalcAnimKeyFrameSimple(KeyFrameAnim* anim, f32 time, u32 startIdx)
+{
+    KeyFrameAnimKey* keys = reinterpret_cast<KeyFrameAnimKey*>(anim + 1);
+    if (anim->numKeys == 1)
+        return keys[0].value;
+
+    KeyFrameAnimKey& secStartKey = keys[startIdx];
+    KeyFrameAnimKey& secEndKey   = (startIdx + 1u != anim->numKeys) ? keys[startIdx + 1u] : keys[startIdx];
+
+    f32 secDuration = secEndKey.time - secStartKey.time;
+    if (secDuration == 0.0f)
+        return secStartKey.value;
+
+    f32 rate = (time - secStartKey.time) / secDuration;
+
+    return secStartKey.value * (1.0f - rate) + secEndKey.value * rate;
+}
+
+s32 CalcAnimKeyFrameSimpleS32(KeyFrameAnim* anim, f32 time, u32 startIdx)
+{
+    KeyFrameAnimKey* keys = reinterpret_cast<KeyFrameAnimKey*>(anim + 1);
+    if (anim->numKeys == 1)
+        return keys[0].valueS32;
+
+    KeyFrameAnimKey& secStartKey = keys[startIdx];
+    KeyFrameAnimKey& secEndKey   = (startIdx + 1u != anim->numKeys) ? keys[startIdx + 1u] : keys[startIdx];
+
+    f32 secDuration = secEndKey.time - secStartKey.time;
+    if (secDuration == 0.0f)
+        return secStartKey.valueS32;
+
+    f32 rate = (time - secStartKey.time) / secDuration;
+
+    return secStartKey.valueS32 * (1.0f - rate) + secEndKey.valueS32 * rate;
+}
+
 } } // namespace nw::eft

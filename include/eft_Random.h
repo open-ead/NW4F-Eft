@@ -74,7 +74,13 @@ public:
 
     f32 GetF32()
     {
-        return GetU32() * (1.0f / 4294967296.0f);
+        u32 random = GetU32() >> 9 | 0x3F800000;
+        union
+        {
+            u32* ui;
+            f32* f;
+        } bit_cast = { .ui = &random }; // Using a union instead of casting to suppress warning
+        return *bit_cast.f - 1.0f;
     }
 
     f32 GetF32(f32 max)
@@ -157,7 +163,7 @@ public:
         return mNormalizedVec3Tbl[randomNormVec3Idx++ & 0x1FF];
     }
 
-    static void Initialize(Heap* heap);
+    static void Initialize();
     static Random* GetGlobalRandom();
 
     static Random gRandom;

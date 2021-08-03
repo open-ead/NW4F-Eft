@@ -10,38 +10,47 @@ class Heap;
 class Config
 {
 public:
-    Config()
-        : heap (NULL)
-        , numEmitterMax(0x100)
-        , numParticleMax(0x800)
-        , numEmitterSetMax(0x80)
-        , numResourceMax(1)
-        , numStripeMax(0x100)
-        , doubleBufferSize(0x20000)
+    Config(Heap* heap, Heap* dynamicHeap, u32 numEmitterMax, u32 numParticleMax, u32 numEmitterSetMax, u32 numStripeMax,
+           u32 numResourceMax, u32 doubleBufferSize, bool suppressOutputLog, bool isTripleBuffer, u32 numExtraResourceMax)
+        : heap(heap)
+        , dynamicHeap(dynamicHeap)
+        , numEmitterMax(numEmitterMax)
+        , numParticleMax(numParticleMax)
+        , numEmitterSetMax(numEmitterSetMax)
+        , numStripeMax(numStripeMax)
+        , numResourceMax(numResourceMax)
+        , doubleBufferSize(doubleBufferSize)
+        , suppressOutputLog(suppressOutputLog)
+        , isTripleBuffer(isTripleBuffer)
+        , numExtraResourceMax(numExtraResourceMax)
     {
     }
 
     virtual ~Config() { }
 
-    virtual void SetEffectHeap(Heap* heap)
+    void SetEffectHeap(Heap* heap)
     {
         this->heap = heap;
     }
 
-    virtual Heap* GetEffectHeap() const
+    Heap* GetEffectHeap() const
     {
         return heap;
     }
 
     Heap* heap;
+    Heap* dynamicHeap;
     u32 numEmitterMax;
     u32 numParticleMax;
     u32 numEmitterSetMax;
-    u32 numResourceMax;
     u32 numStripeMax;
+    u32 numResourceMax;
     u32 doubleBufferSize;
+    bool suppressOutputLog;
+    bool isTripleBuffer;
+    u32 numExtraResourceMax; // Used to be fixed to 0x10u in NSMBU in System::Initialize()
 };
-static_assert(sizeof(Config) == 0x20, "Config size mismatch");
+static_assert(sizeof(Config) == 0x2C, "Config size mismatch");
 
 } } // namespace nw::eft
 

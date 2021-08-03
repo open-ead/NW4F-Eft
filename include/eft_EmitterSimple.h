@@ -17,6 +17,7 @@ public:
     virtual PtclType GetPtclType() const { return PtclType_Simple; }
     virtual u32 CalcParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer);
     virtual u32 CalcChildParticle(EmitterInstance* emitter, CpuCore core, bool noCalcBehavior, bool noMakePtclAttributeBuffer) { return 0; }
+    virtual EmitterDynamicUniformBlock* MakeEmitterUniformBlock(EmitterInstance* emitter, CpuCore core, const ChildData* childData, bool noCalcBehavior);
 
     void EmitSameDistance(const SimpleEmitterData* data, EmitterInstance* emitter);
 };

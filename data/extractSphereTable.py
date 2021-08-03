@@ -62,16 +62,16 @@ def sphere(elfObj):
         32,
     ]
 
-    sphereCommon(elfObj, 'gSameDivideSphereTbl',    8, addresses_map, "gSameDivideSphere",    0x101e8abc)
+    sphereCommon(elfObj, 'gSameDivideSphereTbl',    8, addresses_map, "gSameDivideSphere",    0x10153848)
 
 
 def sphere64(elfObj):
     addresses_map = range(2, 65)
-    sphereCommon(elfObj, 'gSameDivideSphere64Tbl', 63, addresses_map, "gSameDivideSphere64_", 0x101e8adc)
+    sphereCommon(elfObj, 'gSameDivideSphere64Tbl', 63, addresses_map, "gSameDivideSphere64_", 0x10153868)
 
 
 def main():
-    elfObj = f_elf_open('red-pro2.elf')
+    elfObj = f_elf_open('Turbo_kiosk.elf')
     sphere(elfObj)
     sphere64(elfObj)
 

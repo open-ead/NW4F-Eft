@@ -1,5 +1,6 @@
 #include <eft_Emitter.h>
 #include <eft_EmitterSet.h>
+#include <eft_Primitive.h>
 #include <eft_System.h>
 
 #include <cfloat>
@@ -22,16 +23,21 @@ EmitterCalc::EmitFunction EmitterCalc::mEmitFunctions[] = {
     EmitterCalc::CalcEmitLine,
     EmitterCalc::CalcEmitLineSameDivide,
     EmitterCalc::CalcEmitRectangle,
+    EmitterCalc::CalcEmitPrimitive,
 };
 
 #include "eft_EmitterVolume.hpp"
 
-PtclInstance* EmitterCalc::CalcEmitPoint(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitPoint(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
     (void)emitterSet; // Suppress unused warning
 
-    EMIT_LOOP_START()
+    for (s32 i = 0; i < numEmit; i++)
+    {
+        PtclInstance* ptcl = mSys->AllocPtcl(emitter);
+        if (ptcl == NULL)
+            return;
 
         ptcl->pos = math::VEC3::Zero();
         ptcl->velocity = emitter->random.GetNormalizedVec3() * velocityMag;
@@ -39,15 +45,15 @@ PtclInstance* EmitterCalc::CalcEmitPoint(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitCircle(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitCircle(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
     f32 scaleX = data->volumeScale.x * emitterSet->emitterVolumeScale.x * emitter->anim[22];
     f32 scaleZ = data->volumeScale.z * emitterSet->emitterVolumeScale.z * emitter->anim[23];
 
-    f32 arcLength = math::Idx2Rad(data->arcLength);
-    f32 arcStartAngle = math::Idx2Rad(data->arcStartAngle);
+    f32 arcLength = data->arcLength;
+    f32 arcStartAngle = data->arcStartAngle;
     if (data->arcStartAngleRandom != 0)
         arcStartAngle = emitter->random.GetF32() * math::F_PI * 2.0f;
 
@@ -67,35 +73,37 @@ PtclInstance* EmitterCalc::CalcEmitCircle(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitCircleSameDivide(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitCircleSameDivide(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
     f32 scaleX = data->volumeScale.x * emitterSet->emitterVolumeScale.x * emitter->anim[22];
     f32 scaleZ = data->volumeScale.z * emitterSet->emitterVolumeScale.z * emitter->anim[23];
 
-    u32 arcLengthUnit;
-    u32 arcStartAngle = data->arcStartAngle;
+    f32 arcLengthUnit;
+    f32 arcStartAngle = data->arcStartAngle;
     if (data->arcStartAngleRandom != 0)
-        arcStartAngle = emitter->random.GetU32();
+        arcStartAngle = emitter->random.GetF32() * math::F_PI * 2.0f;
 
     if (numEmit <= 1.0f) // Comparison with 1.0f instead of 1... mistake?
         arcLengthUnit = 0;
 
     else
     {
-        if (data->arcLength == 0xFFFFFFFF)
-            arcLengthUnit = 0xFFFFFFFF / numEmit;
+        if (data->arcLength == math::F_PI * 2.0f)
+            arcLengthUnit = data->arcLength / numEmit;
         else
             arcLengthUnit = data->arcLength / (numEmit - 1);
     }
 
-    u32 angle = arcStartAngle;
+    f32 angle = arcStartAngle;
 
     EMIT_LOOP_START()
 
-        f32 sin_val, cos_val;
-        math::SinCosIdx(&sin_val, &cos_val, angle);
+        f32 sin_val, cos_val, rndAngle = angle;
+        if (data->arcRandom != 0.0f)
+            rndAngle += emitter->random.GetF32Range(-1.0f, 1.0f) * data->arcRandom / 180.0f * math::F_PI;
+        math::SinCosRad(&sin_val, &cos_val, rndAngle);
 
         ptcl->pos.x = sin_val * scaleX;
         ptcl->pos.y = 0.0f;
@@ -110,15 +118,15 @@ PtclInstance* EmitterCalc::CalcEmitCircleSameDivide(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitFillCircle(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitFillCircle(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
     f32 scaleX = data->volumeScale.x * emitterSet->emitterVolumeScale.x * emitter->anim[22];
     f32 scaleZ = data->volumeScale.z * emitterSet->emitterVolumeScale.z * emitter->anim[23];
 
-    f32 arcLength = math::Idx2Rad(data->arcLength);
-    f32 arcStartAngle = math::Idx2Rad(data->arcStartAngle);
+    f32 arcLength = data->arcLength;
+    f32 arcStartAngle = data->arcStartAngle;
     if (data->arcStartAngleRandom != 0)
         arcStartAngle = emitter->random.GetF32() * math::F_PI * 2.0f;
 
@@ -147,7 +155,7 @@ PtclInstance* EmitterCalc::CalcEmitFillCircle(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitSphere(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitSphere(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -164,9 +172,9 @@ PtclInstance* EmitterCalc::CalcEmitSphere(EmitterInstance* emitter)
     }
     else
     {
-        arcLength = math::Idx2Rad(data->arcLength);
+        arcLength = data->arcLength;
         arcStartAngle = (data->arcStartAngleRandom != 0) ? emitter->random.GetF32() * math::F_PI * 2.0f
-                                                         : math::Idx2Rad(data->arcStartAngle);
+                                                         : data->arcStartAngle;
     }
 
     EMIT_LOOP_START()
@@ -175,7 +183,7 @@ PtclInstance* EmitterCalc::CalcEmitSphere(EmitterInstance* emitter)
                                                                      : emitter->random.GetF32() * arcLength + arcStartAngle;
         math::SinCosRad(&sin_val, &cos_val, angle);
 
-        f32 y = (data->sphereUseLatitude != 0) ? math::CosRad(emitter->random.GetF32() * data->sphereLatitude)
+        f32 y = (data->sphereUseLatitude != 0) ? 1.0f - (1.0f - math::CosRad(data->sphereLatitude)) * emitter->random.GetF32()
                                                : emitter->random.GetF32Range(-1.0f, 1.0f);
 
         f32 a = 1.0f - y * y;
@@ -206,7 +214,7 @@ PtclInstance* EmitterCalc::CalcEmitSphere(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitSphereSameDivide(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitSphereSameDivide(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -216,23 +224,41 @@ PtclInstance* EmitterCalc::CalcEmitSphereSameDivide(EmitterInstance* emitter)
 
     const math::VEC3* table = gSameDivideSphereTbl[data->sphereDivTblIdx];
 
-    EMIT_LOOP_START()
-
+    for (s32 i = 0; i < numEmit; i++)
+    {
         math::VEC3 normalizedVel = *table++;
 
         if (data->sphereUseLatitude != 0)
         {
-            if (!(math::CosRad(data->sphereLatitude) < normalizedVel.y))
+            if (!(math::F_PI - 0.0001f < data->sphereLatitude || math::CosRad(data->sphereLatitude) < normalizedVel.y))
                 continue;
+        }
 
-            if (data->sphereLatitudeDir.x != 0.0f || data->sphereLatitudeDir.y != 1.0f || data->sphereLatitudeDir.z != 0.0f)
-            {
-                math::VEC3 base = (math::VEC3){ 0.0f, 1.0f, 0.0f };
-                math::MTX34 mtx;
-                math::MTX34::MakeVectorRotation(&mtx, &base, &data->sphereLatitudeDir);
+        PtclStripe* stripe = NULL;
+        if (data->vertexTransformMode == VertexTransformMode_Stripe)
+        {
+            stripe = mSys->AllocAndConnectStripe(emitter);
+            if (stripe == NULL)
+                break;
+        }
 
-                math::MTX34::PSMultVec(&normalizedVel, &mtx, &normalizedVel);
-            }
+        PtclInstance* ptcl = mSys->AllocPtcl();
+        if (ptcl == NULL)
+            continue;
+
+        ptcl->type = emitter->calc->GetPtclType();
+        ptcl->data = emitter->data;
+        ptcl->complexParam->stripe = stripe;
+        if (stripe != NULL)
+            stripe->particle = ptcl;
+
+        if (data->sphereUseLatitude != 0 && (data->sphereLatitudeDir.x != 0.0f || data->sphereLatitudeDir.y != 1.0f || data->sphereLatitudeDir.z != 0.0f))
+        {
+            math::VEC3 base = (math::VEC3){ 0.0f, 1.0f, 0.0f };
+            math::MTX34 mtx;
+            math::MTX34::MakeVectorRotation(&mtx, &base, &data->sphereLatitudeDir);
+
+            math::MTX34::PSMultVec(&normalizedVel, &mtx, &normalizedVel);
         }
 
         ptcl->pos.x = normalizedVel.x * scaleX;
@@ -246,7 +272,7 @@ PtclInstance* EmitterCalc::CalcEmitSphereSameDivide(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitSphereSameDivide64(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitSphereSameDivide64(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -256,23 +282,41 @@ PtclInstance* EmitterCalc::CalcEmitSphereSameDivide64(EmitterInstance* emitter)
 
     const math::VEC3* table = gSameDivideSphere64Tbl[data->sphereDivTblIdx + 2]; // What is the point of the first 2 tables?
 
-    EMIT_LOOP_START()
-
+    for (s32 i = 0; i < numEmit; i++)
+    {
         math::VEC3 normalizedVel = *table++;
 
         if (data->sphereUseLatitude != 0)
         {
-            if (!(math::CosRad(data->sphereLatitude) < normalizedVel.y))
+            if (!(math::F_PI - 0.0001f < data->sphereLatitude || math::CosRad(data->sphereLatitude) < normalizedVel.y))
                 continue;
+        }
 
-            if (data->sphereLatitudeDir.x != 0.0f || data->sphereLatitudeDir.y != 1.0f || data->sphereLatitudeDir.z != 0.0f)
-            {
-                math::VEC3 base = (math::VEC3){ 0.0f, 1.0f, 0.0f };
-                math::MTX34 mtx;
-                math::MTX34::MakeVectorRotation(&mtx, &base, &data->sphereLatitudeDir);
+        PtclStripe* stripe = NULL;
+        if (data->vertexTransformMode == VertexTransformMode_Stripe)
+        {
+            stripe = mSys->AllocAndConnectStripe(emitter);
+            if (stripe == NULL)
+                break;
+        }
 
-                math::MTX34::PSMultVec(&normalizedVel, &mtx, &normalizedVel);
-            }
+        PtclInstance* ptcl = mSys->AllocPtcl();
+        if (ptcl == NULL)
+            continue;
+
+        ptcl->type = emitter->calc->GetPtclType();
+        ptcl->data = emitter->data;
+        ptcl->complexParam->stripe = stripe;
+        if (stripe != NULL)
+            stripe->particle = ptcl;
+
+        if (data->sphereUseLatitude != 0 && (data->sphereLatitudeDir.x != 0.0f || data->sphereLatitudeDir.y != 1.0f || data->sphereLatitudeDir.z != 0.0f))
+        {
+            math::VEC3 base = (math::VEC3){ 0.0f, 1.0f, 0.0f };
+            math::MTX34 mtx;
+            math::MTX34::MakeVectorRotation(&mtx, &base, &data->sphereLatitudeDir);
+
+            math::MTX34::PSMultVec(&normalizedVel, &mtx, &normalizedVel);
         }
 
         ptcl->pos.x = normalizedVel.x * scaleX;
@@ -286,7 +330,7 @@ PtclInstance* EmitterCalc::CalcEmitSphereSameDivide64(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitFillSphere(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitFillSphere(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -303,9 +347,9 @@ PtclInstance* EmitterCalc::CalcEmitFillSphere(EmitterInstance* emitter)
     }
     else
     {
-        arcLength = math::Idx2Rad(data->arcLength);
+        arcLength = data->arcLength;
         arcStartAngle = (data->arcStartAngleRandom != 0) ? emitter->random.GetF32() * math::F_PI * 2.0f
-                                                         : math::Idx2Rad(data->arcStartAngle);
+                                                         : data->arcStartAngle;
     }
 
     EMIT_LOOP_START()
@@ -314,7 +358,7 @@ PtclInstance* EmitterCalc::CalcEmitFillSphere(EmitterInstance* emitter)
                                                                      : emitter->random.GetF32() * arcLength + arcStartAngle;
         math::SinCosRad(&sin_val, &cos_val, angle);
 
-        f32 y = (data->sphereUseLatitude != 0) ? math::CosRad(emitter->random.GetF32() * data->sphereLatitude)
+        f32 y = (data->sphereUseLatitude != 0) ? 1.0f - (1.0f - math::CosRad(data->sphereLatitude)) * emitter->random.GetF32()
                                                : emitter->random.GetF32Range(-1.0f, 1.0f);
 
         f32 a = 1.0f - y * y;
@@ -352,7 +396,7 @@ PtclInstance* EmitterCalc::CalcEmitFillSphere(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitCylinder(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitCylinder(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -360,8 +404,8 @@ PtclInstance* EmitterCalc::CalcEmitCylinder(EmitterInstance* emitter)
     f32 scaleY = data->volumeScale.y * emitterSet->emitterVolumeScale.y * emitter->anim[23];
     f32 scaleZ = data->volumeScale.z * emitterSet->emitterVolumeScale.z * emitter->anim[24];
 
-    f32 arcLength = math::Idx2Rad(data->arcLength);
-    f32 arcStartAngle = math::Idx2Rad(data->arcStartAngle);
+    f32 arcLength = data->arcLength;
+    f32 arcStartAngle = data->arcStartAngle;
     if (data->arcStartAngleRandom != 0)
         arcStartAngle = emitter->random.GetF32() * math::F_PI * 2.0f;
 
@@ -381,7 +425,7 @@ PtclInstance* EmitterCalc::CalcEmitCylinder(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitFillCylinder(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitFillCylinder(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -389,8 +433,8 @@ PtclInstance* EmitterCalc::CalcEmitFillCylinder(EmitterInstance* emitter)
     f32 scaleY = data->volumeScale.y * emitterSet->emitterVolumeScale.y * emitter->anim[23];
     f32 scaleZ = data->volumeScale.z * emitterSet->emitterVolumeScale.z * emitter->anim[24];
 
-    f32 arcLength = math::Idx2Rad(data->arcLength);
-    f32 arcStartAngle = math::Idx2Rad(data->arcStartAngle);
+    f32 arcLength = data->arcLength;
+    f32 arcStartAngle = data->arcStartAngle;
     if (data->arcStartAngleRandom != 0)
         arcStartAngle = emitter->random.GetF32() * math::F_PI * 2.0f;
 
@@ -419,7 +463,7 @@ PtclInstance* EmitterCalc::CalcEmitFillCylinder(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitBox(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitBox(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -471,7 +515,7 @@ PtclInstance* EmitterCalc::CalcEmitBox(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitFillBox(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitFillBox(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -545,7 +589,7 @@ PtclInstance* EmitterCalc::CalcEmitFillBox(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitLine(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitLine(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -565,7 +609,7 @@ PtclInstance* EmitterCalc::CalcEmitLine(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitLineSameDivide(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitLineSameDivide(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -601,7 +645,7 @@ PtclInstance* EmitterCalc::CalcEmitLineSameDivide(EmitterInstance* emitter)
     EMIT_LOOP_FUNCTION_END()
 }
 
-PtclInstance* EmitterCalc::CalcEmitRectangle(EmitterInstance* emitter)
+void EmitterCalc::CalcEmitRectangle(EmitterInstance* emitter)
 {
     EMIT_FUNCTION_START()
 
@@ -644,6 +688,65 @@ PtclInstance* EmitterCalc::CalcEmitRectangle(EmitterInstance* emitter)
         ptcl->velocity.z = normalizedVel.z * velocityMag;
 
     EMIT_LOOP_FUNCTION_END()
+}
+
+void EmitterCalc::CalcEmitPrimitive(EmitterInstance* emitter)
+{
+    if (emitter->volumePrimitive == NULL)
+        return;
+
+    EMIT_FUNCTION_START()
+    (void)emitterSet; // Suppress unused warning
+
+    math::VEC3* pos = static_cast<math::VEC3*>(emitter->volumePrimitive->vbPos.buffer);
+    math::VEC3* normal = static_cast<math::VEC3*>(emitter->volumePrimitive->vbNormal.buffer);
+    u32 numVertices = emitter->volumePrimitive->vbPos.bufferSize / sizeof(math::VEC3);
+
+    if (emitter->data->primitiveEmitType == 0)
+    {
+        for (u32 i = 0; i < numVertices; i++)
+        {
+            PtclInstance* ptcl = mSys->AllocPtcl(emitter);
+            if (ptcl == NULL)
+                return;
+
+            ptcl->pos = *pos++;
+            ptcl->velocity = *normal++ * velocityMag;
+
+        EMIT_LOOP_FUNCTION_END()
+    }
+    else if (emitter->data->primitiveEmitType == 1)
+    {
+        for (s32 i = 0; i < numEmit; i++)
+        {
+            u32 idx = (u32)(numVertices * emitter->random.GetF32());
+
+            PtclInstance* ptcl = mSys->AllocPtcl(emitter);
+            if (ptcl == NULL)
+                return;
+
+            ptcl->pos = pos[idx];
+            ptcl->velocity = normal[idx] * velocityMag;
+
+        EMIT_LOOP_FUNCTION_END()
+    }
+    else if (emitter->data->primitiveEmitType == 2)
+    {
+        for (s32 i = 0; i < numEmit; i++)
+        {
+            u32 idx = emitter->primitiveEmitCounter++ % numVertices;
+
+            PtclInstance* ptcl = mSys->AllocPtcl(emitter);
+            if (ptcl == NULL)
+                return;
+
+            ptcl->pos = pos[idx];
+            ptcl->velocity = normal[idx] * velocityMag;
+
+        EMIT_LOOP_FUNCTION_END()
+    }
+
+    emitter->emitterBehaviorFlg |= EmitterBehaviorFlag_IsEmitted;
 }
 
 } } // namespace nw::eft

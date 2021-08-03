@@ -1,5 +1,7 @@
 #include <math/math_VEC4.h>
+#include <eft_Emitter.h>
 #include <eft_Heap.h>
+#include <eft_Misc.h>
 #include <eft_Primitive.h>
 #include <eft_ResData.h>
 #include <eft_Resource.h>
@@ -9,9 +11,9 @@
 
 namespace nw { namespace eft {
 
-Resource::Resource(Heap* heap, void* resource, u32 resourceID, System* system)
+Resource::Resource(Heap* heap, void* resource, u32 resourceID, System* system, bool _unusedArg)
 {
-    Initialize(heap, resource, resourceID, system);
+    Initialize(heap, resource, resourceID, system, _unusedArg);
 }
 
 Resource::~Resource()
@@ -37,13 +39,29 @@ void Resource::CreateFtexbTextureHandle(Heap* heap, void* data, TextureRes& text
         GX2_SURFACE_FORMAT_TC_R8_UNORM,
         GX2_SURFACE_FORMAT_TC_R8_G8_UNORM,
         GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_SRGB,
+        GX2_SURFACE_FORMAT_TC_R8_SNORM,
+        GX2_SURFACE_FORMAT_T_R4_G4_UNORM,
+        GX2_SURFACE_FORMAT_TC_R11_G11_B10_FLOAT,
+        GX2_SURFACE_FORMAT_TC_R16_FLOAT,
+        GX2_SURFACE_FORMAT_TC_R16_G16_FLOAT,
+        GX2_SURFACE_FORMAT_TC_R16_G16_B16_A16_FLOAT,
+        GX2_SURFACE_FORMAT_TCD_R32_FLOAT,
+        GX2_SURFACE_FORMAT_TC_R32_G32_FLOAT,
+        GX2_SURFACE_FORMAT_TC_R32_G32_B32_A32_FLOAT,
+        GX2_SURFACE_FORMAT_TCS_R5_G6_B5_UNORM,
+        GX2_SURFACE_FORMAT_TC_R5_G5_B5_A1_UNORM,
     };
 
     GX2SurfaceFormat format = GX2_SURFACE_FORMAT_TCS_R8_G8_B8_A8_UNORM;
     if (TextureResFormat_Invalid < texture.cafeTexFormat && texture.cafeTexFormat < TextureResFormat_Max)
         format = formats[texture.cafeTexFormat];
+    else
+        WARNING("Input FTX Texture Format is out of support.\n");
 
-    GX2InitTexture(&texture.gx2Texture, texture.width, texture.height, 1, texture.numMips, format, GX2_SURFACE_DIM_2D);
+    if (texture.depth == 1)
+        GX2InitTexture(&texture.gx2Texture, texture.width, texture.height, texture.depth, texture.numMips, format, GX2_SURFACE_DIM_2D);
+    else
+        GX2InitTexture(&texture.gx2Texture, texture.width, texture.height, texture.depth, texture.numMips, format, GX2_SURFACE_DIM_2D_ARRAY);
     texture.gx2Texture.surface.tileMode = texture.tileMode;
 
     GX2CalcSurfaceSizeAndAlignment(&texture.gx2Texture.surface);
@@ -74,18 +92,18 @@ void Resource::CreateOriginalTextureHandle(Heap* heap, void* data, TextureRes& t
     {
         for (u32 y = 0; y < texture.height; y++)
             for (u32 x = 0; x < texture.width; x++)
-                ((u32*)data_aligned)[y * texture.gx2Texture.surface.pitch + x] = (  *dataU8++ << 24
+                ((u32*)data_aligned)[y * texture.gx2Texture.surface.pitch + x] = (  *dataU8++ << 8
                                                                                   | *dataU8++ << 16
-                                                                                  | *dataU8++ << 8
+                                                                                  | *dataU8++ << 24
                                                                                   | *dataU8++  );
     }
     else
     {
         for (u32 y = 0; y < texture.height; y++)
             for (u32 x = 0; x < texture.width; x++)
-                ((u32*)data_aligned)[y * texture.gx2Texture.surface.pitch + x] = (  *dataU8++ << 24
+                ((u32*)data_aligned)[y * texture.gx2Texture.surface.pitch + x] = (  *dataU8++ << 8
                                                                                   | *dataU8++ << 16
-                                                                                  | *dataU8++ << 8
+                                                                                  | *dataU8++ << 24
                                                                                   | 0xFF  );
     }
 
@@ -94,7 +112,7 @@ void Resource::CreateOriginalTextureHandle(Heap* heap, void* data, TextureRes& t
     texture.initialized = 1;
 }
 
-void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, System* argSystem)
+void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, System* argSystem, bool _unusedArg)
 {
     system = argSystem;
     heap = argHeap;
@@ -107,18 +125,29 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
     strTbl = reinterpret_cast<char*>((u32)argResource + resource->strTblOffs);
     textureDataTbl = reinterpret_cast<u8*>((u32)argResource + resource->textureDataTblOffs);
 
-    resourceID = argResourceID;
+    const u32 magic = resource->magic[0] << 24 | resource->magic[1] << 16 | resource->magic[2] << 8 | resource->magic[3];
+    if (magic != 0x45465446) // EFTF
+        ERROR("Binary Target is Windows.\n");
+
+    if (resource->version != 65)
+        ERROR("Binary Version Error. Data Version:%d, Runtime Version:%d, DataName:%s.\n", resource->version, 65, strTbl);
 
     if (resource->numEmitterSet == 0)
+    {
+        WARNING("EmitterSet is Empty.\n");
         return;
+    }
+
+    resourceID = argResourceID;
 
     ShaderTable* shaderTbl = reinterpret_cast<ShaderTable*>((u32)argResource + resource->shaderTblOffs);
     ShaderProgram* program = reinterpret_cast<ShaderProgram*>((u32)shaderTbl + shaderTbl->shaderProgOffs);
-    u8* const baseShaderBinary = reinterpret_cast<u8*>(program + shaderTbl->numShaderProg);
+    u8* const baseShaderBinary = reinterpret_cast<u8*>((u32)shaderTbl + shaderTbl->shaderBinOffs);
 
     numShader = shaderTbl->numShaderProg;
     //if (numShader != 0)
     {
+        LOG("Resource Setup. Setup Shader Num : %d \n", numShader);
         shaders = static_cast<ParticleShader**>(heap->Alloc(sizeof(ParticleShader*) * numShader));
 
         for (u32 i = 0; i < numShader; i++)
@@ -138,6 +167,7 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
     numPrimitive = primitiveTbl->numPrimitive;
     if (numPrimitive != 0)
     {
+        LOG("Resource Setup. Setup Primitive Num : %d \n", numPrimitive);
         primitives = static_cast<Primitive**>(heap->Alloc(sizeof(Primitive*) * numPrimitive));
 
         for (u32 i = 0; i < numPrimitive; i++)
@@ -191,13 +221,13 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
                     void* colorBuf = primitive->vbColor.AllocateVertexBuffer(argHeap, sizeof(math::VEC4) * primitive->numIndex, 4);
                     for (u32 j = 0; j < primitive->numIndex; j++)
                         ((math::VEC4*)colorBuf)[j] = (math::VEC4){ 1.0f, 1.0f, 1.0f, 1.0f };
-                    //primitive->color = reinterpret_cast<f32*>(colorBuf); <-- NSMBU doesn't do this, but MK8 does. Bug in older Eft?
+                    primitive->color = reinterpret_cast<f32*>(colorBuf);
                     primitive->vbColor.Invalidate();
                 }
 
                 if (texCoord != NULL && texCoordBufSize != 0)
                 {
-                    void* texCoordBuf = primitive->vbTexCoord.AllocateVertexBuffer(argHeap, texCoordBufSize, 2);
+                    void* texCoordBuf = primitive->vbTexCoord.AllocateVertexBuffer(argHeap, texCoordBufSize, 4);
                     memcpy(texCoordBuf, texCoord, texCoordBufSize);
                     primitive->texCoord = reinterpret_cast<f32*>(texCoordBuf);
                     primitive->vbTexCoord.Invalidate();
@@ -210,31 +240,45 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
                     primitive->index = reinterpret_cast<u32*>(indexBuf);
                     primitive->vbIndex.Invalidate();
                 }
+                else
+                {
+                    ERROR("Primitive Index is Error.\n");
+                }
             }
         }
     }
 
     EmitterSetData* emitterSetData = reinterpret_cast<EmitterSetData*>(resource + 1);
 
-    const u32 numEmitterSet = resource->numEmitterSet;
+    const s32 numEmitterSet = resource->numEmitterSet;
     //if (numEmitterSet != 0)
     {
         emitterSets = static_cast<Resource::EmitterSet*>(heap->Alloc(sizeof(Resource::EmitterSet) * numEmitterSet));
 
-        for (u32 i = 0; i < numEmitterSet; i++)
+        u32 numEmitter = 0;
+        for (s32 i = 0; i < numEmitterSet; i++)
         {
             Resource::EmitterSet* emitterSet = &emitterSets[i];
             emitterSet->data = &emitterSetData[i];
+            numEmitter += emitterSet->data->numEmitter;
+        }
+
+        emitterStaticUniformBlocks = static_cast<EmitterStaticUniformBlock*>(heap->Alloc(sizeof(EmitterStaticUniformBlock) * numEmitter * 2, 0x100));
+
+        u32 currentStaticUBIdx = 0;
+        for (s32 i = 0; i < numEmitterSet; i++)
+        {
+            Resource::EmitterSet* emitterSet = &emitterSets[i];
+
             emitterSet->name = (emitterSet->data->name = &strTbl[emitterSet->data->nameOffs]);
             emitterSet->numEmitter = emitterSet->data->numEmitter;
             emitterSet->userData = emitterSet->data->userData;
-            emitterSet->_unused = 0;
             emitterSet->shaders = shaders;
             emitterSet->numShader = numShader;
             emitterSet->primitives = primitives;
             emitterSet->numPrimitive = numPrimitive;
 
-            if(emitterSet->data->emitterRefOffs != 0)
+            if (emitterSet->data->emitterRefOffs != 0)
             {
                 emitterSet->emitterRef = (/*emitterSet->data->emitterRef =*/ reinterpret_cast<EmitterTblData*>((u32)argResource + emitterSet->data->emitterRefOffs));
 
@@ -243,31 +287,37 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
                     EmitterTblData* emitterRef = &emitterSet->emitterRef[j];
 
                     if (emitterRef->dataOffs == 0)
+                    {
                         emitterRef->data = NULL;
-
+                        emitterRef->emitterStaticUniformBlock      = NULL;
+                        emitterRef->childEmitterStaticUniformBlock = NULL;
+                    }
                     else
                     {
                         emitterRef->data = reinterpret_cast<EmitterData*>((u32)argResource + emitterRef->dataOffs);
                         emitterRef->data->name = &strTbl[emitterRef->data->nameOffs];
+                        emitterRef->emitterStaticUniformBlock = &emitterStaticUniformBlocks[currentStaticUBIdx++];
+                        emitterRef->childEmitterStaticUniformBlock = &emitterStaticUniformBlocks[currentStaticUBIdx++];
 
+                        const SimpleEmitterData* data = static_cast<const SimpleEmitterData*>(emitterRef->data);
+                        const ComplexEmitterData* cdata = NULL;
+                        if (emitterRef->data->type == EmitterType_Complex)
+                            cdata = static_cast<const ComplexEmitterData*>(emitterRef->data);
+
+                        EmitterInstance::UpdateEmitterStaticUniformBlock(emitterRef->emitterStaticUniformBlock, data, cdata);
+
+                        for (s32 k = 0; k < 3; k++)
                         {
-                            TextureRes* const texture = &emitterRef->data->textures[0];
+                            TextureRes* const texture = &emitterRef->data->textures[k];
 
                             if (texture->cafeTexDataSize > 0)
                                 CreateFtexbTextureHandle(heap, textureDataTbl + texture->cafeTexDataOffs, *texture);
 
                             else if (texture->originalTexDataSize > 0)
                                 CreateOriginalTextureHandle(heap, textureDataTbl + texture->originalTexDataOffs, *texture);
-                        }
 
-                        {
-                            TextureRes* const texture = &emitterRef->data->textures[1];
-
-                            if (texture->cafeTexDataSize > 0)
-                                CreateFtexbTextureHandle(heap, textureDataTbl + texture->cafeTexDataOffs, *texture);
-
-                            else if (texture->originalTexDataSize > 0)
-                                CreateOriginalTextureHandle(heap, textureDataTbl + texture->originalTexDataOffs, *texture);
+                            else if (k == 0)
+                                ERROR("Texture Binary is None.\n");
                         }
 
                         if (emitterRef->data->type == EmitterType_Complex
@@ -280,10 +330,24 @@ void Resource::Initialize(Heap* argHeap, void* argResource, u32 argResourceID, S
 
                             else if (texture->originalTexDataSize > 0)
                                 CreateOriginalTextureHandle(heap, textureDataTbl + texture->originalTexDataOffs, *texture);
+
+                            else
+                                ERROR("Child Texture Binary is None.\n");
                         }
 
                         if (emitterRef->data->keyAnimArray.size != 0)
                             emitterRef->data->keyAnimArray.ptr = reinterpret_cast<KeyFrameAnimArray*>((u32)argResource + resource->keyAnimArrayTblOffs + emitterRef->data->keyAnimArray.offset);
+
+                        if (emitterRef->data->shaderParam.count != 0)
+                            emitterRef->data->shaderParam.ptr = reinterpret_cast<f32*>((u32)argResource + resource->shaderParamTblOffs + emitterRef->data->shaderParam.offset);
+
+                        if (emitterRef->data->type == EmitterType_Complex
+                            && (static_cast<ComplexEmitterData*>(emitterRef->data)->childFlags & 1))
+                        {
+                            ChildData* childData = reinterpret_cast<ChildData*>(static_cast<ComplexEmitterData*>(emitterRef->data) + 1);
+                            if (childData->shaderParam.count != 0)
+                                childData->shaderParam.ptr = reinterpret_cast<f32*>((u32)argResource + resource->shaderParamTblOffs + childData->shaderParam.offset);
+                        }
                     }
                 }
             }
@@ -320,14 +384,9 @@ void Resource::Finalize(Heap* heap)
         {
             EmitterTblData* emitterRef = &emitterSet->emitterRef[j];
 
+            for (s32 k = 0; k < 3; k++)
             {
-                TextureRes* const texture = &emitterRef->data->textures[0];
-                if (texture->initialized)
-                    DeleteTextureHandle(heap, *texture, !texture->cafeTexDataSize);
-            }
-
-            {
-                TextureRes* const texture = &emitterRef->data->textures[1];
+                TextureRes* const texture = &emitterRef->data->textures[k];
                 if (texture->initialized)
                     DeleteTextureHandle(heap, *texture, !texture->cafeTexDataSize);
             }
@@ -366,18 +425,23 @@ void Resource::Finalize(Heap* heap)
 
         heap->Free(primitives);
     }
+
+    if (emitterStaticUniformBlocks != NULL)
+    {
+        heap->Free(emitterStaticUniformBlocks);
+        emitterStaticUniformBlocks = NULL;
+    }
 }
 
-ParticleShader* Resource::GetShader(s32 emitterSetID, const VertexShaderKey* vertexShaderKey, const FragmentShaderKey* fragmentShaderKey)
+ParticleShader* Resource::GetShader(s32 emitterSetID, u32 index)
 {
     u32 numShader = emitterSets[emitterSetID].numShader;
+    if (numShader <= index)
+        return NULL;
+
     ParticleShader** shaders = emitterSets[emitterSetID].shaders;
 
-    for (u32 i = 0; i < numShader; i++)
-        if (shaders[i]->vertexShaderKey == *vertexShaderKey && shaders[i]->fragmentShaderKey == *fragmentShaderKey)
-            return shaders[i];
-
-    return NULL;
+    return shaders[index];
 }
 
 } } // namespace nw::eft

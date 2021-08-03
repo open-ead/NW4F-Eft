@@ -18,13 +18,11 @@ struct TextureRes
     u16 height;
     GX2TileMode tileMode;
     u32 swizzle;
-    u32 alignment;
-    u32 pitch;
     u8 wrapMode;
     u8 filterMode;
+    u8 depth;
     u32 numMips;
     u32 compSel;
-    u32 mipOffset[13];
     f32 maxLOD;
     f32 biasLOD;
     TextureResFormat originalTexFormat;
@@ -36,7 +34,7 @@ struct TextureRes
     u32 initialized;
     GX2Texture gx2Texture;
 };
-static_assert(sizeof(TextureRes) == 0x114, "TextureRes size mismatch");
+static_assert(sizeof(TextureRes) == 0xD8, "TextureRes size mismatch");
 
 struct KeyFrameAnimArray
 {
@@ -60,6 +58,14 @@ struct EmitterPrimitive
 };
 static_assert(sizeof(EmitterPrimitive) == 0xC, "EmitterPrimitive size mismatch");
 
+struct EmitterShaderParam
+{
+    u32 count;
+    u32 offset;
+    f32* ptr;
+};
+static_assert(sizeof(EmitterShaderParam) == 0xC, "EmitterShaderParam size mismatch");
+
 struct EmitterData // Actual name not known
 {
     EmitterType type;
@@ -70,25 +76,30 @@ struct EmitterData // Actual name not known
     CustomActionCallBackID callbackID;
     u32 nameOffs;
     const char* name;
-    TextureRes textures[2];
+    TextureRes textures[3];
     EmitterKeyAnimArray keyAnimArray;
     EmitterPrimitive primitive;
+    EmitterPrimitive volumePrimitive;
+    EmitterShaderParam shaderParam;
 };
-static_assert(sizeof(EmitterData) == 0x280, "EmitterData size mismatch");
+static_assert(sizeof(EmitterData) == 0x2F8, "EmitterData size mismatch");
 
 struct TextureEmitterData
 {
     bool hasTexPtnAnim;
     bool texPtnAnimRandStart;
     bool texPtnAnimClamp;
-    u8 texPtnAnimIdxDiv;
-    u8 _unusedPad0;
+    u8 texPtnAnimIdxDiv[2];
     u8 texPtnAnimNum;
-    u8 _unusedPad1[2];
+    u8 texInvURandom;
+    u8 texInvVRandom;
+    bool texSurfaceNoCrossFade;
+    bool texUseSphereUV;
+    u8 _unusedPad[2];
+    u8 texPtnAnimData[32];
+    u32 texPtnAnimMode;
     s16 texPtnAnimPeriod;
     s16 texPtnAnimUsedSize;
-    u8 texPtnAnimData[32];
-    u8 _unusedPad2[4];
     math::VEC2 uvScaleInit;
     u32 uvShiftAnimMode;
     math::VEC2 texIncScroll;
@@ -101,49 +112,52 @@ struct TextureEmitterData
     f32 texInitRotate;
     f32 texInitRotateRandom;
 };
-static_assert(sizeof(TextureEmitterData) == 0x78, "TextureEmitterData size mismatch");
+static_assert(sizeof(TextureEmitterData) == 0x7C, "TextureEmitterData size mismatch");
 
 struct anim3v4Key
 {
     f32 startValue;
     f32 startDiff;
     f32 endDiff;
-    s32 time2;
-    s32 time3;
+    f32 time2;
+    f32 time3;
 };
 static_assert(sizeof(anim3v4Key) == 0x14, "anim3v4Key size mismatch");
 
 struct SimpleEmitterData : EmitterData
 {
-    u8 _unused0[3];
     u8 transformGravity;
-    u8 _unused1;
     u8 noEmitAtFade;
-    u8 sphereDivTblIdx;
-    u8 arcStartAngleRandom;
     u8 displayParent;
     u8 emitSameDistance;
+    u8 rotateDirRandomX;
+    u8 rotateDirRandomY;
+    u8 rotateDirRandomZ;
+    u8 oneTime;
     u8 sphereUseLatitude;
+    u8 updateEmitterInfoByEmit;
+    u8 sphereDivTblIdx;
+    u8 arcStartAngleRandom;
+    u8 primitiveScaleYToZ;
+    u8 forceRandomType0;
+    u32 particleBehaviorFlg;
     VertexRotationMode rotationMode;
     PtclFollowType ptclFollowType;
     u32 fragmentColorMode;
     u32 fragmentAlphaMode;
     s32 _bitForUnusedFlag;
     DisplaySideType displaySideType;
-    f32 momentumRandom;
-    math::MTX34 animMatrixSRT;
-    math::MTX34 animMatrixRT;
-    math::VEC3 emitterScale;
-    math::VEC3 emitterRotate;
-    math::VEC3 emitterTranslate;
-    math::VEC3 emitterRotateRandom;
-    math::VEC3 emitterTranslateRandom;
     BlendType blendType;
     ZBufATestType zBufATestType;
+    AnimationType scaleAnimType;
+    AnimationType colorAnimType[2];
+    AnimationType alphaAnimType[2];
     u32 emitFunction;
+    u32 primitiveEmitType;
     math::VEC3 volumeScale;
-    s32 arcStartAngle;
-    u32 arcLength;
+    f32 arcStartAngle;
+    f32 arcLength;
+    f32 arcRandom;
     f32 volumeFillRatio;
     f32 sphereLatitude;
     math::VEC3 sphereLatitudeDir;
@@ -152,52 +166,67 @@ struct SimpleEmitterData : EmitterData
     ut::Color4f emitterColor0;
     ut::Color4f emitterColor1;
     f32 emitterAlpha;
-    f32 emitSameDistanceUnit;
-    f32 emitSameDistanceMax;
-    f32 emitSameDistanceMin;
-    f32 emitSameDistanceThreshold;
+    math::MTX34 animMatrixSRT;
+    math::MTX34 animMatrixRT;
+    math::VEC3 emitterScale;
+    math::VEC3 emitterRotate;
+    math::VEC3 emitterTranslate;
+    math::VEC3 emitterRotateRandom;
+    math::VEC3 emitterTranslateRandom;
     f32 emissionRate;
+    s32 emissionRateRandom;
     s32 startFrame;
     s32 endFrame;
     s32 emitInterval;
     s32 emitIntervalRandom;
     f32 allDirVel;
-    f32 dirVel;
     f32 dirVelRandom;
+    f32 dirVel;
     math::VEC3 dir;
     f32 dispersionAngle;
     math::VEC3 diffusionVel;
     f32 airResist;
-    math::VEC3 gravity;
     f32 yDiffusionVel;
     f32 ptclPosRandom;
+    f32 emitterVelInheritRatio;
+    f32 emitSameDistanceUnit;
+    f32 emitSameDistanceMax;
+    f32 emitSameDistanceMin;
+    f32 emitSameDistanceThreshold;
+    math::VEC3 gravity;
     s32 ptclMaxLifespan;
     s32 ptclLifespanRandom;
     MeshType meshType;
     VertexTransformMode vertexTransformMode;
+    f32 momentumRandom;
     math::VEC2 rotBasis;
+    u32 cameraOffsetType;
     f32 cameraOffset;
-    TextureEmitterData texAnimParam[2];
+    TextureEmitterData texAnimParam[3];
     ColorSourceType ptclColorSrc[2];
-    ut::Color4f ptclColorTbl[2][3];
+    ut::Color4f ptclColorTbl[2][8];
     s32 colorTime2[2];
     s32 colorTime3[2];
     s32 colorTime4[2];
     s32 colorNumRepetition[2];
     s32 colorRandomStart[2];
     f32 colorScaleFactor;
-    anim3v4Key alphaAnim;
-    FragmentComposite textureColorBlend;
+    AlphaSourceType ptclAlphaSrc[2];
+    anim3v4Key alphaAnim[2];
+    FragmentComposite texture1ColorBlend;
+    FragmentComposite texture2ColorBlend;
     FragmentComposite primitiveColorBlend;
-    FragmentComposite textureAlphaBlend;
+    FragmentComposite texture1AlphaBlend;
+    FragmentComposite texture2AlphaBlend;
     FragmentComposite primitiveAlphaBlend;
     s32 scaleAnimTime2;
     s32 scaleAnimTime3;
-    f32 ptclScaleRandom;
+    math::VEC2 ptclScaleRandom;
     math::VEC2 ptclEmitScale;
     math::VEC2 ptclScaleStart;
     math::VEC2 ptclScaleStartDiff;
     math::VEC2 ptclScaleEndDiff;
+    f32 _7F4;
     math::VEC3 ptclRotate;
     math::VEC3 ptclRotateRandom;
     math::VEC3 angularVelocity;
@@ -207,17 +236,32 @@ struct SimpleEmitterData : EmitterData
     u8 fragmentShaderMode;
     u8 shaderUserSetting;
     bool fragmentSoftEdge;
+    bool enableFresnelAlpha;
+    bool enableNearAlpha;
+    bool enableFarAlpha;
+    bool enableDecal;
     bool refractionApplyAlpha;
+    bool enableShaderParamAnim;
     math::VEC2 shaderParam01;
+    u32 shaderIdx;
+    u32 userShaderIdx1;
+    u32 userShaderIdx2;
+    u32 _850;
     f32 fragmentSoftEdgeFadeDist;
+    f32 fragmentSoftEdgeAlphaOffset;
     f32 fragmentSoftEdgeVolume;
+    math::VEC2 fresnelMinMax;
+    f32 decalVolume;
+    math::VEC2 nearAlphaMinMax;
+    math::VEC2 farAlphaMinMax;
     char userMacro1[16];
     char userMacro2[16];
     u32 shaderUserFlag;
     u32 shaderUserSwitchFlag;
-    u8 _unusedPad[0x6F4 - 0x674];
+    u32 _8A4;
+    anim3v4Key shaderParamAnim;
 };
-static_assert(sizeof(SimpleEmitterData) == 0x6F4, "SimpleEmitterData size mismatch");
+static_assert(sizeof(SimpleEmitterData) == 0x8BC, "SimpleEmitterData size mismatch");
 
 struct ComplexEmitterData : SimpleEmitterData
 {
@@ -232,7 +276,7 @@ struct ComplexEmitterData : SimpleEmitterData
     u16 stripeDataOffs;
     u32 dataSize;
 };
-static_assert(sizeof(ComplexEmitterData) == 0x70C, "ComplexEmitterData size mismatch");
+static_assert(sizeof(ComplexEmitterData) == 0x8D4, "ComplexEmitterData size mismatch");
 
 struct ChildData
 {
@@ -240,6 +284,7 @@ struct ChildData
     s32 startFramePercent;
     s32 ptclMaxLifespan;
     s32 emissionInterval;
+    u32 particleBehaviorFlg;
     f32 velInheritRatio;
     f32 allDirVel;
     math::VEC3 diffusionVel;
@@ -254,12 +299,11 @@ struct ChildData
     DisplaySideType displaySideType;
     math::VEC3 ptclColor0;
     math::VEC3 ptclColor1;
-    u8 _unusedPad0[4];
+    f32 colorScaleFactor;
     FragmentComposite primitiveColorBlend;
     FragmentComposite primitiveAlphaBlend;
-    f32 ptclAlphaMid;
-    f32 ptclAlphaEnd;
-    f32 ptclAlphaStart;
+    AlphaSourceType ptclAlphaSrc[2];
+    anim3v4Key alphaAnim[2];
     f32 scaleInheritRatio;
     math::VEC2 ptclEmitScale;
     f32 ptclScaleRandom;
@@ -269,36 +313,48 @@ struct ChildData
     math::VEC3 angularVelocity;
     math::VEC3 angularVelocityRandom;
     f32 rotInertia;
+    u8 rotateDirRandomX;
+    u8 rotateDirRandomY;
+    u8 rotateDirRandomZ;
+    u8 primitiveScaleYToZ;
     math::VEC2 rotBasis;
     math::VEC3 gravity;
-    s32 alphaAnimTime3;
-    s32 alphaAnimTime2;
     s32 scaleAnimTime1;
     math::VEC2 ptclScaleEnd;
-    u16 texPtnAnimNum;
-    u8 texPtnAnimIdxDiv;
-    math::VEC2 uvScaleInit;
-    u8 texPtnAnimData[32];
-    s16 texPtnAnimPeriod;
-    s16 texPtnAnimUsedSize;
-    bool texPtnAnimClamp;
+    TextureEmitterData texAnimParam;
     u32 fragmentColorMode;
     u32 fragmentAlphaMode;
     f32 airResist;
     u8 fragmentShaderMode;
     u8 shaderUserSetting;
     bool fragmentSoftEdge;
+    bool enableFresnelAlpha;
+    bool enableNearAlpha;
+    bool enableFarAlpha;
     bool refractionApplyAlpha;
+    bool enableDecal;
+    bool enableShaderParamAnim;
     math::VEC2 shaderParam01;
+    u32 shaderIdx;
+    u32 userShaderIdx1;
+    u32 userShaderIdx2;
+    u32 _290;
     f32 fragmentSoftEdgeFadeDist;
+    f32 fragmentSoftEdgeAlphaOffset;
     f32 fragmentSoftEdgeVolume;
+    math::VEC2 fresnelMinMax;
+    math::VEC2 nearAlphaMinMax;
+    math::VEC2 farAlphaMinMax;
+    f32 decalVolume;
     char userMacro1[16];
     char userMacro2[16];
     u32 shaderUserFlag;
     u32 shaderUserSwitchFlag;
-    u8 _unusedPad1[0x2FC - 0x27C];
+    EmitterShaderParam shaderParam;
+    u32 _2F0;
+    anim3v4Key shaderParamAnim;
 };
-static_assert(sizeof(ChildData) == 0x2FC, "ChildData size mismatch");
+static_assert(sizeof(ChildData) == 0x308, "ChildData size mismatch");
 
 struct FieldRandomData
 {
@@ -312,12 +368,14 @@ struct FieldMagnetData
     f32 strength;
     math::VEC3 pos;
     u32 flags;
+    u8 followEmitter;
+    // u8 pad[3];
 };
-static_assert(sizeof(FieldMagnetData) == 0x14, "FieldMagnetData size mismatch");
+static_assert(sizeof(FieldMagnetData) == 0x18, "FieldMagnetData size mismatch");
 
 struct FieldSpinData
 {
-    s32 angle;
+    u32 angle;
     s32 axis;
     f32 diffusionVel;
 };
@@ -325,33 +383,54 @@ static_assert(sizeof(FieldSpinData) == 0xC, "FieldSpinData size mismatch");
 
 struct FieldCollisionData
 {
-    u16 collisionType;
-    u16 coordSystem;
+    u8 collisionType;
+    u8 coordSystem;
+    u8 sharedPlane;
     f32 y;
     f32 bounceRate;
+    s32 bounceCount;
+    f32 friction;
 };
-static_assert(sizeof(FieldCollisionData) == 0xC, "FieldCollisionData size mismatch");
+static_assert(sizeof(FieldCollisionData) == 0x14, "FieldCollisionData size mismatch");
 
 struct FieldConvergenceData
 {
+    u32 followType;
     math::VEC3 pos;
     f32 strength;
 };
-static_assert(sizeof(FieldConvergenceData) == 0x10, "FieldConvergenceData size mismatch");
+static_assert(sizeof(FieldConvergenceData) == 0x14, "FieldConvergenceData size mismatch");
 
 struct FieldPosAddData
 {
     math::VEC3 posAdd;
+    u8 coordSystem;
+    // u8 pad[3];
 };
-static_assert(sizeof(FieldPosAddData) == 0xC, "FieldPosAddData size mismatch");
+static_assert(sizeof(FieldPosAddData) == 0x10, "FieldPosAddData size mismatch");
+
+struct FieldCurlNoiseData
+{
+    u8 interpolation;
+    u8 randomOffset;
+    f32 scale;
+    math::VEC3 weight;
+    math::VEC3 speed;
+    f32 offset;
+};
+static_assert(sizeof(FieldCurlNoiseData) == 0x24, "FieldCurlNoiseData size mismatch");
 
 struct FluctuationData
 {
-    f32 amplitude;
-    f32 frequency;
-    u32 enableRandom;
+    struct
+    {
+        f32 amplitude;
+        f32 frequency;
+        u32 enableRandom;
+        f32 phase;
+    } x, y;
 };
-static_assert(sizeof(FluctuationData) == 0xC, "FluctuationData size mismatch");
+static_assert(sizeof(FluctuationData) == 0x20, "FluctuationData size mismatch");
 
 struct StripeData
 {
@@ -370,12 +449,16 @@ struct StripeData
 };
 static_assert(sizeof(StripeData) == 0x34, "StripeData size mismatch");
 
+struct EmitterStaticUniformBlock;
+
 struct EmitterTblData
 {
     u32 dataOffs;
     EmitterData* data;
+    EmitterStaticUniformBlock* emitterStaticUniformBlock;
+    EmitterStaticUniformBlock* childEmitterStaticUniformBlock;
 };
-static_assert(sizeof(EmitterTblData) == 8, "EmitterTblData size mismatch");
+static_assert(sizeof(EmitterTblData) == 0x10, "EmitterTblData size mismatch");
 
 struct EmitterSetData // Actual name not known
 {
@@ -404,9 +487,11 @@ struct Header // Actual name not known
     u32 keyAnimArrayTblSize;
     u32 primitiveTblOffs;
     u32 primitiveTblSize;
+    u32 shaderParamTblOffs;
+    u32 shaderParamTblSize;
     u8 _unusedPad1[12];
 };
-static_assert(sizeof(Header) == 0x40, "Header size mismatch");
+static_assert(sizeof(Header) == 0x48, "Header size mismatch");
 
 struct PrimitiveAttrib // Actual name not known
 {
@@ -441,15 +526,20 @@ struct KeyFrameAnim
     u32 interpolation;
     u32 animValIdx;
     u32 loop;
+    u32 loopLength;
+    u32 randomStart;
     u32 nextOffs;
-    u8 _unusedPad[4];
 };
-static_assert(sizeof(KeyFrameAnim) == 0x18, "KeyFrameAnim size mismatch");
+static_assert(sizeof(KeyFrameAnim) == 0x1C, "KeyFrameAnim size mismatch");
 
 struct KeyFrameAnimKey
 {
     f32 time;
-    f32 value;
+    union
+    {
+        f32 value;
+        s32 valueS32;
+    };
 };
 static_assert(sizeof(KeyFrameAnimKey) == 8, "KeyFrameAnimKey size mismatch");
 

@@ -3,9 +3,9 @@ from struct import unpack as f_unpack
 
 
 def main():
-    elfObj = f_elf_open('red-pro2.elf')
+    elfObj = f_elf_open('Turbo_kiosk.elf')
 
-    tableBin = f_elf_extract(elfObj, 0x101b610c, 0x101b711c - 0x101b610c)
+    tableBin = f_elf_extract(elfObj, 0x1013cbf4, 0x1013dc04 - 0x1013cbf4)
     numFloats = 4 * (256 + 1)
     assert len(tableBin) == (numFloats * 4)
 

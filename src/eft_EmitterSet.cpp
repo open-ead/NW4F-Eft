@@ -4,11 +4,6 @@
 
 namespace nw { namespace eft {
 
-void EmitterController::SetFollowType(PtclFollowType followType)
-{
-    emitter->ptclFollowType = followType;
-}
-
 void EmitterSet::SetMtx(const math::MTX34& matrixSRT)
 {
     this->matrixSRT = matrixSRT;
@@ -70,6 +65,15 @@ void EmitterSet::SetMtx(const math::MTX34& matrixSRT)
 void EmitterSet::Kill()
 {
     system->KillEmitterSet(this);
+}
+
+void EmitterSet::Fade()
+{
+    doFade = 1;
+
+    for (s32 i = 0; i < numEmitterAtCreate; i++)
+        if (emitters[i] != NULL && emitters[i]->calc != NULL)
+            emitters[i]->fadeStartFrame = emitters[i]->counter;
 }
 
 } } // namespace nw::eft

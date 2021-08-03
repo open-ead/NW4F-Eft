@@ -2,7 +2,10 @@
     const SimpleEmitterData* data = emitter->data;                            \
     const EmitterSet* emitterSet = emitter->emitterSet;                       \
                                                                               \
-    f32 emissionRate = emitter->anim[0] * emitter->controller->emissionRatio; \
+    f32 emissionRateRandom = emitter->data->emissionRateRandom / 100.0f       \
+                             * emitter->random.GetF32() * emitter->anim[0];   \
+    f32 emissionRate = emitter->anim[0] * emitter->controller->emissionRatio  \
+                       - emissionRateRandom;                                  \
     emitter->emitLostRate += emissionRate;                                    \
     s32 counter = (s32)emitter->counter;                                      \
     if (counter == 0 && emitter->emitLostRate < 1.0f && emissionRate != 0.0f) \
@@ -12,22 +15,16 @@
     if (data->emitSameDistance != 0) numEmit = 1;                             \
     emitter->emitLostRate -= (f32)numEmit;                                    \
     if (numEmit == 0)                                                         \
-        return NULL;                                                          \
+        return;                                                               \
                                                                               \
     f32 velocityMag = emitter->anim[15] * emitter->emitterSet->allDirVel;
 
 #define EMIT_LOOP_START()                                                   \
-    PtclInstance* ptclFirst = NULL;                                         \
     for (s32 i = 0; i < numEmit; i++)                                       \
     {                                                                       \
-        PtclInstance* ptcl = mSys->AllocPtcl(emitter->calc->GetPtclType()); \
-        if (ptclFirst == NULL)                                              \
-            ptclFirst = ptcl;                                               \
+        PtclInstance* ptcl = mSys->AllocPtcl(emitter);                      \
         if (ptcl == NULL)                                                   \
-            break;                                                          \
-                                                                            \
-        ptcl->data = data;                                                  \
-        ptcl->stripe = NULL;
+            continue;
 
 #define EMIT_LOOP_FUNCTION_END()                                                            \
         if (data->yDiffusionVel != 0.0f)                                                    \
@@ -51,8 +48,8 @@
         EmitCommon(emitter, ptcl);                                                          \
     }                                                                                       \
                                                                                             \
-    emitter->isEmitted = true;                                                              \
-    return ptclFirst;
+    emitter->emitterBehaviorFlg |= EmitterBehaviorFlag_IsEmitted;                           \
+    return;
 
 static const math::VEC3 gSameDivideSphere2[2] = {
      0.000000f,  1.000000f,  0.000000f,

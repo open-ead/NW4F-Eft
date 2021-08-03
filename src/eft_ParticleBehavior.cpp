@@ -1,8 +1,39 @@
+#include <eft_Animation.h>
 #include <eft_Emitter.h>
 #include <eft_EmitterSet.h>
 #include <eft_UniformBlock.h>
 
 namespace nw { namespace eft {
+
+EmitterCalc::AnimFunction EmitterCalc::mAnimFunctionsSclae[] = {
+    EmitterCalc::CalcPtclAnimation,
+    EmitterCalc::ptclAnim_Scale_4k3v,
+    EmitterCalc::ptclAnim_Scale_8key,
+};
+
+EmitterCalc::AnimFunction EmitterCalc::mAnimFunctionsColor0[] = {
+    EmitterCalc::CalcPtclAnimation,
+    EmitterCalc::ptclAnim_Color0_4k3v,
+    EmitterCalc::ptclAnim_Color0_8key,
+};
+
+EmitterCalc::AnimFunction EmitterCalc::mAnimFunctionsColor1[] = {
+    EmitterCalc::CalcPtclAnimation,
+    EmitterCalc::ptclAnim_Color1_4k3v,
+    EmitterCalc::ptclAnim_Color1_8key,
+};
+
+EmitterCalc::AnimFunction EmitterCalc::mAnimFunctionsAlpha0[] = {
+    EmitterCalc::CalcPtclAnimation,
+    EmitterCalc::ptclAnim_Alpha0_4k3v,
+    EmitterCalc::ptclAnim_Alpha0_8key,
+};
+
+EmitterCalc::AnimFunction EmitterCalc::mAnimFunctionsAlpha1[] = {
+    EmitterCalc::CalcPtclAnimation,
+    EmitterCalc::ptclAnim_Alpha1_4k3v,
+    EmitterCalc::ptclAnim_Alpha1_8key,
+};
 
 // No division-by-zero checks whatsoever...
 
@@ -12,7 +43,7 @@ static inline void ColorAnim_4k3v(u32 colorIdx, PtclInstance* ptcl, const Simple
     if (period == 0)
         period = ptcl->lifespan;
 
-    s32 counter = (s32)ptcl->counter - 1;
+    s32 counter = ptcl->counterS32;
     if (data->colorRandomStart[colorIdx])
         counter += ptcl->randomU32 >> 6;
     counter %= period;
@@ -39,99 +70,11 @@ static inline void ColorAnim_4k3v(u32 colorIdx, PtclInstance* ptcl, const Simple
     }
 }
 
-static inline void TexPtnAnim(u32 texIdx, PtclInstance* ptcl, const SimpleEmitterData* data)
+static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
 {
-    s32 period = data->texAnimParam[texIdx].texPtnAnimPeriod;
-    s16 size = data->texAnimParam[texIdx].texPtnAnimUsedSize;
-    s32 counter = (s32)ptcl->counter;
-    u32 idx;
+    const SimpleEmitterData* data = ptcl->data;
 
-    // Four animation types:
-    // 1. Fit to lifespan
-    // 2. Clamp
-    // 3. Loop
-    // 4. Random (Not handled here; handled in Emit function)
-
-    //const bool fitToLifespan = period == 0;
-    //const bool clamp         = data->texAnimParam[texIdx].texPtnAnimClamp;
-    //const bool loop          = !fitToLifespan && !clamp;
-
-    if (period == 0)
-        idx = (counter * size) / ptcl->lifespan; // (time / lifespan) * size
-    else
-        idx = counter / period;                  //  time / period
-
-    if (data->texAnimParam[texIdx].texPtnAnimClamp && idx >= size)
-        return;
-
-    if (period != 0 && !data->texAnimParam[texIdx].texPtnAnimClamp
-        && data->texAnimParam[texIdx].texPtnAnimRandStart)
-    {
-        idx += ptcl->randomU32;
-    }
-
-    s32 texPtnAnimIdxDiv = data->texAnimParam[texIdx].texPtnAnimIdxDiv;
-    s32 texPtnAnimIdx = data->texAnimParam[texIdx].texPtnAnimData[idx % size];
-    s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
-    s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
-
-    ptcl->texAnimParam[texIdx].offset.x = data->texAnimParam[texIdx].uvScaleInit.x * (f32)offsetX;
-    ptcl->texAnimParam[texIdx].offset.y = data->texAnimParam[texIdx].uvScaleInit.y * (f32)offsetY;
-}
-
-static inline void ChildTexPtnAnim(PtclInstance* ptcl, u32 childFlags, const ChildData* childData)
-{
-    s32 period = childData->texPtnAnimPeriod;
-    s16 size = childData->texPtnAnimUsedSize;
-    s32 counter = (s32)ptcl->counter;
-    u32 idx;
-
-    // Four animation types:
-    // 1. Fit to lifespan
-    // 2. Clamp
-    // 3. Loop
-    // 4. Random (Not handled here; handled in Emit function)
-
-    //const bool fitToLifespan = period == 0;
-    //const bool clamp         = childData->texPtnAnimClamp;
-    //const bool loop          = !fitToLifespan && !clamp;
-
-    if (period == 0)
-        idx = (counter * size) / ptcl->lifespan; // (time / lifespan) * size
-    else
-        idx = counter / period;                  //  time / period
-
-    if (childData->texPtnAnimClamp && idx >= size)
-        return;
-
-    if (period != 0 && !childData->texPtnAnimClamp
-        && childFlags & 0x4000)
-    {
-        idx += ptcl->randomU32;
-    }
-
-    s32 texPtnAnimIdxDiv = childData->texPtnAnimIdxDiv;
-    s32 texPtnAnimIdx = childData->texPtnAnimData[idx % size];
-    s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
-    s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
-
-    ptcl->texAnimParam[0].offset.x = childData->uvScaleInit.x * (f32)offsetX;
-    ptcl->texAnimParam[0].offset.y = childData->uvScaleInit.y * (f32)offsetY;
-}
-
-static inline void TexUvShiftAnim(u32 texIdx, PtclInstance* ptcl, const SimpleEmitterData* data, f32 emissionSpeed)
-{
-    ptcl->texAnimParam[texIdx].scroll.x += data->texAnimParam[texIdx].texIncScroll.x * emissionSpeed;
-    ptcl->texAnimParam[texIdx].scroll.y += data->texAnimParam[texIdx].texIncScroll.y * emissionSpeed;
-    ptcl->texAnimParam[texIdx].scale.x  += data->texAnimParam[texIdx].texIncScale.x  * emissionSpeed;
-    ptcl->texAnimParam[texIdx].scale.y  += data->texAnimParam[texIdx].texIncScale.y  * emissionSpeed;
-    ptcl->texAnimParam[texIdx].rotate   += data->texAnimParam[texIdx].texIncRotate   * emissionSpeed;
-}
-
-static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, const SimpleEmitterData* data)
-{
-    s32 counter = (s32)ptcl->counter;
-    f32 emissionSpeedInv = 1.0f - emitter->emissionSpeed;
+    f32 emissionSpeedInv = 1.0f - emissionSpeed;
 
     math::MTX34* matrixRT = ptcl->pMatrixRT;
 
@@ -145,14 +88,14 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
         ptcl->matrixRT.m[2][3] = emitter->matrixRT.m[2][3];
     }
 
-    ptcl->pos += ptcl->velocity * ptcl->randomF32 * emitter->emissionSpeed;
+    ptcl->pos += ptcl->velocity * (ptcl->randomF32 * emissionSpeed);
 
     if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AirResist)
         ptcl->velocity *= data->airResist + (1.0f - data->airResist) * emissionSpeedInv;
 
     if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Gravity)
     {
-        math::VEC3 gravity = data->gravity * emitter->emissionSpeed;
+        math::VEC3 gravity = data->gravity * (emissionSpeed * emitter->anim[25]);
 
         if (data->transformGravity != 0)
             ptcl->velocity += *math::VEC3::MultMTX(&gravity, &gravity, matrixRT);
@@ -161,103 +104,60 @@ static inline void CalcParitcleBehavior(EmitterInstance* emitter, PtclInstance* 
             ptcl->velocity += gravity;
     }
 
-    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AlphaAnim)
-    {
-        // EmitterCalc::ptclAnim_Alpha0_4k3v(EmitterInstance*, PtclInstance*, f32)
-        {
-            if (counter <= ptcl->alphaAnim->time2)
-                ptcl->alpha += ptcl->alphaAnim->startDiff * emitter->emissionSpeed;
-
-            else if (counter > ptcl->alphaAnim->time3)
-                ptcl->alpha += ptcl->alphaAnim->endDiff * emitter->emissionSpeed;
-        }
-    }
-
-    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_ScaleAnim)
-    {
-        // EmitterCalc::ptclAnim_Scale_4k3v(EmitterInstance*, PtclInstance*, f32)
-        {
-            if (counter <= ptcl->scaleAnim->time2)
-            {
-                ptcl->scale.x += ptcl->scaleAnim->startDiff.x * emitter->emissionSpeed;
-                ptcl->scale.y += ptcl->scaleAnim->startDiff.y * emitter->emissionSpeed;
-            }
-            else if (counter > ptcl->scaleAnim->time3)
-            {
-                ptcl->scale.x += ptcl->scaleAnim->endDiff.x * emitter->emissionSpeed;
-                ptcl->scale.y += ptcl->scaleAnim->endDiff.y * emitter->emissionSpeed;
-            }
-        }
-    }
-
     if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Rotate)
-        ptcl->rotation += ptcl->angularVelocity * emitter->emissionSpeed;
+        ptcl->rotation += ptcl->angularVelocity * emissionSpeed;
 
     if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_RotInertia)
         math::VEC3::Scale(&ptcl->angularVelocity, &ptcl->angularVelocity, data->rotInertia + (1.0f - data->rotInertia) * emissionSpeedInv);
 
-    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Color0Anim)
-    {
-        // EmitterCalc::ptclAnim_Color0_4k3v(EmitterInstance*, PtclInstance*, f32)
-        ColorAnim_4k3v(0, ptcl, data);
-    }
+    if (data->alphaAnimType[0] != AnimationType_None)
+        EmitterCalc::mAnimFunctionsAlpha0[data->alphaAnimType[0]](emitter, ptcl, emissionSpeed);
 
-    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Color1Anim)
-    {
-        // EmitterCalc::ptclAnim_Color1_4k3v(EmitterInstance*, PtclInstance*, f32)
-        ColorAnim_4k3v(1, ptcl, data);
-    }
+    if (data->alphaAnimType[1] != AnimationType_None)
+        EmitterCalc::mAnimFunctionsAlpha1[data->alphaAnimType[1]](emitter, ptcl, emissionSpeed);
 
-    {
-        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex0PtnAnim)
-            TexPtnAnim(0, ptcl, data);
+    if (data->scaleAnimType != AnimationType_None)
+        EmitterCalc::mAnimFunctionsSclae[data->scaleAnimType](emitter, ptcl, emissionSpeed);
 
-        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex0UVShiftAnim)
-            TexUvShiftAnim(0, ptcl, data, emitter->emissionSpeed);
-    }
+    if (data->colorAnimType[0] != AnimationType_None)
+        EmitterCalc::mAnimFunctionsColor0[data->colorAnimType[0]](emitter, ptcl, emissionSpeed);
 
-    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_HasTex1)
-    {
-        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex1PtnAnim)
-            TexPtnAnim(1, ptcl, data);
+    if (data->colorAnimType[1] != AnimationType_None)
+        EmitterCalc::mAnimFunctionsColor1[data->colorAnimType[1]](emitter, ptcl, emissionSpeed);
 
-        if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Tex1UVShiftAnim)
-            TexUvShiftAnim(1, ptcl, data, emitter->emissionSpeed);
-    }
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Unk)
+        ptcl->_13C = (ptcl->velocity.Magnitude() + ptcl->posDiff.Magnitude() * ptcl->randomF32) * (ptcl->data->_7F4 * ptcl->randomF32);
 }
 
-u32 EmitterCalc::CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
+void EmitterCalc::CalcSimpleParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
 {
-    const SimpleEmitterData* data = emitter->data;
-
     math::VEC3 posBefore = ptcl->pos;
     math::MTX34* matrixSRT = ptcl->pMatrixSRT;
 
-    CalcParitcleBehavior(emitter, ptcl, data);
+    CalcParitcleBehavior(emitter, ptcl, emissionSpeed);
 
-    math::MTX34::MultVec(&ptcl->worldPos, matrixSRT, &ptcl->pos);
-
-    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf)
+    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf && emissionSpeed != 0.0f)
     {
         math::VEC3 posDiff = ptcl->pos - posBefore;
         if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
             ptcl->posDiff += posDiff - ptcl->posDiff;
 
-        *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
+        math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff);
     }
 
-    ptcl->counter += emitter->emissionSpeed;
-    return 0;
+    math::MTX34::MultVec(&ptcl->worldPos, matrixSRT, &ptcl->pos);
+
+    ptcl->counter += emissionSpeed;
 }
 
-u32 EmitterCalc::CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, CpuCore core)
+void EmitterCalc::CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
 {
-    const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
+    const ComplexEmitterData* data = ptcl->cdata;
 
     math::VEC3 posBefore = ptcl->pos;
     math::MTX34* matrixSRT = ptcl->pMatrixSRT;
 
-    CalcParitcleBehavior(emitter, ptcl, data);
+    CalcParitcleBehavior(emitter, ptcl, emissionSpeed);
 
     if (data->fluctuationFlags & 1)
         CalcFluctuation(emitter, ptcl);
@@ -266,27 +166,30 @@ u32 EmitterCalc::CalcComplexParticleBehavior(EmitterInstance* emitter, PtclInsta
     {
         const void* fieldData = reinterpret_cast<const void*>((u32)data + data->fieldDataOffs);
 
-        if (data->fieldFlags & 0x01) fieldData = _ptclField_Random     (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x02) fieldData = _ptclField_Magnet     (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x04) fieldData = _ptclField_Spin       (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x08) fieldData = _ptclField_Collision  (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x10) fieldData = _ptclField_Convergence(emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x20) fieldData = _ptclField_PosAdd     (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x01) fieldData = _ptclField_Random     (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x02) fieldData = _ptclField_Magnet     (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x04) fieldData = _ptclField_Spin       (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x08) fieldData = _ptclField_Collision  (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x10) fieldData = _ptclField_Convergence(emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x20) fieldData = _ptclField_PosAdd     (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x40) fieldData = _ptclField_CurlNoise  (emitter, ptcl, fieldData, emissionSpeed);
     }
 
-    math::VEC3 posDiff = ptcl->pos - posBefore;
-    if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
-        ptcl->posDiff += posDiff - ptcl->posDiff;
+    if (emissionSpeed != 0.0f && emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf)
+    {
+        math::VEC3 posDiff = ptcl->pos - posBefore;
+        if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
+            ptcl->posDiff += posDiff - ptcl->posDiff;
+
+        math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff);
+    }
 
     math::MTX34::MultVec(&ptcl->worldPos, matrixSRT, &ptcl->pos);
-    if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf)
-        *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
 
-    ptcl->counter += emitter->emissionSpeed;
-    return 0;
+    ptcl->counter += emissionSpeed;
 }
 
-u32 EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl)
+void EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
 {
     const ComplexEmitterData* data = static_cast<const ComplexEmitterData*>(emitter->data);
     const ChildData* childData = reinterpret_cast<const ChildData*>(data + 1);
@@ -296,103 +199,110 @@ u32 EmitterCalc::CalcChildParticleBehavior(EmitterInstance* emitter, PtclInstanc
     math::MTX34* matrixRT = ptcl->pMatrixRT;
     math::MTX34* matrixSRT = ptcl->pMatrixSRT;
 
-    s32 counter = (s32)ptcl->counter;
-    f32 emissionSpeedInv = 1.0f - emitter->emissionSpeed;
+    f32 emissionSpeedInv = 1.0f - emissionSpeed;
 
-    ptcl->pos += ptcl->velocity * ptcl->randomF32 * emitter->emissionSpeed;
+    ptcl->pos += ptcl->velocity * ptcl->randomF32 * emissionSpeed;
 
-    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AirResist)
+    if (emitter->childParticleBehaviorFlg & ParticleBehaviorFlag_AirResist)
         ptcl->velocity *= childData->airResist + (1.0f - data->airResist) * emissionSpeedInv; // No idea why it uses data->airResist, mistake?
 
-    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Gravity)
+    if (emitter->childParticleBehaviorFlg & ParticleBehaviorFlag_Gravity)
     {
-        math::VEC3 gravity = childData->gravity * emitter->emissionSpeed;
+        math::VEC3 gravity = childData->gravity * (emissionSpeed * emitter->anim[26]);
 
-        if (data->transformGravity != 0)
+        if (data->childFlags & 0x100)
             ptcl->velocity += *math::VEC3::MultMTX(&gravity, &gravity, matrixRT);
 
         else
             ptcl->velocity += gravity;
     }
 
-    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_AlphaAnim)
-    {
-        if (counter < childData->alphaAnimTime2)
-            ptcl->alpha += ptcl->alphaAnim->startDiff * emitter->emissionSpeed;
+    AnimationType alphaAnimType0 = static_cast<AnimationType>(childData->ptclAlphaSrc[0]);
+    AnimationType alphaAnimType1 = static_cast<AnimationType>(childData->ptclAlphaSrc[1]);
 
-        else if (counter >= childData->alphaAnimTime3)
-            ptcl->alpha += ptcl->alphaAnim->endDiff * emitter->emissionSpeed;
-    }
+    if (alphaAnimType0 != AnimationType_None)
+        EmitterCalc::mAnimFunctionsAlpha0[alphaAnimType0](emitter, ptcl, emissionSpeed);
 
-    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_ScaleAnim)
+    if (alphaAnimType1 != AnimationType_None)
+        EmitterCalc::mAnimFunctionsAlpha1[alphaAnimType1](emitter, ptcl, emissionSpeed);
+
+    if (emitter->childParticleBehaviorFlg & ParticleBehaviorFlag_ScaleAnim)
     {
-        if (counter >= childData->scaleAnimTime1)
+        if (ptcl->counter >= childData->scaleAnimTime1)
         {
-            ptcl->scale.x += ptcl->scaleAnim->startDiff.x * emitter->emissionSpeed;
-            ptcl->scale.y += ptcl->scaleAnim->startDiff.y * emitter->emissionSpeed;
+            ptcl->scale.x += ptcl->scaleAnim->startDiff.x * emissionSpeed;
+            ptcl->scale.y += ptcl->scaleAnim->startDiff.y * emissionSpeed;
         }
     }
 
-    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_Rotate)
-        ptcl->rotation += ptcl->angularVelocity * emitter->emissionSpeed;
+    if (emitter->childParticleBehaviorFlg & ParticleBehaviorFlag_Rotate)
+        ptcl->rotation += ptcl->angularVelocity * emissionSpeed;
 
-    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_RotInertia)
+    if (emitter->childParticleBehaviorFlg & ParticleBehaviorFlag_RotInertia)
         math::VEC3::Scale(&ptcl->angularVelocity, &ptcl->angularVelocity, childData->rotInertia + (1.0f - childData->rotInertia) * emissionSpeedInv);
-
-    if (data->childFlags & 0x2000)
-        ChildTexPtnAnim(ptcl, data->childFlags, childData);
 
     if (data->childFlags & 0x800)
     {
         const void* fieldData = reinterpret_cast<const void*>((u32)data + data->fieldDataOffs);
 
-        if (data->fieldFlags & 0x01) fieldData = _ptclField_Random     (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x02) fieldData = _ptclField_Magnet     (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x04) fieldData = _ptclField_Spin       (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x08) fieldData = _ptclField_Collision  (emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x10) fieldData = _ptclField_Convergence(emitter, ptcl, fieldData);
-        if (data->fieldFlags & 0x20) fieldData = _ptclField_PosAdd     (emitter, ptcl, fieldData);
+        if (data->fieldFlags & 0x01) fieldData = _ptclField_Random     (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x02) fieldData = _ptclField_Magnet     (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x04) fieldData = _ptclField_Spin       (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x08) fieldData = _ptclField_Collision  (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x10) fieldData = _ptclField_Convergence(emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x20) fieldData = _ptclField_PosAdd     (emitter, ptcl, fieldData, emissionSpeed);
+        if (data->fieldFlags & 0x40) fieldData = _ptclField_CurlNoise  (emitter, ptcl, fieldData, emissionSpeed);
     }
 
-    math::VEC3 posDiff = ptcl->pos - posBefore;
-    if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
-        ptcl->posDiff += posDiff - ptcl->posDiff;
-
     math::MTX34::MultVec(&ptcl->worldPos, &ptcl->matrixSRT, &ptcl->pos);
-    //if (emitter->particleBehaviorFlg & ParticleBehaviorFlag_WldPosDf)
-        *math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff) *= emitter->emissionSpeed;
 
-    ptcl->counter += emitter->emissionSpeed;
-    return 0;
+    if (emitter->childParticleBehaviorFlg & ParticleBehaviorFlag_WldPosDf && emissionSpeed != 0.0f)
+    {
+        math::VEC3 posDiff = ptcl->pos - posBefore;
+        if (fabsf(posDiff.x) > 0.0001 || fabsf(posDiff.y) > 0.0001 || fabsf(posDiff.z) > 0.0001)
+            ptcl->posDiff += posDiff - ptcl->posDiff;
+
+        math::MTX34::MultVecSR(&ptcl->worldPosDiff, matrixSRT, &ptcl->posDiff);
+    }
+
+    ptcl->counter += emissionSpeed;
 }
 
-void EmitterCalc::MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttributeBuffer, PtclInstance* ptcl, u32 shaderAvailableAttribFlg, f32 cameraOffset)
+void EmitterCalc::MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttributeBuffer, PtclInstance* ptcl, u32 shaderAvailableAttribFlg)
 {
     const EmitterSet* emitterSet = ptcl->emitter->emitterSet;
 
     ptclAttributeBuffer->wldPos.xyz() = ptcl->worldPos;
-    ptclAttributeBuffer->wldPos.w = cameraOffset;
+    ptclAttributeBuffer->wldPos.w = ptcl->counter;
 
-    ptclAttributeBuffer->scl.x = ptcl->scale.x * emitterSet->ptclEffectiveScale.x * ptcl->fluctuationScale;
-    ptclAttributeBuffer->scl.y = ptcl->scale.y * emitterSet->ptclEffectiveScale.y * ptcl->fluctuationScale;
-    ptclAttributeBuffer->scl.z = ptcl->texAnimParam[0].rotate;
-    ptclAttributeBuffer->scl.w = ptcl->texAnimParam[1].rotate;
+    if (shaderAvailableAttribFlg & ShaderAttrib_Scl)
+    {
+        ptclAttributeBuffer->scl.x = ptcl->scale.x * emitterSet->ptclEffectiveScale.x * ptcl->fluctuationScale.x;
+        ptclAttributeBuffer->scl.y = ptcl->scale.y * emitterSet->ptclEffectiveScale.y * ptcl->fluctuationScale.y + ptcl->_13C;
+        ptclAttributeBuffer->scl.z = 0.0f;
+        ptclAttributeBuffer->scl.w = 0.0f;
+    }
 
-    ptclAttributeBuffer->color0.xyz() = ptcl->color0.rgb();
-    ptclAttributeBuffer->color0.w = ptcl->alpha * ptcl->fluctuationAlpha;
+    if (shaderAvailableAttribFlg & ShaderAttrib_Color0)
+    {
+        ptclAttributeBuffer->color0.xyz() = ptcl->color0.rgb();
+        ptclAttributeBuffer->color0.w = ptcl->alpha0 * ptcl->fluctuationAlpha;
+    }
+
+    ptclAttributeBuffer->random.xyz() = ptcl->randomVec4.xyz();
+    ptclAttributeBuffer->random.w = (f32)ptcl->lifespan;
+
+    if (shaderAvailableAttribFlg & ShaderAttrib_Vec)
+    {
+        ptclAttributeBuffer->vec.xyz() = ptcl->velocity;
+        ptclAttributeBuffer->vec.w = ptcl->randomF32;
+    }
 
     if (shaderAvailableAttribFlg & ShaderAttrib_Color1)
     {
         ptclAttributeBuffer->color1.xyz() = ptcl->color1.rgb();
-        ptclAttributeBuffer->color1.w = ptcl->alpha * ptcl->fluctuationAlpha;
+        ptclAttributeBuffer->color1.w = ptcl->alpha1 * ptcl->fluctuationAlpha;
     }
-
-    ptclAttributeBuffer->texAnim.x    = ptcl->texAnimParam[0].offset.x + ptcl->texAnimParam[0].scroll.x;
-    ptclAttributeBuffer->texAnim.y    = ptcl->texAnimParam[0].offset.y - ptcl->texAnimParam[0].scroll.y;
-    ptclAttributeBuffer->texAnim.zw() = ptcl->texAnimParam[0].scale;
-
-    if (shaderAvailableAttribFlg & ShaderAttrib_WldPosDf)
-        ptclAttributeBuffer->wldPosDf.xyz() = ptcl->worldPosDiff;
 
     if (shaderAvailableAttribFlg & ShaderAttrib_Rot)
     {
@@ -400,15 +310,130 @@ void EmitterCalc::MakeParticleAttributeBuffer(PtclAttributeBuffer* ptclAttribute
         ptclAttributeBuffer->rot.w = 0.0f;
     }
 
-    if (shaderAvailableAttribFlg & ShaderAttrib_SubTexAnim)
+    if (shaderAvailableAttribFlg & ShaderAttrib_WldPosDf)
     {
-        ptclAttributeBuffer->subTexAnim.x    = ptcl->texAnimParam[1].offset.x + ptcl->texAnimParam[1].scroll.x;
-        ptclAttributeBuffer->subTexAnim.y    = ptcl->texAnimParam[1].offset.y - ptcl->texAnimParam[1].scroll.y;
-        ptclAttributeBuffer->subTexAnim.zw() = ptcl->texAnimParam[1].scale;
+        ptclAttributeBuffer->wldPosDf.xyz() = ptcl->worldPosDiff;
+        ptclAttributeBuffer->wldPosDf.w = 1.0f;
     }
 
     if (shaderAvailableAttribFlg & ShaderAttrib_EmMat)
+    {
         ptclAttributeBuffer->emtMat = *ptcl->pMatrixRT;
+
+        if (ptcl->velocity.x == ptcl->pMatrixRT->m[0][1] && ptcl->velocity.z == ptcl->pMatrixRT->m[2][1])
+            ptclAttributeBuffer->emtMat.m[2][1] += 0.0001f;
+    }
+}
+
+void EmitterCalc::ptclAnim_Scale_8key(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    KeyFrameAnim* scaleXAnim = emitter->ptclAnimArray[46 - (27 + 1)];
+    KeyFrameAnim* scaleYAnim = emitter->ptclAnimArray[47 - (27 + 1)];
+
+    f32 time = _calcParticleAnimTime(scaleXAnim, ptcl, 46);
+    u32 index = CalcAnimKeyFrameIndex(scaleXAnim, time);
+
+    ptcl->scale.x = CalcAnimKeyFrameSimple(scaleXAnim, time, index) * ptcl->data->ptclEmitScale.x * emitter->anim[17];
+    ptcl->scale.y = CalcAnimKeyFrameSimple(scaleYAnim, time, index) * ptcl->data->ptclEmitScale.y * emitter->anim[18];
+
+    if (emitter->data->ptclScaleRandom.x == emitter->data->ptclScaleRandom.y)
+        ptcl->scale *= 1.0f - emitter->data->ptclScaleRandom.x * ptcl->randomVec4.x;
+
+    else
+    {
+        ptcl->scale.x *= 1.0f - emitter->data->ptclScaleRandom.x * ptcl->randomVec4.x;
+        ptcl->scale.y *= 1.0f - emitter->data->ptclScaleRandom.y * ptcl->randomVec4.y;
+    }
+}
+
+void EmitterCalc::ptclAnim_Scale_4k3v(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    if (ptcl->counter <= ptcl->scaleAnim->time2)
+    {
+        ptcl->scale.x += ptcl->scaleAnim->startDiff.x * emissionSpeed;
+        ptcl->scale.y += ptcl->scaleAnim->startDiff.y * emissionSpeed;
+    }
+    else if (ptcl->counter > ptcl->scaleAnim->time3)
+    {
+        ptcl->scale.x += ptcl->scaleAnim->endDiff.x * emissionSpeed;
+        ptcl->scale.y += ptcl->scaleAnim->endDiff.y * emissionSpeed;
+    }
+}
+
+void EmitterCalc::ptclAnim_Color0_8key(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    KeyFrameAnim* colorRAnim = emitter->ptclAnimArray[38 - (27 + 1)];
+    KeyFrameAnim* colorGAnim = emitter->ptclAnimArray[39 - (27 + 1)];
+    KeyFrameAnim* colorBAnim = emitter->ptclAnimArray[40 - (27 + 1)];
+
+    f32 time = _calcParticleAnimTime(colorRAnim, ptcl, 38);
+    u32 index = CalcAnimKeyFrameIndex(colorRAnim, time);
+
+    ptcl->color[0].r = CalcAnimKeyFrameSimple(colorRAnim, time, index);
+    ptcl->color[0].g = CalcAnimKeyFrameSimple(colorGAnim, time, index);
+    ptcl->color[0].b = CalcAnimKeyFrameSimple(colorBAnim, time, index);
+}
+
+void EmitterCalc::ptclAnim_Color1_8key(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    KeyFrameAnim* colorRAnim = emitter->ptclAnimArray[41 - (27 + 1)];
+    KeyFrameAnim* colorGAnim = emitter->ptclAnimArray[42 - (27 + 1)];
+    KeyFrameAnim* colorBAnim = emitter->ptclAnimArray[43 - (27 + 1)];
+
+    f32 time = _calcParticleAnimTime(colorRAnim, ptcl, 41);
+    u32 index = CalcAnimKeyFrameIndex(colorRAnim, time);
+
+    ptcl->color[1].r = CalcAnimKeyFrameSimple(colorRAnim, time, index);
+    ptcl->color[1].g = CalcAnimKeyFrameSimple(colorGAnim, time, index);
+    ptcl->color[1].b = CalcAnimKeyFrameSimple(colorBAnim, time, index);
+}
+
+void EmitterCalc::ptclAnim_Color0_4k3v(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    ColorAnim_4k3v(0, ptcl, ptcl->data);
+}
+
+void EmitterCalc::ptclAnim_Color1_4k3v(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    ColorAnim_4k3v(1, ptcl, ptcl->data);
+}
+
+void EmitterCalc::ptclAnim_Alpha0_8key(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    KeyFrameAnim* alphaAnim = emitter->ptclAnimArray[44 - (27 + 1)];
+
+    f32 time = _calcParticleAnimTime(alphaAnim, ptcl, 44);
+    u32 index = CalcAnimKeyFrameIndex(alphaAnim, time);
+
+    ptcl->alpha[0] = CalcAnimKeyFrameSimple(alphaAnim, time, index);
+}
+
+void EmitterCalc::ptclAnim_Alpha0_4k3v(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    if (ptcl->counter <= ptcl->alphaAnim[0]->time2)
+        ptcl->alpha[0] += ptcl->alphaAnim[0]->startDiff * emissionSpeed;
+
+    else if (ptcl->counter > ptcl->alphaAnim[0]->time3)
+        ptcl->alpha[0] += ptcl->alphaAnim[0]->endDiff * emissionSpeed;
+}
+
+void EmitterCalc::ptclAnim_Alpha1_8key(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    KeyFrameAnim* alphaAnim = emitter->ptclAnimArray[45 - (27 + 1)];
+
+    f32 time = _calcParticleAnimTime(alphaAnim, ptcl, 45);
+    u32 index = CalcAnimKeyFrameIndex(alphaAnim, time);
+
+    ptcl->alpha[1] = CalcAnimKeyFrameSimple(alphaAnim, time, index);
+}
+
+void EmitterCalc::ptclAnim_Alpha1_4k3v(EmitterInstance* emitter, PtclInstance* ptcl, f32 emissionSpeed)
+{
+    if (ptcl->counter <= ptcl->alphaAnim[1]->time2)
+        ptcl->alpha[1] += ptcl->alphaAnim[1]->startDiff * emissionSpeed;
+
+    else if (ptcl->counter > ptcl->alphaAnim[1]->time3)
+        ptcl->alpha[1] += ptcl->alphaAnim[1]->endDiff * emissionSpeed;
 }
 
 } } // namespace nw::eft
