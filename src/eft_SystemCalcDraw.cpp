@@ -6,6 +6,7 @@
 #include <eft_Shader.h>
 #include <eft_System.h>
 
+#include <cstdlib>
 #include <cstring>
 
 namespace nw { namespace eft {
@@ -223,6 +224,153 @@ void System::RenderEmitter(const EmitterInstance* emitter, void* argData)
     {
         renderers[core]->EntryParticle(emitter, argData);
     }
+}
+
+static u32 Float32ToBits24(f32 val)
+{
+    union
+    {
+        u32* ui;
+        f32* f;
+    } bit_cast = { .f = &val }; // Using a union instead of casting to suppress warning
+    u32 valU32 = *bit_cast.ui;
+
+    u32 sign     = (valU32 & 0x80000000); // >> 31;
+    s32 exponent = (valU32 & 0x7F800000)     >> 23;
+    u32 fraction = (valU32 & 0x007FFFFF); // >>  0;
+
+    u32 valU24 = (sign != 0) ? 0x800000 : 0;
+
+    if ((valU32 & ~0x80000000) == 0)
+        exponent = 0;
+
+    else
+        exponent -= 64;
+
+    fraction >>= 7;
+
+    if (exponent >= 0)
+    {
+        if (exponent > 127)
+            valU24 = 0x7F0000;
+
+        else
+            valU24 = valU24 | fraction | (exponent & 0x7Fu) << 16;
+    }
+
+    return valU24;
+}
+
+s32 System::ComparePtclViewZ(const void* a, const void* b)
+{
+    const PtclViewZ* ptcl_a = static_cast<const PtclViewZ*>(a);
+    const PtclViewZ* ptcl_b = static_cast<const PtclViewZ*>(b);
+
+    if (ptcl_a->z < 0.0f && ptcl_b->z < 0.0f)
+    {
+        if (ptcl_a->z < ptcl_b->z)
+            return -1;
+    }
+    else
+    {
+        if (ptcl_a->z > ptcl_b->z)
+            return -1;
+    }
+
+    return 1;
+}
+
+void System::RenderSortBuffer(void* argData, RenderEmitterProfilerCallback callback)
+{
+    CpuCore core = static_cast<CpuCore>(OSGetCoreId());
+    if (numSortedEmitterSets[core] == 0)
+    {
+        _unused1[core] = 0;
+        return;
+    }
+
+    qsort(sortedEmitterSets[core], numSortedEmitterSets[core], sizeof(PtclViewZ), ComparePtclViewZ);
+
+    for (u32 i = 0; i < numSortedEmitterSets[core]; i++)
+    {
+        if (callback != NULL)
+        {
+            RenderEmitterProfilerArg arg = {
+                .system = this,
+                .emitterSet = sortedEmitterSets[core][i].emitterSet,
+                .emitter = NULL,
+                ._C = 1,
+                .flushCache = true,
+                .argData = argData,
+            };
+            callback(arg);
+        }
+
+        for (s32 j = sortedEmitterSets[core][i].emitterSet->numEmitterAtCreate - 1; j >= 0; j--)
+        {
+            if (!(sortedEmitterSets[core][i].emitterSet->createID == sortedEmitterSets[core][i].emitterSet->emitters[j]->emitterSetCreateID
+                  && sortedEmitterSets[core][i].emitterSet->emitters[j]->calc != NULL && _unused1[core] & (1 << sortedEmitterSets[core][i].emitterSet->emitters[j]->data->_bitForUnusedFlag)))
+                continue;
+
+            EmitterInstance* emitter = sortedEmitterSets[core][i].emitterSet->emitters[j];
+            if (callback != NULL)
+            {
+                RenderEmitterProfilerArg arg = {
+                    .system = this,
+                    .emitterSet = NULL,
+                    .emitter = emitter,
+                    ._C = 0,
+                    .flushCache = true,
+                    .argData = argData,
+                };
+                callback(arg);
+            }
+            else
+            {
+                RenderEmitter(emitter, argData);
+            }
+        }
+
+        if (callback != NULL)
+        {
+            RenderEmitterProfilerArg arg = {
+                .system = this,
+                .emitterSet = sortedEmitterSets[core][i].emitterSet,
+                .emitter = NULL,
+                ._C = 0,
+                .flushCache = true,
+                .argData = argData,
+            };
+            callback(arg);
+        }
+    }
+
+    numSortedEmitterSets[core] = 0;
+    _unused1[core] = 0;
+}
+
+void System::AddSortBuffer(u8 groupID, u32 flag)
+{
+    CpuCore core = static_cast<CpuCore>(OSGetCoreId());
+
+    for (EmitterSet* emitterSet = emitterSetGroupHead[groupID]; emitterSet != NULL; emitterSet = emitterSet->next)
+    {
+        if (!(emitterSet->numEmitter > 0 && emitterSet->_unusedFlags & flag && emitterSet->noDraw == 0 && emitterSet->_unusedFlags != 0))
+            continue;
+
+        math::VEC3 pos = {
+            .x = emitterSet->matrixSRT.m[0][3],
+            .y = emitterSet->matrixSRT.m[1][3],
+            .z = emitterSet->matrixSRT.m[2][3],
+        };
+
+        sortedEmitterSets[core][numSortedEmitterSets[core]].emitterSet = emitterSet;
+        f32 z = view[core].m[2][0] * pos.x + view[core].m[2][1] * pos.y + view[core].m[2][2] * pos.z + view[core].m[2][3];
+        sortedEmitterSets[core][numSortedEmitterSets[core]].z = emitterSet->renderPriority << 24 | Float32ToBits24(z);
+        numSortedEmitterSets[core]++;
+    }
+
+    _unused1[core] |= flag;
 }
 
 void System::EndRender()

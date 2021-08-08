@@ -112,6 +112,17 @@ struct RenderStateSetArg
 };
 static_assert(sizeof(RenderStateSetArg) == 0x10, "RenderStateSetArg size mismatch");
 
+struct RenderEmitterProfilerArg
+{
+    System* system;
+    EmitterSet* emitterSet;
+    EmitterInstance* emitter;
+    u32 _C;
+    bool flushCache;
+    void* argData;
+};
+static_assert(sizeof(RenderEmitterProfilerArg) == 0x18, "RenderEmitterProfilerArg size mismatch");
+
 typedef void (*CustomActionEmitterMatrixSetCallback)(EmitterMatrixSetArg& arg);
 typedef void (*CustomActionEmitterPreCalcCallback)(EmitterPreCalcArg& arg);
 typedef void (*CustomActionEmitterPostCalcCallback)(EmitterPostCalcArg& arg);
@@ -127,6 +138,7 @@ typedef void (*CustomShaderEmitterPostCalcCallback)(ShaderEmitterPostCalcArg& ar
 typedef void (*CustomShaderDrawOverrideCallback)(ShaderDrawOverrideArg& arg);
 typedef void (*CustomShaderRenderStateSetCallback)(RenderStateSetArg& arg);
 typedef void (*DrawPathRenderStateSetCallback)(RenderStateSetArg& arg);
+typedef void (*RenderEmitterProfilerCallback)(RenderEmitterProfilerArg& arg);
 
 struct AlphaAnim;
 struct ComplexEmitterParam;
@@ -187,6 +199,8 @@ public:
     void CalcParticle(bool flushCache);
     void BeginRender(const math::MTX44& proj, const math::MTX34& view, const math::VEC3& cameraWorldPos, f32 zNear, f32 zFar);
     void RenderEmitter(const EmitterInstance* emitter, void* argData);
+    void RenderSortBuffer(void* argData, RenderEmitterProfilerCallback callback);
+    void AddSortBuffer(u8 groupID, u32 flag = 0xFFFFFFFF);
     void EndRender();
     void SwapStreamOutBuffer();
     void CalcStreamOutEmittter();
@@ -214,7 +228,7 @@ public:
     DrawPathRenderStateSetCallback GetDrawPathRenderStateSetCallback(DrawPathFlag flag);
 
     // For qsort
-    static int ComparePtclViewZ(const void* a, const void* b);
+    static s32 ComparePtclViewZ(const void* a, const void* b);
 
     static bool mInitialized;
     u32 counter;
