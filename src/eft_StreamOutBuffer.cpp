@@ -102,4 +102,15 @@ bool StreamOutAttributeBuffer::Bind(u32 buffer, u32 target, bool swap, bool appl
     return false;
 }
 
+void StreamOutAttributeBuffer::UnBind(u32 target)
+{
+    if (data[0] != NULL && data[1] != NULL)
+    {
+        GX2SaveStreamOutContext(target, &buffer[currentBufferIdx]);
+        GX2Invalidate(static_cast<GX2InvalidateType>(GX2_INVALIDATE_ATTRIB_BUFFER
+                                                     | GX2_INVALIDATE_STREAMOUT_BUFFER),
+                      buffer[currentBufferIdx].dataPtr, dataSize);
+    }
+}
+
 } } // namespace nw::eft

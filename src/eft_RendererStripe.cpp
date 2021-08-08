@@ -380,6 +380,7 @@ bool Renderer::MakeStripeAttributeBlock(const EmitterInstance* emitter, PtclInst
     return true;
 }
 
+// This function was moved to eft_RendererConnectionStripe.cpp
 bool Renderer::ConnectionStripeUvScaleCalc(f32& invTexRatio, f32& texRatioSub, const EmitterInstance* emitter, s32 numParticles, f32 invRatio, s32 connectionType)
 {
     const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(emitter->particleHead->data);
@@ -418,6 +419,7 @@ bool Renderer::ConnectionStripeUvScaleCalc(f32& invTexRatio, f32& texRatioSub, c
 
 }
 
+// This function was moved to eft_RendererConnectionStripe.cpp
 u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer)
 {
     if (numParticles < 2)
@@ -612,6 +614,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCore(EmitterInstance* emitter, s
     return numDrawStripe;
 }
 
+// This function was moved to eft_RendererConnectionStripe.cpp
 u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emitter, s32 numParticles, PtclInstance* ptclLast, PtclInstance* ptclBeforeLast, s32 connectionType, StripeVertexBuffer* stripeVertexBuffer)
 {
     const ComplexEmitterData* cdata = reinterpret_cast<const ComplexEmitterData*>(emitter->particleHead->data);
@@ -894,6 +897,7 @@ u32 Renderer::MakeConnectionStripeAttributeBlockCoreDivide(EmitterInstance* emit
     return numDrawStripe;
 }
 
+// This function was moved to eft_RendererConnectionStripe.cpp
 StripeVertexBuffer* Renderer::MakeConnectionStripeAttributeBlock(EmitterInstance* emitter)
 {
     u32 numParticles = emitter->numParticles;

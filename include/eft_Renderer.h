@@ -49,6 +49,9 @@ public:
     bool EntryChildParticleSub(const EmitterInstance* emitter, void* argData, bool draw = true);
     bool EntryParticleSub(const EmitterInstance* emitter, void* argData, bool draw = true);
     void EntryParticle(const EmitterInstance* emitter, void* argData);
+    void BeginStremOut();
+    void CalcStremOutParticle(const EmitterInstance* emitter, bool bind);
+    void EndStremOut();
     void EndRender();
 
     void SwapDoubleBuffer();

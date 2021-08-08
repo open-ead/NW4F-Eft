@@ -14,6 +14,7 @@ struct StreamOutAttributeBuffer
     void Initialize(u32 size);
     void Finalize();
     bool Bind(u32 buffer, u32 target, bool swap, bool apply);
+    void UnBind(u32 target);
 
     math::VEC4* data[2];
     GX2StreamOutBuffer buffer[2];

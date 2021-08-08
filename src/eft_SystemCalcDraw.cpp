@@ -230,4 +230,23 @@ void System::EndRender()
     renderers[OSGetCoreId()]->EndRender();
 }
 
+void System::SwapStreamOutBuffer()
+{
+    for (EmitterInstance* emitter = streamOutEmitterHead; emitter != NULL; emitter = emitter->nextStreamOut)
+        emitter->swapStreamOut ^= 1;
+}
+
+void System::CalcStreamOutEmittter()
+{
+    if (streamOutEmitterHead == NULL)
+        return;
+
+    renderers[OSGetCoreId()]->BeginStremOut();
+
+    for (EmitterInstance* emitter = streamOutEmitterHead; emitter != NULL; emitter = emitter->nextStreamOut)
+        renderers[OSGetCoreId()]->CalcStremOutParticle(emitter, true);
+
+    renderers[OSGetCoreId()]->EndStremOut();
+}
+
 } } // namespace nw::eft

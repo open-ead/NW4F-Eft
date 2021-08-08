@@ -186,6 +186,8 @@ public:
     void BeginRender(const math::MTX44& proj, const math::MTX34& view, const math::VEC3& cameraWorldPos, f32 zNear, f32 zFar);
     void RenderEmitter(const EmitterInstance* emitter, void* argData);
     void EndRender();
+    void SwapStreamOutBuffer();
+    void CalcStreamOutEmittter();
 
     void ClearResource(Heap* heap, u32 resourceID);
     void EntryResource(Heap* heap, void* resource, u32 resourceID, bool);

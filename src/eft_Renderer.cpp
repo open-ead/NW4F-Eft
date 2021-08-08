@@ -606,6 +606,79 @@ void Renderer::EntryParticle(const EmitterInstance* emitter, void* argData)
     currentParticleType = PtclType_Max;
 }
 
+void Renderer::BeginStremOut()
+{
+    GX2SetRasterizerClipControl(GX2_DISABLE, GX2_ENABLE);
+    GX2SetStreamOutEnable(GX2_ENABLE);
+}
+
+void Renderer::CalcStremOutParticle(const EmitterInstance* emitter, bool bind)
+{
+    if (emitter->numDrawParticle == 0 || emitter->emitterDynamicUniformBlock == NULL)
+        return;
+
+    ParticleShader* shader = emitter->shader[ShaderType_Normal];
+    if (shader == NULL)
+        return;
+
+    if (!(shader->vertexShaderKey.flags[0] & 0x2000000))
+    {
+        if (emitter->ptclAttributeBuffer == NULL)
+            return;
+    }
+    else
+    {
+        if (emitter->ptclAttributeBufferGpu == NULL)
+            return;
+    }
+
+    const SimpleEmitterData* data = emitter->data;
+
+    if (!SetupParticleShaderAndVertex(shader, data->meshType, emitter->primitive))
+        return;
+
+    {
+        const EmitterStaticUniformBlock* emitterStaticUniformBlock = emitter->emitterStaticUniformBlock;
+        shader->vertexEmitterStaticUniformBlock.BindUniformBlock(emitterStaticUniformBlock);
+        shader->fragmentEmitterStaticUniformBlock.BindUniformBlock(emitterStaticUniformBlock);
+    }
+
+    {
+        const EmitterDynamicUniformBlock* emitterDynamicUniformBlock = emitter->emitterDynamicUniformBlock;
+        shader->vertexEmitterDynamicUniformBlock.BindUniformBlock(emitterDynamicUniformBlock);
+        shader->fragmentEmitterDynamicUniformBlock.BindUniformBlock(emitterDynamicUniformBlock);
+    }
+
+    shader->EnableInstanced();
+
+    BindGpuParticleAttributeBlock(emitter->ptclAttributeBufferGpu, shader, 0, emitter->numDrawParticle);
+
+    if (bind)
+    {
+        bool posBind = const_cast<EmitterInstance*>(emitter)->posStreamOutAttributeBuffer.Bind(shader->attrStreamOutPosBuffer, 0, emitter->swapStreamOut, true);
+        bool vecBind = const_cast<EmitterInstance*>(emitter)->vecStreamOutAttributeBuffer.Bind(shader->attrStreamOutVecBuffer, 1, emitter->swapStreamOut, true);
+
+        if (!posBind || !vecBind)
+            return;
+    }
+
+    GX2DrawEx(GX2_PRIMITIVE_POINTS, 1, 0, emitter->numDrawParticle);
+
+    const_cast<EmitterInstance*>(emitter)->posStreamOutAttributeBuffer.UnBind(0);
+    const_cast<EmitterInstance*>(emitter)->vecStreamOutAttributeBuffer.UnBind(1);
+
+    const_cast<EmitterInstance*>(emitter)->posStreamOutAttributeBuffer.UnBind(0);
+    const_cast<EmitterInstance*>(emitter)->vecStreamOutAttributeBuffer.UnBind(1);
+
+    shader->DisableInstanced();
+}
+
+void Renderer::EndStremOut()
+{
+    GX2SetStreamOutEnable(GX2_DISABLE);
+    GX2SetRasterizerClipControl(GX2_ENABLE, GX2_ENABLE);
+}
+
 void Renderer::EndRender()
 {
 }
