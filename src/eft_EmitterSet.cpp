@@ -4,6 +4,22 @@
 
 namespace nw { namespace eft {
 
+EmitterInstance* EmitterSet::GetAliveEmitter(u32 idx)
+{
+    u32 aliveIdx = 0;
+
+    for (s32 i = 0; i < numEmitterAtCreate; i++)
+        if (emitters[i]->emitterSetCreateID == createID && emitters[i]->calc != NULL)
+        {
+            if (aliveIdx == idx)
+                return emitters[i];
+
+            aliveIdx++;
+        }
+
+    return NULL;
+}
+
 void EmitterSet::SetMtx(const math::MTX34& matrixSRT)
 {
     this->matrixSRT = matrixSRT;

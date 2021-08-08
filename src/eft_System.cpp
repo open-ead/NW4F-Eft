@@ -431,6 +431,31 @@ PtclInstance* System::AllocPtcl()
     return NULL;
 }
 
+void System::UpdateEmitterResInfo()
+{
+    for (u32 i = 0; i < 64u; i++)
+        for (EmitterInstance* emitter = emitterGroups[i]; emitter != NULL; emitter = emitter->next)
+            emitter->UpdateResInfo();
+}
+
+void System::UpdateEmitterSetResInfo()
+{
+    for (u32 i = 0; i < 64u; i++)
+    {
+        EmitterSet* emitterSet = emitterSetGroupHead[i];
+        u32 flags = 0;
+
+        for (; emitterSet != NULL; emitterSet = emitterSet->next)
+            if (emitterSet->numEmitter > 0)
+            {
+                for (s32 j = 0; j < emitterSet->numEmitter; j++)
+                    flags |= 1 << emitterSet->GetAliveEmitter(j)->data->_bitForUnusedFlag;
+
+                emitterSet->_unusedFlags = flags;
+            }
+    }
+}
+
 EmitterSet* System::AllocEmitterSet(Handle* handle)
 {
     EmitterSet* emitterSet = NULL;

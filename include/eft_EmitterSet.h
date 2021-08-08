@@ -42,6 +42,7 @@ public:
             emitters[i] = NULL;
     }
 
+    EmitterInstance* GetAliveEmitter(u32 idx);
     void SetMtx(const math::MTX34& matrixSRT);
     void Kill();
     void Fade();

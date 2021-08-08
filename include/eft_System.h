@@ -167,6 +167,8 @@ public:
     PtclStripe* AllocAndConnectStripe(EmitterInstance* emitter);
     PtclInstance* AllocPtcl();
     inline PtclInstance* AllocPtcl(EmitterInstance* emitter);
+    void UpdateEmitterResInfo();
+    void UpdateEmitterSetResInfo();
     EmitterSet* AllocEmitterSet(Handle* handle);
     EmitterInstance* AllocEmitter(u8 groupID);
     void AddEmitterSetToDrawList(EmitterSet* emitterSet, u8 groupID);
