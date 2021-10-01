@@ -515,7 +515,7 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
 
     else // TexPtnAnim Type Random
     {
-        s32 texPtnAnimIdx = emitter->random.GetU32(data->texAnimParam[0].texPtnAnimNum);
+        s32 texPtnAnimIdx = emitter->random.GetS32(data->texAnimParam[0].texPtnAnimNum);
         s32 texPtnAnimIdxDiv = data->texAnimParam[0].texPtnAnimIdxDiv;
         s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
         s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;
@@ -529,7 +529,7 @@ void EmitterCalc::EmitCommon(EmitterInstance* emitter, PtclInstance* ptcl)
 
     else // TexPtnAnim Type Random
     {
-        s32 texPtnAnimIdx = emitter->random.GetU32(data->texAnimParam[1].texPtnAnimNum);
+        s32 texPtnAnimIdx = emitter->random.GetS32(data->texAnimParam[1].texPtnAnimNum);
         s32 texPtnAnimIdxDiv = data->texAnimParam[1].texPtnAnimIdxDiv;
         s32 offsetX = texPtnAnimIdx % texPtnAnimIdxDiv;
         s32 offsetY = texPtnAnimIdx / texPtnAnimIdxDiv;

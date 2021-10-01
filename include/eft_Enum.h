@@ -118,7 +118,7 @@ enum PtclType // Actual name unknown
     PtclType_Child   = 2,
     PtclType_Max     = 3,
 };
-static_assert(sizeof(PtclFollowType) == 4, "PtclFollowType size mismatch");
+static_assert(sizeof(PtclType) == 4, "PtclType size mismatch");
 
 enum ShaderAttrib
 {
