@@ -65,7 +65,7 @@ BOOL _DEMOGFDReadPixelShader(nw::eft::Heap* heap, GX2PixelShader** shader, u32 i
 
 BOOL _DEMOGFDReadGeometryShader(nw::eft::Heap* heap, GX2GeometryShader** shader, u32 index, const void* binary)
 {
-        if (binary == NULL || shader == NULL || index >= GFDGetGeometryShaderCount(binary))
+    if (binary == NULL || shader == NULL || index >= GFDGetGeometryShaderCount(binary))
         return FALSE;
 
     u32 headerSize = GFDGetGeometryShaderHeaderSize(index, binary);

@@ -249,8 +249,8 @@ void EmitterInstance::UpdateResInfo()
     anim[ 6] = data->emitterRotate.y + rotateRandom.y;
     anim[ 7] = data->emitterRotate.z + rotateRandom.z;
     anim[ 8] = data->emitterTranslate.x + translateRandom.x;
-    anim[ 9] = data->emitterTranslate.y + translateRandom.x;
-    anim[10] = data->emitterTranslate.z + translateRandom.x;
+    anim[ 9] = data->emitterTranslate.y + translateRandom.y;
+    anim[10] = data->emitterTranslate.z + translateRandom.z;
 
     particleBehaviorFlg = 0;
     shaderAvailableAttribFlg = 0;
